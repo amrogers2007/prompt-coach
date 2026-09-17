@@ -13,10 +13,15 @@ and doing a little research. Move answered ones to IDEA.md.
 - [x] Which form factor first: browser extension, desktop integration, or app?
       → **Answered: browser extension** (chatgpt.com), BYOK for the AI-powered
       rewrite. Moved to IDEA.md / PROTOTYPE-SPEC.md.
-- [ ] What are the 20 best "micro-tips"? (You could start listing these now — it's
-      basically your content/curriculum, and it's fun. `rules.js` has ~12 so far —
-      see `dashboard/`'s "what to train on next" chart for how you'd prioritize
-      the next ones once you have real trigger-frequency data.)
+- [x] What are the 20 best "micro-tips"? → **20 rules now live in `rules.js`**
+      (sensitive data, grounding/sources, edit-in-AI, clarify, context, tech
+      constraints, planning constraints, format, structured output, audience,
+      persona, criteria, negative constraints, example, options/alternatives,
+      recency, step-by-step reasoning, compound questions, tutor mode,
+      self-check). Real trigger-frequency data (see `dashboard/`'s "what to
+      train on next" chart) would tell us which of these 20 actually matter
+      most to users and which to cut/refine — still gated on the privacy
+      questions below.
 - [ ] How do you make coaching feel helpful, not annoying? (Timing, frequency, tone.)
 - [ ] How would a skeptic's experience differ from an enthusiast's?
 - [ ] Which manager-dashboard metrics actually matter?
@@ -39,11 +44,15 @@ and doing a little research. Move answered ones to IDEA.md.
       confirmed before relying on it, not assumed.
 - [ ] Does Microsoft 365 Copilot have an extensibility/plugin model you could use?
 - [ ] Do enterprise AI tools expose usage data an admin could feed you? (Privacy!)
-- [ ] Privacy/security: enterprises are strict (you saw this at State Farm). What
-      can you see vs. not see about what employees are typing? This is a big deal.
-      **This is exactly why `dashboard/` is a mockup with sample data, not wired
-      to anything real** — a real version needs a real answer here first
-      (aggregation? anonymization? opt-in? what never leaves the browser?).
+- [x] Privacy/security: enterprises are strict (you saw this at State Farm). What
+      can you see vs. not see about what employees are typing?
+      → **Designed, not yet built.** See `docs/PRIVACY-DESIGN.md`: prompt text
+      never leaves the browser, only day-bucketed rule-trigger counts do, opt-in
+      only, and true anonymity (k≥5) has to be enforced server-side, not by the
+      client. `extension/src/telemetry.js` is a working sketch of the
+      client-side half, intentionally not wired into the extension yet — still
+      needs a consent UI and a real backend before `dashboard/` can show
+      anything but sample data.
 
 ## About the market / competition
 - [ ] Who are the top 5 companies already doing "AI enablement"? What do they charge?

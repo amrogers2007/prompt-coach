@@ -55,7 +55,11 @@ button sends the prompt to Claude for a smarter, context-aware rewrite plus
 ## What v1 does NOT do yet (future)
 - Work on Claude / Gemini / Copilot web (easy to add: extend the selectors + matches)
 - The "fix it after a bad response" helper (v2)
-- Any real, working team / manager dashboard (see `../dashboard/` for the mockup and `../docs/OPEN-QUESTIONS.md` for the privacy questions that gate a real one)
+- Any real, working team / manager dashboard (see `../dashboard/` for the mockup,
+  `../docs/OPEN-QUESTIONS.md` for the privacy questions that gate a real one, and
+  `../docs/PRIVACY-DESIGN.md` for the answer plus `src/telemetry.js`, a client-side
+  aggregation sketch that's deliberately **not wired in yet** — no consent UI or
+  backend exists to send it to)
 
 ## Privacy / security notes
 - Your Anthropic API key lives only in this browser's extension storage. It is

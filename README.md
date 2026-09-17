@@ -34,8 +34,10 @@ no signup.
 1. **The rules engine** (`extension/src/rules.js`) is the "brain": pure,
    dependency-free JavaScript that reads a prompt and flags concrete,
    research-backed weaknesses (no source-checking, no format specified, too
-   little context, editing habits that belong in the AI instead of Word, and
-   more) — instantly, for free, fully offline.
+   little context, missing technical/planning constraints, no structured
+   output ask, no persona for expert tasks, editing habits that belong in the
+   AI instead of Word, and more — 20 rules total) — instantly, for free,
+   fully offline.
 2. **Bring-your-own-key AI rewrite.** Click "✨ Improve with AI" and, if you've
    added your own Anthropic API key in the extension's Settings, it calls
    Claude *directly from your browser* to produce a smarter rewrite. Your key
