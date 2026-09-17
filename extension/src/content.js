@@ -1,8 +1,9 @@
 // =============================================================================
-// content.js  —  THE "PLUMBING" (ChatGPT web version)
+// content.js  —  THE "PLUMBING" (ChatGPT / Claude.ai / Gemini web versions)
 // -----------------------------------------------------------------------------
-// This is the part that's specific to running inside the ChatGPT website.
-// Its jobs:
+// This is the part that's specific to running inside a web AI chat site (see
+// manifest.json's content_scripts.matches for the current site list). Its
+// jobs:
 //   1. Find the prompt text box on the page.
 //   2. Watch what you type.
 //   3. Ask the "brain" (window.PromptCoach.analyze) what could be better
@@ -10,6 +11,13 @@
 //   4. Optionally ask background.js for an AI-powered rewrite, using the
 //      user's OWN Anthropic API key (set in Settings) — see background.js.
 //   5. Show a little suggestion card, with "Use this" buttons.
+//
+// findPromptBox() tries site-specific selectors first (they're the most
+// reliable when they match), then falls back to "the first contenteditable
+// or textarea on the page" — every text-box-based AI chat site has one of
+// those, even ones we haven't added a specific selector for yet. This is
+// also why adding a new site is usually just a manifest.json match, not new
+// selector code: see extension/README.md.
 //
 // If we later build a desktop version, THIS file gets rewritten, but rules.js
 // (the brain) stays exactly the same.
@@ -22,11 +30,15 @@
   var lastAnalysis = null;
 
   // --- Find the prompt box ---------------------------------------------------
-  // ChatGPT changes its HTML often, so we try several selectors and fall back
-  // to "the biggest text box on the page."
+  // These sites change their HTML often, so we try known selectors first
+  // (most specific/reliable), then fall back to "the first contenteditable
+  // or textarea on the page." If Prompt Coach stops attaching on a site,
+  // check the console for "[Prompt Coach] attached to prompt box" — if it's
+  // missing, that site likely needs a new selector added here.
   function findPromptBox() {
     var candidates = [
-      document.querySelector("#prompt-textarea"),
+      document.querySelector("#prompt-textarea"),                 // chatgpt.com
+      document.querySelector('div.ProseMirror[contenteditable="true"]'), // claude.ai
       document.querySelector("main form textarea"),
       document.querySelector("form textarea"),
       document.querySelector('div[contenteditable="true"]'),

@@ -1,14 +1,17 @@
 # Prompt Coach — Chrome Extension
 
-Coaches you to write better AI prompts, right as you type, on ChatGPT web.
+Coaches you to write better AI prompts, right as you type, on chatgpt.com,
+claude.ai, and gemini.google.com.
 
 ## The three-part design (remember this!)
 - **`src/rules.js` = the BRAIN.** Pure logic: given a prompt, what could be
   better + a rewritten version. Knows nothing about browsers. *Reusable* in a
   future desktop app, Slack bot, etc.
-- **`src/content.js` = the PLUMBING.** The ChatGPT-web-specific part: find the
-  text box, watch typing, draw the suggestion card. This gets rewritten per
-  platform; the brain does not.
+- **`src/content.js` = the PLUMBING.** The web-chat-specific part: find the
+  text box, watch typing, draw the suggestion card. `findPromptBox()` tries a
+  few site-specific selectors, then falls back to "the first contenteditable
+  or textarea on the page" — that's what makes adding a new site usually just
+  a `manifest.json` match, not new code. The brain (`rules.js`) never changes.
 - **`src/background.js` = the AI CONNECTION.** A service worker that calls
   Claude directly from the browser using **your own** Anthropic API key
   (stored in `chrome.storage.local` via the Settings page, `src/options.html`).
@@ -38,15 +41,20 @@ its top) so it can run with zero build step; if you add or change a rule in
 2. Turn on **Developer mode** (top-right toggle).
 3. Click **Load unpacked**.
 4. Select this `extension/` folder.
-5. Go to https://chatgpt.com and start typing a prompt — a card should appear.
+5. Go to https://chatgpt.com, https://claude.ai, or https://gemini.google.com
+   and start typing a prompt — a card should appear.
 6. (Optional, for AI rewrites) Right-click the extension in
    `chrome://extensions` → **Options**, and paste in your own Anthropic API
    key from https://console.anthropic.com/settings/keys.
 
 If nothing shows: open the page, right-click → Inspect → Console, and look for
-`[Prompt Coach] attached to prompt box`. ChatGPT changes its HTML often, so if
-it can't find the box we may need to update the selectors in `content.js`
-(`findPromptBox`).
+`[Prompt Coach] attached to prompt box`. These sites change their HTML often,
+so if it can't find the box we may need to update the selectors in
+`content.js` (`findPromptBox`). **Note:** claude.ai and gemini.google.com
+support was added by extending the manifest + selector list using the same
+generic-fallback design already proven on chatgpt.com, but hasn't been
+manually verified against those two live sites yet — if you try it and the
+card doesn't appear, that's the first place to look.
 
 ## What v1 does
 Detects common prompt problems (from real user interviews) and offers a
@@ -64,7 +72,11 @@ button sends the prompt to Claude for a smarter, context-aware rewrite plus
 1–3 plain-English tips.
 
 ## What v1 does NOT do yet (future)
-- Work on Claude / Gemini / Copilot web (easy to add: extend the selectors + matches)
+- Work on Copilot web (Copilot's chat surface and auth are more different from
+  the others; hasn't been attempted)
+- Manual verification that the new claude.ai / gemini.google.com support above
+  actually attaches on those live sites (should work per the generic-fallback
+  design, not yet confirmed hands-on)
 - The "fix it after a bad response" helper (v2)
 - Any real, working team / manager dashboard (see `../dashboard/` for the mockup,
   `../docs/OPEN-QUESTIONS.md` for the privacy questions that gate a real one, and

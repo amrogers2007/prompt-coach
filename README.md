@@ -25,7 +25,7 @@ no signup.
 
 | Folder | What it is |
 |---|---|
-| [`extension/`](extension/) | The real Chrome extension (Manifest V3). Coaches you live on chatgpt.com. |
+| [`extension/`](extension/) | The real Chrome extension (Manifest V3). Coaches you live on chatgpt.com, claude.ai, and gemini.google.com. |
 | [`playground/`](playground/) | A standalone page that runs the same coaching logic — the fastest way to try it or tune the rules. |
 | [`dashboard/`](dashboard/) | A manager-facing dashboard **mockup** (sample data) showing what a company buying this would want to see. |
 | [`server/`](server/) | *(legacy)* An earlier design where a server held the API key. Kept for the history — see its README for why it was replaced. |
