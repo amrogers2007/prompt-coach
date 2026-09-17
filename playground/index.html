@@ -162,7 +162,7 @@
       all.push({ prio:2, title:"No accuracy check", why:"AI can make things up — ask for sources.",
         eg:"Cite sources; say if you're unsure.", add:"Cite your sources, and say if you're unsure instead of guessing." });
 
-    var codeWords = ["code","function","script","program","algorithm","class ","api","bug","debug","regex","sql query","endpoint","unit test"];
+    var codeWords = ["code","function"," script","program","algorithm","class "," api","bug","debug","regex","sql query","endpoint","unit test"];
     var stackWords = ["python","javascript","typescript","java ","c++","c#","ruby","golang"," go ","rust","php","swift","kotlin","html","css","sql","bash","node","react","vue","angular","version","framework","library"];
     if (has(codeWords) && !has(stackWords))
       all.push({ prio:3.5, title:"No language or stack given", why:"Say the language, framework, and version — otherwise it guesses.",

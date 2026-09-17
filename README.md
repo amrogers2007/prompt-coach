@@ -1,5 +1,7 @@
 # Prompt Coach
 
+[![Test](https://github.com/amrogers2007/prompt-coach/actions/workflows/test.yml/badge.svg)](https://github.com/amrogers2007/prompt-coach/actions/workflows/test.yml)
+
 **An in-the-flow AI coach that watches how you write prompts and teaches you to
 get more out of AI — right as you type, with zero setup cost to you.**
 
@@ -28,6 +30,7 @@ no signup.
 | [`dashboard/`](dashboard/) | A manager-facing dashboard **mockup** (sample data) showing what a company buying this would want to see. |
 | [`server/`](server/) | *(legacy)* An earlier design where a server held the API key. Kept for the history — see its README for why it was replaced. |
 | [`docs/`](docs/) | The idea, the customer interviews, the business thinking, and the open questions — the "why" behind every decision above. |
+| [`tests/`](tests/) | Automated tests for the rules engine and telemetry sketch (Node's built-in test runner, zero dependencies). Runs in CI on every push — see the badge above. |
 
 ## How it works
 

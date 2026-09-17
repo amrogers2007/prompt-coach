@@ -1,0 +1,11 @@
+{
+  "name": "prompt-coach",
+  "private": true,
+  "description": "Tests for the Prompt Coach rules engine and telemetry sketch. The extension and playground themselves need no build step or dependencies — this is here only so `npm test` works in CI.",
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

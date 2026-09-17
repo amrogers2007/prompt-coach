@@ -4,15 +4,21 @@
 // Pure logic. Give it a prompt string, get back { issues, improvedPrompt }.
 // Friendly + SHORT on purpose. Shows at most the 3 highest-priority issues so
 // it never overwhelms. v1 = hard-coded rules (no AI model).
+//
+// evaluateAll() vs analyze(): evaluateAll() runs every rule and returns all
+// matches (used by tests, and by telemetry.js's future caller — see
+// docs/PRIVACY-DESIGN.md — which needs to count every rule that fired, not
+// just the 3 shown). analyze() is the one the extension UI actually uses: it
+// calls evaluateAll() and keeps only the top 3, plus the rewritten prompt.
 // =============================================================================
 
 (function () {
-  function analyze(rawText) {
+  function evaluateAll(rawText) {
     var text = (rawText || "").trim();
     var wc = text ? text.split(/\s+/).length : 0;
     function has(ws) { var l = text.toLowerCase(); return ws.some(function (w) { return l.indexOf(w) >= 0; }); }
 
-    if (wc < 2) return { issues: [], improvedPrompt: text };
+    if (wc < 2) return [];
 
     var isQ = text.indexOf("?") >= 0 ||
       /^(what|who|when|where|which|why|how|is|are|does|do|can|should)\b/i.test(text);
@@ -38,8 +44,8 @@
         add: "Cite your sources, and say if you're unsure instead of guessing." });
 
     // 12 — Missing technical constraints (coding tasks)
-    var codeWords = ["code", "function", "script", "program", "algorithm",
-      "class ", "api", "bug", "debug", "regex", "sql query", "endpoint", "unit test"];
+    var codeWords = ["code", "function", " script", "program", "algorithm",
+      "class ", " api", "bug", "debug", "regex", "sql query", "endpoint", "unit test"];
     var stackWords = ["python", "javascript", "typescript", "java ", "c++", "c#",
       "ruby", "golang", " go ", "rust", "php", "swift", "kotlin", "html", "css",
       "sql", "bash", "node", "react", "vue", "angular", "version", "framework", "library"];
@@ -200,8 +206,14 @@
         eg: "Double-check your answer for mistakes before giving it to me.",
         add: "Double-check your answer for mistakes before giving it to me." });
 
-    // Keep it short: highest-priority 3 only.
     all.sort(function (a, b) { return a.prio - b.prio; });
+    return all;
+  }
+
+  // Keep it short: highest-priority 3 only.
+  function analyze(rawText) {
+    var text = (rawText || "").trim();
+    var all = evaluateAll(text);
     var shown = all.slice(0, 3);
     var adds = shown.filter(function (i) { return i.add; }).map(function (i) { return i.add; });
     var improved = adds.length
@@ -211,5 +223,7 @@
     return { issues: shown, improvedPrompt: improved };
   }
 
-  window.PromptCoach = { analyze: analyze };
+  var api = { analyze: analyze, evaluateAll: evaluateAll };
+  if (typeof window !== "undefined") window.PromptCoach = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
 })();

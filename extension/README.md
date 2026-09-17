@@ -22,6 +22,17 @@ logic against a plain text box, with example buttons, and has its own
 "bring your own key" field for the AI-rewrite feature. Great for tuning the
 rules without reloading the extension.
 
+## Run the tests
+`rules.js` and `telemetry.js` are pure logic with no browser/extension
+dependency, so they're tested directly with Node — no build step, no test
+framework dependency (uses `node:test`, built into Node 18+):
+```
+npm test
+```
+`playground/index.html` keeps its own copy of the same rules (documented at
+its top) so it can run with zero build step; if you add or change a rule in
+`rules.js`, update both, then run the tests above.
+
 ## Load the real extension in Chrome
 1. Open Chrome → go to `chrome://extensions`
 2. Turn on **Developer mode** (top-right toggle).
