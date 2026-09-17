@@ -124,6 +124,7 @@
     <input id="key-input" type="password" placeholder="sk-ant-... (your own Anthropic API key)" />
     <button id="key-save">Save key</button>
   </div>
+  <div id="key-status" class="err" style="display:none;"></div>
   <p class="key-note">
     Stored only in this browser (localStorage) and sent straight to Anthropic —
     never through any server of ours. Usage is billed to <b>your</b> account.
@@ -316,7 +317,7 @@
     try { return localStorage.getItem(KEY_STORAGE) || ""; } catch (e) { return ""; }
   }
   function saveKey(k) {
-    try { localStorage.setItem(KEY_STORAGE, k); } catch (e) { /* private browsing, etc. */ }
+    try { localStorage.setItem(KEY_STORAGE, k); return true; } catch (e) { return false; /* private browsing, etc. */ }
   }
 
   (function initKeyField() {
@@ -324,12 +325,18 @@
     if (existing) keyInput.placeholder = "sk-ant-•••• (saved — enter a new key to replace it)";
   })();
 
+  var keyStatus = document.getElementById("key-status");
   document.getElementById("key-save").addEventListener("click", function () {
     var v = keyInput.value.trim();
     if (!v) return;
-    saveKey(v);
-    keyInput.value = "";
-    keyInput.placeholder = "sk-ant-•••• (saved — enter a new key to replace it)";
+    if (saveKey(v)) {
+      keyStatus.style.display = "none";
+      keyInput.value = "";
+      keyInput.placeholder = "sk-ant-•••• (saved — enter a new key to replace it)";
+    } else {
+      keyStatus.textContent = "Couldn't save — this browser is blocking local storage (private/incognito mode?). \"Improve with AI\" won't work until you allow storage for this page.";
+      keyStatus.style.display = "block";
+    }
   });
 
   // --- "Improve with AI" — calls Anthropic directly, with YOUR key -----------
