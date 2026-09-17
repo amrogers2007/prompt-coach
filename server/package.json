@@ -1,0 +1,12 @@
+{
+  "name": "prompt-coach-server",
+  "version": "0.1.0",
+  "description": "Tiny local server that calls Claude to improve prompts. Keeps the API key off the browser.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0"
+  }
+}

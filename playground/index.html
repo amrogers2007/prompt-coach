@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Coach — Playground</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --text: #ececf1;
+      --muted: #9a9aa6;
+      --card: #191920;
+      --border: #2a2a33;
+      --accent: #12b886;
+      --accent-dim: #0e9c74;
+      --blue: #8ab0ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 680px; margin: 0 auto; padding: 48px 20px 80px;
+      color: var(--text); background: var(--bg);
+    }
+    h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.02em; }
+    p.sub { color: var(--muted); margin: 0 0 22px; font-size: 14px; }
+
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .examples button {
+      border: 1px solid var(--border); background: #16161c; color: var(--text);
+      border-radius: 999px; padding: 6px 13px; font-size: 12.5px; cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .examples button:hover { border-color: var(--accent); background: #1c1c24; }
+
+    textarea {
+      width: 100%; min-height: 116px; font-size: 15px; line-height: 1.5;
+      padding: 14px 16px; color: var(--text); background: var(--card);
+      border: 1px solid var(--border); border-radius: 14px; resize: vertical;
+      font-family: inherit; transition: border-color .15s;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    textarea::placeholder { color: #5c5c68; }
+
+    .card {
+      margin-top: 14px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 18px;
+    }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .badge {
+      font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Improved prompt card */
+    .improved { border-color: #245c48; background: linear-gradient(180deg, #12241d, #14140f00), var(--card); }
+    .improved .badge { color: var(--accent); }
+    .improved-text {
+      margin-top: 12px; white-space: pre-wrap; font-size: 14.5px; line-height: 1.55;
+      color: #e7f6ef;
+    }
+    .use {
+      border: none; border-radius: 9px; padding: 9px 15px; cursor: pointer;
+      background: var(--accent); color: #06231a; font-weight: 700; font-size: 13px;
+      white-space: nowrap; transition: background .15s, transform .05s;
+    }
+    .use:hover { background: var(--accent-dim); }
+    .use:active { transform: translateY(1px); }
+
+    /* Coach card */
+    .coach .badge { color: #ffd479; }
+    .item { padding: 12px 0; border-top: 1px solid var(--border); }
+    .item:first-of-type { padding-top: 14px; }
+    .item-title { font-weight: 650; font-size: 14.5px; }
+    .why { color: var(--muted); margin-top: 3px; font-size: 13.5px; line-height: 1.5; }
+    .eg { color: var(--blue); font-style: italic; margin-top: 5px; font-size: 13px; }
+
+    .solid { color: var(--accent); font-size: 14.5px; }
+    .err { color: #ff7a7a; margin-top: 14px; }
+
+    .key-row { display: flex; gap: 8px; margin-top: 16px; }
+    .key-row input {
+      flex: 1; font-size: 13px; padding: 9px 12px; color: var(--text);
+      background: var(--card); border: 1px solid var(--border); border-radius: 9px;
+      font-family: inherit;
+    }
+    .key-row input:focus { outline: none; border-color: #6b4ea8; }
+    .key-row button {
+      border: 1px solid #6b4ea8; border-radius: 9px; padding: 8px 14px;
+      background: #241a33; color: #d9c9ff; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .key-row button:hover { background: #2e2142; }
+    .key-note { color: var(--muted); font-size: 12px; margin: 6px 0 0; line-height: 1.5; }
+    .key-note a { color: var(--blue); }
+
+    #ai {
+      margin-top: 12px; border: 1px solid #6b4ea8; border-radius: 9px;
+      padding: 10px 16px; background: #241a33; color: #d9c9ff; font-size: 14px;
+      font-weight: 600; cursor: pointer;
+    }
+    #ai:hover { background: #2e2142; }
+    #ai:disabled { opacity: .6; cursor: default; }
+    .ai-card {
+      margin-top: 12px; background: #1a1626; border: 1px solid #4a3a6b;
+      border-radius: 12px; padding: 14px;
+    }
+    .ai-card .badge { color: #c4a7ff; }
+    .ai-note { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>✨ Prompt Coach</h1>
+  <p class="sub">Type a prompt — coaching appears automatically as you type.</p>
+
+  <div class="examples">
+    <button data-eg="write me an essay about the French Revolution">Vague "do it for me"</button>
+    <button data-eg="what year did the Roman Empire fall?">Fact question</button>
+    <button data-eg="explain photosynthesis">Too little context</button>
+    <button data-eg="Summarize this report in 3 concise bullets, cite sources; write it for execs in a formal tone.">A good prompt</button>
+  </div>
+
+  <textarea id="prompt" placeholder="Type an AI prompt here..."></textarea>
+
+  <div id="key-row" class="key-row">
+    <input id="key-input" type="password" placeholder="sk-ant-... (your own Anthropic API key)" />
+    <button id="key-save">Save key</button>
+  </div>
+  <p class="key-note">
+    Stored only in this browser (localStorage) and sent straight to Anthropic —
+    never through any server of ours. Usage is billed to <b>your</b> account.
+    Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.
+  </p>
+
+  <button id="ai">✨ Improve with AI (your own key)</button>
+  <div id="ai-out"></div>
+
+  <div id="out"></div>
+
+  <script>
+  // ==========================================================================
+  // Self-contained "brain" (same logic as extension/src/rules.js).
+  // ==========================================================================
+  function analyze(rawText) {
+    var text = (rawText || "").trim();
+    var wc = text ? text.split(/\s+/).length : 0;
+    function has(ws){ var l=text.toLowerCase(); return ws.some(function(w){return l.indexOf(w)>=0;}); }
+
+    if (wc < 2) return { issues: [], improvedPrompt: text };
+
+    var isQ = text.indexOf("?")>=0 || /^(what|who|when|where|which|why|how|is|are|does|do|can|should)\b/i.test(text);
+    var isTask = /^(write|create|make|solve|do|build|generate|draft|help me|email|plan)\b/i.test(text);
+    var all = [];
+
+    var sensitive =
+      /[\w.+-]+@[\w-]+\.[\w.-]+/.test(text) ||
+      /\b\d{3}-\d{2}-\d{4}\b/.test(text) ||
+      /\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/.test(text) ||
+      /\b\d{13,16}\b/.test(text) ||
+      has(["confidential","social security","ssn","credit card","password","account number"]);
+    if (sensitive) all.push({ prio:1, title:"⚠️ Looks like private info", why:"Avoid pasting personal or confidential data into AI." });
+
+    if (isQ && !has(["source","cite","citation","reference","according to"]))
+      all.push({ prio:2, title:"No accuracy check", why:"AI can make things up — ask for sources.",
+        eg:"Cite sources; say if you're unsure.", add:"Cite your sources, and say if you're unsure instead of guessing." });
+
+    var editVerbs = ["edit this","edit the","revise this","revise the","make edits","make changes",
+      "proofread","polish this","polish the","clean up this","clean up the","rewrite this","rewrite the",
+      "redline","track changes","tighten this","tighten the","reword"];
+    var docWords = ["document","draft","essay","report","paper","section","paragraph","memo","letter","cover letter","resume","manuscript"];
+    var wordAppWords = ["word doc","word document",".docx","google doc","in word","microsoft word"];
+    var isEditTask = has(editVerbs) && (has(docWords) || has(wordAppWords) || wc > 40);
+    if (isEditTask)
+      all.push({ prio:2.5, title:"Edit it here, not in Word", why:"Keep revising in this chat — the AI can edit the text " +
+        "directly and you just say what's next, instead of pasting into Word every round.",
+        eg:"Make the edit right here; I'll tell you what to change next instead of copying into Word.",
+        add:"Make the edit directly here (not just describe it) so we can keep iterating without me copy-pasting into Word." });
+
+    if (isTask || wc < 8)
+      all.push({ prio:3, title:"Let it ask first", why:"Have the AI ask questions if anything's unclear.",
+        eg:"Ask me anything unclear before answering.", add:"If anything is unclear, ask me before you answer." });
+
+    if (wc < 6)
+      all.push({ prio:4, title:"Too little context", why:"Add your goal, who it's for, and key details.",
+        eg:"(Goal: ___. For: ___. Details: ___)", add:"Context — goal: [fill in]. For: [fill in]. Key details: [fill in]." });
+
+    if (!has(["bullet","concise","short","brief","one sentence","paragraph","word","words","list","step","table","tl;dr","summary","summarize"]))
+      all.push({ prio:5, title:"No length or format", why:"Say the shape you want, or it may overshoot.",
+        eg:"Answer in 3 short bullets.", add:"Answer concisely in 3 short bullets." });
+
+    if (isTask && !has(["for ","audience","tone","formal","casual","professional","beginner","expert","5th","executive","exec","kids","children","simple terms"]))
+      all.push({ prio:6, title:"No audience or tone", why:"Say who it's for and the tone to use.",
+        eg:"Write for execs, professional tone.", add:"Write it for [audience], in a [tone] tone." });
+
+    if (isTask && has(["good","great","best","nice","better","perfect"]))
+      all.push({ prio:7, title:"Vague quality bar", why:"Say what 'good' means here.", eg:"It's good if it [your criteria]." });
+
+    if (isTask && wc < 25 && !has(["example","e.g","for instance","such as","like this"]))
+      all.push({ prio:8, title:"No example", why:"Show a sample of what you want.", eg:"Here's an example of the style I want: ___" });
+
+    if (has(["latest","recent","current","today","this year","newest","right now","2024","2025","2026"]))
+      all.push({ prio:9, title:"Asking about current info", why:"AI may be out of date — ask it to flag uncertainty.", eg:"Note if this might be outdated." });
+
+    if ((text.match(/\?/g)||[]).length >= 2)
+      all.push({ prio:10, title:"Several questions at once", why:"Ask one thing at a time for deeper answers.", eg:"Split this into separate questions." });
+
+    if (isTask)
+      all.push({ prio:11, title:"Learn it, not just get it?", why:"Ask it to guide you, not do your thinking.", eg:"Guide me step by step instead of giving the answer." });
+
+    all.sort(function(a,b){return a.prio-b.prio;});
+    var shown = all.slice(0,3);
+    var adds = shown.filter(function(i){return i.add;}).map(function(i){return i.add;});
+    var improved = adds.length ? text + "\n\n" + adds.map(function(a){return "- "+a;}).join("\n") : text;
+    return { issues: shown, improvedPrompt: improved };
+  }
+
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  function render() {
+    var out = document.getElementById("out");
+    try {
+      var box = document.getElementById("prompt");
+      var a = analyze(box.value);
+      var words = box.value.trim() ? box.value.trim().split(/\s+/).length : 0;
+      var html = "";
+
+      // 1) Improved prompt FIRST, with a "Use" button.
+      var hasImproved = a.improvedPrompt && a.improvedPrompt !== box.value.trim();
+      if (hasImproved) {
+        html += '<div class="card improved">' +
+          '<div class="card-head"><span class="badge">Improved prompt</span>' +
+          '<button id="useBtn" class="use">Use improved prompt →</button></div>' +
+          '<div class="improved-text">' + esc(a.improvedPrompt) + '</div></div>';
+      }
+
+      // 2) Coaching tips below.
+      if (a.issues.length) {
+        html += '<div class="card coach"><div class="card-head"><span class="badge">✨ Prompt Coach</span></div>';
+        a.issues.forEach(function (i) {
+          html += '<div class="item"><div class="item-title">' + esc(i.title) + '</div>' +
+            '<div class="why">' + esc(i.why) + '</div>' +
+            (i.eg ? '<div class="eg">Try: “' + esc(i.eg) + '”</div>' : '') + '</div>';
+        });
+        html += '</div>';
+      } else if (words >= 2) {
+        html += '<div class="card solid">✅ <b>Looks solid.</b> This prompt already tells the AI what it needs.</div>';
+      }
+
+      out.innerHTML = html;
+
+      // Wire the "Use" button (re-created each render, so bind here).
+      var ub = document.getElementById("useBtn");
+      if (ub) ub.addEventListener("click", function () {
+        box.value = a.improvedPrompt;
+        box.focus();
+        render();
+      });
+    } catch (e) {
+      out.innerHTML = '<div class="err">Error: ' + esc(e.message) + '</div>';
+    }
+  }
+
+  document.getElementById("prompt").addEventListener("input", render);
+
+  // --- Your own API key, saved only in this browser ---------------------------
+  // This page calls Anthropic's API directly, with YOUR key, straight from the
+  // browser. Nothing routes through a server we run. See extension/src/background.js
+  // for the exact same pattern used by the real Chrome extension.
+  var KEY_STORAGE = "promptCoachApiKey";
+  var keyInput = document.getElementById("key-input");
+
+  function loadKey() {
+    try { return localStorage.getItem(KEY_STORAGE) || ""; } catch (e) { return ""; }
+  }
+  function saveKey(k) {
+    try { localStorage.setItem(KEY_STORAGE, k); } catch (e) { /* private browsing, etc. */ }
+  }
+
+  (function initKeyField() {
+    var existing = loadKey();
+    if (existing) keyInput.placeholder = "sk-ant-•••• (saved — enter a new key to replace it)";
+  })();
+
+  document.getElementById("key-save").addEventListener("click", function () {
+    var v = keyInput.value.trim();
+    if (!v) return;
+    saveKey(v);
+    keyInput.value = "";
+    keyInput.placeholder = "sk-ant-•••• (saved — enter a new key to replace it)";
+  });
+
+  // --- "Improve with AI" — calls Anthropic directly, with YOUR key -----------
+  var aiBtn = document.getElementById("ai");
+  var aiOut = document.getElementById("ai-out");
+  var MODEL = "claude-haiku-4-5";
+  var SYSTEM_PROMPT = "You are Prompt Coach. Rewrite the user's AI prompt so it gets a " +
+    "better result, then explain what you improved in 1-3 short, friendly tips.\n\n" +
+    "Rules:\n- Keep the rewrite faithful to what the user actually wants.\n" +
+    "- Improve clarity, add missing context/format/goal, and guard against made-up info.\n" +
+    "- Be concise and encouraging. Tips are one short sentence each, no jargon.";
+  var SCHEMA = {
+    type: "object",
+    properties: {
+      improved: { type: "string", description: "The improved version of the prompt." },
+      tips: { type: "array", items: { type: "string" }, description: "1-3 short, friendly tips." },
+    },
+    required: ["improved", "tips"],
+    additionalProperties: false,
+  };
+
+  aiBtn.addEventListener("click", async function () {
+    var prompt = document.getElementById("prompt").value.trim();
+    if (!prompt) { aiOut.innerHTML = '<div class="ai-note">Type a prompt first.</div>'; return; }
+
+    var apiKey = loadKey();
+    if (!apiKey) {
+      aiOut.innerHTML = '<div class="ai-note">Add your Anthropic API key above first — it\'s free to add, you only pay per use.</div>';
+      keyInput.focus();
+      return;
+    }
+
+    aiBtn.disabled = true;
+    aiOut.innerHTML = '<div class="ai-card">🤔 Asking Claude…</div>';
+
+    try {
+      var resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          // Lets this page call Anthropic directly from browser JS, billed to
+          // YOUR key, instead of routing through a server.
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 1024,
+          system: SYSTEM_PROMPT,
+          output_config: { format: { type: "json_schema", schema: SCHEMA }, effort: "low" },
+          messages: [{ role: "user", content: "Improve this prompt:\n\n" + prompt }],
+        }),
+      });
+      var payload = await resp.json();
+      if (!resp.ok) throw new Error((payload.error && payload.error.message) || ("Request failed (" + resp.status + ")"));
+
+      var textBlock = (payload.content || []).find(function (b) { return b.type === "text"; });
+      var data = JSON.parse(textBlock.text);
+
+      var tips = (data.tips || []).map(function (t) {
+        return '<div class="why">• ' + esc(t) + '</div>';
+      }).join("");
+      aiOut.innerHTML =
+        '<div class="ai-card"><div class="card-head"><span class="badge">🤖 AI-improved prompt</span>' +
+        '<button id="ai-use" class="use">Use this →</button></div>' +
+        '<div class="improved-text">' + esc(data.improved) + '</div>' + tips + '</div>';
+
+      document.getElementById("ai-use").addEventListener("click", function () {
+        document.getElementById("prompt").value = data.improved;
+        render();
+      });
+    } catch (e) {
+      aiOut.innerHTML = '<div class="err">⚠️ ' + esc(e.message) + '</div>';
+    } finally {
+      aiBtn.disabled = false;
+    }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".examples button"), function (b) {
+    b.addEventListener("click", function () {
+      document.getElementById("prompt").value = b.getAttribute("data-eg");
+      render();
+    });
+  });
+  </script>
+</body>
+</html>

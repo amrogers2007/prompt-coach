@@ -1,0 +1,119 @@
+/* The suggestion card. Prefixed with "pc-" so it can't clash with ChatGPT. */
+
+.pc-card {
+  position: fixed;
+  z-index: 2147483647;               /* sit on top of everything */
+  background: #ffffff;
+  color: #1a1a1a;
+  border: 1px solid #e2e2e2;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+  padding: 12px 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.pc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pc-title { font-weight: 600; }
+
+.pc-x {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: #888;
+}
+.pc-x:hover { color: #222; }
+
+.pc-list { list-style: none; margin: 0; padding: 0; }
+
+.pc-item {
+  padding: 8px 0;
+  border-top: 1px solid #f0f0f0;
+}
+.pc-item:first-child { border-top: none; }
+
+.pc-item-title { font-weight: 600; margin-bottom: 2px; }
+.pc-why { color: #555; }
+.pc-eg { color: #2563eb; margin-top: 3px; font-style: italic; }
+
+.pc-use {
+  margin-top: 10px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #10a37f;              /* ChatGPT-ish green */
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pc-use:hover { background: #0e906f; }
+
+.pc-solid { color: #0e906f; font-weight: 600; padding: 4px 0 2px; }
+
+.pc-ai {
+  margin-top: 10px;
+  width: 100%;
+  border: 1px solid #6b4ea8;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #f4eeff;
+  color: #4a2e8a;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pc-ai:hover { background: #ece0ff; }
+
+.pc-ai-out:empty { display: none; }
+.pc-ai-note { margin-top: 8px; color: #666; }
+.pc-ai-err { margin-top: 8px; color: #b3261e; }
+.pc-ai-settings {
+  border: none; background: none; padding: 0; color: #2563eb;
+  text-decoration: underline; cursor: pointer; font: inherit;
+}
+
+.pc-ai-card {
+  margin-top: 8px;
+  background: #f4eeff;
+  border: 1px solid #d9c9ff;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.pc-ai-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-weight: 600; color: #4a2e8a; margin-bottom: 6px;
+}
+.pc-ai-use {
+  border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer;
+  background: #6b4ea8; color: white; font-weight: 600; font-size: 12px;
+}
+.pc-ai-use:hover { background: #5a3f91; }
+.pc-ai-text { white-space: pre-wrap; color: #2a1f42; margin-bottom: 6px; }
+
+/* Dark mode friendliness */
+@media (prefers-color-scheme: dark) {
+  .pc-card { background: #2a2a2a; color: #f0f0f0; border-color: #444; }
+  .pc-why { color: #bbb; }
+  .pc-item { border-top-color: #3a3a3a; }
+  .pc-eg { color: #6ea8ff; }
+  .pc-solid { color: #6ea8ff; }
+  .pc-ai { background: #241a33; color: #d9c9ff; border-color: #6b4ea8; }
+  .pc-ai:hover { background: #2e2142; }
+  .pc-ai-note { color: #bbb; }
+  .pc-ai-card { background: #1a1626; border-color: #4a3a6b; }
+  .pc-ai-head { color: #d9c9ff; }
+  .pc-ai-text { color: #e7f6ef; }
+}

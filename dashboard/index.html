@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prompt Coach — Manager Dashboard (mockup)</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page:           #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6;   /* blue: primary sequential hue */
+    --series-1-wash:  rgba(42,120,214,0.10);
+    --good:           #0ca30c;
+    --good-text:      #006300;
+    --warning:        #fab219;
+    --serious:        #ec835a;
+    --critical:       #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page:           #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-1-wash:  rgba(57,135,229,0.14);
+      --good:           #0ca30c;
+      --good-text:      #0ca30c;
+      --warning:        #fab219;
+      --serious:        #ec835a;
+      --critical:       #e66767;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page:           #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-1:       #3987e5;
+    --series-1-wash:  rgba(57,135,229,0.14);
+    --good:           #0ca30c;
+    --good-text:      #0ca30c;
+    --warning:        #fab219;
+    --serious:        #ec835a;
+    --critical:       #e66767;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .viz-root {
+    background: var(--page);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 64px; }
+
+  .banner {
+    background: var(--series-1-wash);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+  .banner b { color: var(--text-primary); }
+
+  header.top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .top .range { font-size: 13px; color: var(--text-secondary); background: var(--surface-1); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; }
+  p.sub { color: var(--text-secondary); font-size: 13.5px; margin: 6px 0 28px; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  @media (max-width: 760px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+  .tile {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .tile .label { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 8px; }
+  .tile .value { font-size: 28px; font-weight: 600; line-height: 1; }
+  .tile .delta { font-size: 12.5px; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
+  .delta.good { color: var(--good-text); }
+  .delta.bad { color: var(--critical); }
+  .delta.flag { color: var(--serious); font-weight: 600; }
+  .spark { margin-top: 10px; display: block; }
+
+  .panel {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-bottom: 20px;
+  }
+  .panel h2 { font-size: 15px; margin: 0 0 3px; }
+  .panel p.hint { font-size: 12.5px; color: var(--text-secondary); margin: 0 0 18px; }
+
+  /* --- Bar chart: what to train on next --- */
+  .bar-row { display: grid; grid-template-columns: 190px 1fr 46px; align-items: center; gap: 10px; padding: 7px 0; position: relative; }
+  .bar-row .cat { font-size: 13px; color: var(--text-primary); }
+  .bar-track { background: var(--gridline); border-radius: 4px; height: 16px; position: relative; overflow: visible; }
+  .bar-fill { background: var(--series-1); height: 16px; border-radius: 4px; position: relative; cursor: default; }
+  .bar-row .val { font-size: 12.5px; color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* --- Line chart: trend --- */
+  .line-wrap { position: relative; }
+  svg.trend { width: 100%; height: 220px; display: block; overflow: visible; }
+  .grid-line { stroke: var(--gridline); stroke-width: 1; }
+  .trend-path { fill: none; stroke: var(--series-1); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .trend-area { fill: var(--series-1-wash); stroke: none; }
+  .trend-dot { fill: var(--series-1); stroke: var(--surface-1); stroke-width: 2; cursor: pointer; }
+  .axis-label { fill: var(--text-muted); font-size: 11px; font-family: inherit; }
+  .end-label { fill: var(--text-primary); font-size: 12.5px; font-weight: 600; font-family: inherit; }
+
+  .tooltip {
+    position: absolute; pointer-events: none; background: var(--text-primary); color: var(--surface-1);
+    font-size: 12px; padding: 6px 9px; border-radius: 7px; transform: translate(-50%, -130%);
+    white-space: nowrap; opacity: 0; transition: opacity .1s; z-index: 5;
+  }
+  .tooltip.show { opacity: 1; }
+
+  /* --- Team table --- */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); font-weight: 600; padding: 0 10px 10px; border-bottom: 1px solid var(--gridline); }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td { padding: 11px 10px; border-bottom: 1px solid var(--gridline); }
+  tr:last-child td { border-bottom: none; }
+  .trend-cell { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+  .team-name { font-weight: 600; }
+  .team-sub { color: var(--text-muted); font-size: 12px; }
+
+  .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: stretch; }
+  @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+  .callout { display: flex; flex-direction: column; justify-content: center; }
+  .callout .big { font-size: 34px; font-weight: 600; margin: 6px 0; }
+  .callout .big span { color: var(--series-1); }
+
+  footer.note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+    <div class="banner">
+      📊 <b>Mockup with sample data</b> — no real employee usage is tracked or shown here.
+      This demonstrates what the manager-facing view of Prompt Coach would prioritize once
+      a company opts into anonymized, aggregated reporting.
+    </div>
+
+    <header class="top">
+      <h1>Prompt Coach — Team Overview</h1>
+      <span class="range">Last 4 weeks ▾</span>
+    </header>
+    <p class="sub">Acme Insurance · Claims &amp; Underwriting org · 214 licensed seats</p>
+
+    <div class="kpi-row">
+      <div class="tile">
+        <div class="label">Weekly active users</div>
+        <div class="value">71%</div>
+        <div class="delta good">▲ 12 pts vs last month</div>
+      </div>
+      <div class="tile">
+        <div class="label">Coaching tips accepted</div>
+        <div class="value">38%</div>
+        <div class="delta good">▲ 6 pts vs last month</div>
+      </div>
+      <div class="tile">
+        <div class="label">Avg. issues per prompt</div>
+        <div class="value">1.9</div>
+        <div class="delta good">▼ down from 3.1</div>
+      </div>
+      <div class="tile">
+        <div class="label">Sensitive-data flags</div>
+        <div class="value">14</div>
+        <div class="delta flag">⚠ this month — review with security</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>What to train on next</h2>
+      <p class="hint">Coaching categories triggered most often, org-wide — this is your curriculum, ranked by real need instead of a guess.</p>
+      <div id="bar-chart"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h2>Prompt quality is improving</h2>
+        <p class="hint">Average number of coaching issues flagged per prompt, org-wide, by week. Fewer issues over time is the clearest proof the coaching is working.</p>
+        <div class="line-wrap">
+          <svg class="trend" viewBox="0 0 640 220" preserveAspectRatio="none" id="trend-svg"></svg>
+          <div class="tooltip" id="trend-tooltip"></div>
+        </div>
+      </div>
+
+      <div class="panel callout">
+        <div class="label" style="font-size:12.5px;color:var(--text-secondary);">Skeptics won over</div>
+        <div class="big"><span>62%</span></div>
+        <p class="hint" style="margin-bottom:0;">
+          of employees who barely used AI in week 1 are now weekly-active users —
+          the strongest signal that coaching (not a mandate) is changing minds.
+        </p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Teams — where to focus follow-up</h2>
+      <p class="hint">Adoption and coaching trend by team, so you know who needs a nudge and who's already ahead.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th class="num">Seats</th>
+            <th class="num">Weekly active</th>
+            <th class="num">Avg. issues / prompt</th>
+            <th class="num">4-week trend</th>
+          </tr>
+        </thead>
+        <tbody id="team-rows"></tbody>
+      </table>
+    </div>
+
+    <footer class="note">Illustrative sample data · built for the Prompt Coach prototype · see the extension and playground in this repo</footer>
+  </div>
+</div>
+
+<script>
+  // ---------------------------------------------------------------------
+  // All data below is HARD-CODED SAMPLE DATA for this mockup — see the
+  // banner above. Nothing here reads real usage from the extension.
+  // ---------------------------------------------------------------------
+
+  var categories = [
+    { label: "No accuracy check (sources)", value: 41 },
+    { label: "No length or format", value: 34 },
+    { label: "Too little context", value: 29 },
+    { label: "Edit in AI, not Word", value: 23 },
+    { label: "Let it ask first", value: 19 },
+    { label: "No audience or tone", value: 14 },
+    { label: "Vague quality bar", value: 9 }
+  ];
+
+  var weeks = ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6", "Wk 7", "Wk 8"];
+  var trend = [3.4, 3.1, 2.9, 2.6, 2.4, 2.2, 2.0, 1.9];
+
+  var teams = [
+    { name: "Claims Processing", sub: "62 seats", seats: 62, active: 78, issues: 1.6, delta: -1.3 },
+    { name: "Underwriting", sub: "48 seats", seats: 48, active: 74, issues: 1.8, delta: -1.1 },
+    { name: "Customer Service", sub: "51 seats", seats: 51, active: 69, issues: 2.1, delta: -0.7 },
+    { name: "Marketing", sub: "22 seats", seats: 22, active: 81, issues: 1.4, delta: -1.6 },
+    { name: "HR / People Ops", sub: "18 seats", seats: 18, active: 52, issues: 2.6, delta: -0.2 },
+    { name: "IT / Support", sub: "13 seats", seats: 13, active: 44, issues: 2.9, delta: +0.1 }
+  ];
+
+  // --- Bar chart -----------------------------------------------------------
+  (function renderBars() {
+    var max = Math.max.apply(null, categories.map(function (c) { return c.value; }));
+    var el = document.getElementById("bar-chart");
+    var tip = document.createElement("div");
+    tip.className = "tooltip";
+    document.querySelector(".wrap").appendChild(tip);
+
+    categories.forEach(function (c) {
+      var row = document.createElement("div");
+      row.className = "bar-row";
+      var pct = Math.round((c.value / max) * 100);
+      row.innerHTML =
+        '<div class="cat">' + c.label + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="val">' + c.value + '%</div>';
+      var fill = row.querySelector(".bar-fill");
+      fill.addEventListener("mousemove", function (e) {
+        showTip(tip, e, c.label + ": " + c.value + "% of prompts");
+      });
+      fill.addEventListener("mouseleave", function () { hideTip(tip); });
+      el.appendChild(row);
+    });
+  })();
+
+  function showTip(tip, evt, text) {
+    tip.textContent = text;
+    var wrapRect = document.querySelector(".wrap").getBoundingClientRect();
+    tip.style.left = (evt.clientX - wrapRect.left) + "px";
+    tip.style.top = (evt.clientY - wrapRect.top) + "px";
+    tip.classList.add("show");
+  }
+  function hideTip(tip) { tip.classList.remove("show"); }
+
+  // --- Line chart ------------------------------------------------------------
+  (function renderTrend() {
+    var svg = document.getElementById("trend-svg");
+    var tip = document.getElementById("trend-tooltip");
+    var W = 640, H = 220, padL = 28, padR = 20, padT = 18, padB = 26;
+    var innerW = W - padL - padR, innerH = H - padT - padB;
+    var maxV = 4, minV = 0;
+
+    function x(i) { return padL + (i / (trend.length - 1)) * innerW; }
+    function y(v) { return padT + innerH - ((v - minV) / (maxV - minV)) * innerH; }
+
+    var ns = "http://www.w3.org/2000/svg";
+    // gridlines (0, 2, 4)
+    [0, 2, 4].forEach(function (v) {
+      var line = document.createElementNS(ns, "line");
+      line.setAttribute("x1", padL); line.setAttribute("x2", W - padR);
+      line.setAttribute("y1", y(v)); line.setAttribute("y2", y(v));
+      line.setAttribute("class", "grid-line");
+      svg.appendChild(line);
+      var label = document.createElementNS(ns, "text");
+      label.setAttribute("x", 4); label.setAttribute("y", y(v) + 4);
+      label.setAttribute("class", "axis-label");
+      label.textContent = v;
+      svg.appendChild(label);
+    });
+
+    var points = trend.map(function (v, i) { return [x(i), y(v)]; });
+    var linePath = "M " + points.map(function (p) { return p[0] + " " + p[1]; }).join(" L ");
+    var areaPath = linePath + " L " + x(trend.length - 1) + " " + y(0) + " L " + x(0) + " " + y(0) + " Z";
+
+    var area = document.createElementNS(ns, "path");
+    area.setAttribute("d", areaPath);
+    area.setAttribute("class", "trend-area");
+    svg.appendChild(area);
+
+    var path = document.createElementNS(ns, "path");
+    path.setAttribute("d", linePath);
+    path.setAttribute("class", "trend-path");
+    svg.appendChild(path);
+
+    trend.forEach(function (v, i) {
+      var dot = document.createElementNS(ns, "circle");
+      dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(v)); dot.setAttribute("r", 4.5);
+      dot.setAttribute("class", "trend-dot");
+      dot.addEventListener("mousemove", function (e) { showTip(tip, e, weeks[i] + ": " + v.toFixed(1) + " issues/prompt"); });
+      dot.addEventListener("mouseleave", function () { hideTip(tip); });
+      svg.appendChild(dot);
+
+      var wk = document.createElementNS(ns, "text");
+      wk.setAttribute("x", x(i)); wk.setAttribute("y", H - 4);
+      wk.setAttribute("class", "axis-label"); wk.setAttribute("text-anchor", "middle");
+      wk.textContent = weeks[i];
+      svg.appendChild(wk);
+    });
+
+    var endLabel = document.createElementNS(ns, "text");
+    endLabel.setAttribute("x", x(trend.length - 1) - 4);
+    endLabel.setAttribute("y", y(trend[trend.length - 1]) - 12);
+    endLabel.setAttribute("class", "end-label");
+    endLabel.setAttribute("text-anchor", "end");
+    endLabel.textContent = trend[trend.length - 1].toFixed(1);
+    svg.appendChild(endLabel);
+  })();
+
+  // --- Team table -------------------------------------------------------------
+  (function renderTeams() {
+    var tbody = document.getElementById("team-rows");
+    teams.forEach(function (t) {
+      var good = t.delta < 0; // fewer issues over time = good
+      var arrow = good ? "▼" : "▲";
+      var cls = good ? "good" : "bad";
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td><div class="team-name">' + t.name + '</div><div class="team-sub">' + t.sub + '</div></td>' +
+        '<td class="num">' + t.seats + '</td>' +
+        '<td class="num">' + t.active + '%</td>' +
+        '<td class="num">' + t.issues.toFixed(1) + '</td>' +
+        '<td class="num"><div class="trend-cell"><span class="delta ' + cls + '">' + arrow + ' ' + Math.abs(t.delta).toFixed(1) + '</span></div></td>';
+      tbody.appendChild(tr);
+    });
+  })();
+</script>
+</body>
+</html>
