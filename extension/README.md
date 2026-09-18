@@ -67,6 +67,14 @@ if so, it leaves the card open so the AI result is actually visible when it
 arrives. Verified with a simulated 800ms response delay and a real mouse
 click (not a synthetic one) to faithfully reproduce the original bug.
 
+**"✨ Improve with AI" confirmed fully working end-to-end (2026-09-18)**
+with a real Anthropic API key on a live site, after fixing both of the
+above and one more real bug the same testing surfaced: the request set
+`output_config.effort = "low"`, which `claude-haiku-4-5` doesn't support
+and rejected outright. Removed (it was an optional tuning hint, not
+required for the feature). All three sites, both buttons, real network
+calls — this is now a fully working v1.
+
 ## What v1 does
 Detects common prompt problems (from real user interviews) and offers a
 one-click improved prompt, entirely for free and offline:
@@ -85,9 +93,6 @@ button sends the prompt to Claude for a smarter, context-aware rewrite plus
 ## What v1 does NOT do yet (future)
 - Work on Copilot web (Copilot's chat surface and auth are more different from
   the others; hasn't been attempted)
-- "✨ Improve with AI" confirmed end-to-end with a real key on a live site
-  (rule-based coaching is confirmed on all three; the AI-rewrite path is only
-  confirmed with mocked responses so far)
 - The "fix it after a bad response" helper (v2)
 - Any real, working team / manager dashboard (see `../dashboard/` for the mockup,
   `../docs/OPEN-QUESTIONS.md` for the privacy questions that gate a real one, and

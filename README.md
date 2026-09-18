@@ -65,6 +65,7 @@ no signup.
 
 ## Status
 
-Working prototype. Rule-based coaching runs live on chatgpt.com; the AI-powered
-rewrite works with your own API key; the manager dashboard is a mockup pending
-real (privacy-safe) telemetry — see `docs/OPEN-QUESTIONS.md`.
+Working prototype, confirmed hands-on end-to-end. Rule-based coaching runs
+live on chatgpt.com, claude.ai, and gemini.google.com; the AI-powered
+rewrite works with your own API key on all three; the manager dashboard is
+a mockup pending real (privacy-safe) telemetry — see `docs/OPEN-QUESTIONS.md`.
