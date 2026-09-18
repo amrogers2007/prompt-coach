@@ -68,7 +68,6 @@ async function improveWithClaude(prompt) {
       system: SYSTEM_PROMPT,
       output_config: {
         format: { type: "json_schema", schema: SCHEMA },
-        effort: "low",
       },
       messages: [{ role: "user", content: `Improve this prompt:\n\n${prompt}` }],
     }),

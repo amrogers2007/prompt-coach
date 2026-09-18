@@ -387,7 +387,7 @@
           model: MODEL,
           max_tokens: 1024,
           system: SYSTEM_PROMPT,
-          output_config: { format: { type: "json_schema", schema: SCHEMA }, effort: "low" },
+          output_config: { format: { type: "json_schema", schema: SCHEMA } },
           messages: [{ role: "user", content: "Improve this prompt:\n\n" + prompt }],
         }),
       });
