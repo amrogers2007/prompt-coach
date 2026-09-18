@@ -50,11 +50,13 @@ its top) so it can run with zero build step; if you add or change a rule in
 If nothing shows: open the page, right-click → Inspect → Console, and look for
 `[Prompt Coach] attached to prompt box`. These sites change their HTML often,
 so if it can't find the box we may need to update the selectors in
-`content.js` (`findPromptBox`). **Note:** claude.ai and gemini.google.com
-support was added by extending the manifest + selector list using the same
-generic-fallback design already proven on chatgpt.com, but hasn't been
-manually verified against those two live sites yet — if you try it and the
-card doesn't appear, that's the first place to look.
+`content.js` (`findPromptBox`).
+
+**Confirmed hands-on (2026-09-17):** the coaching card and "Use improved
+prompt" button both work live on chatgpt.com, claude.ai, and
+gemini.google.com. "✨ Improve with AI" hasn't been confirmed with a real
+API key on live sites yet — it was tested thoroughly with mocked responses
+(see git history), but not end-to-end with a real key on a real page.
 
 ## What v1 does
 Detects common prompt problems (from real user interviews) and offers a
@@ -74,9 +76,9 @@ button sends the prompt to Claude for a smarter, context-aware rewrite plus
 ## What v1 does NOT do yet (future)
 - Work on Copilot web (Copilot's chat surface and auth are more different from
   the others; hasn't been attempted)
-- Manual verification that the new claude.ai / gemini.google.com support above
-  actually attaches on those live sites (should work per the generic-fallback
-  design, not yet confirmed hands-on)
+- "✨ Improve with AI" confirmed end-to-end with a real key on a live site
+  (rule-based coaching is confirmed on all three; the AI-rewrite path is only
+  confirmed with mocked responses so far)
 - The "fix it after a bad response" helper (v2)
 - Any real, working team / manager dashboard (see `../dashboard/` for the mockup,
   `../docs/OPEN-QUESTIONS.md` for the privacy questions that gate a real one, and

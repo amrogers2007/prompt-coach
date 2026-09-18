@@ -24,6 +24,14 @@ and doing a little research. Move answered ones to IDEA.md.
       questions below.
 - [ ] How do you make coaching feel helpful, not annoying? (Timing, frequency, tone.)
 - [ ] How would a skeptic's experience differ from an enthusiast's?
+      → **New data point, not fully answered.** See `INTERVIEW-NOTES.md`'s
+      2026-09-17 physics-professor interview: for a "hard skeptic," half his
+      objection (overconfidence, no clarifying questions) is exactly what
+      Prompt Coach targets — but half (token/setup cost of customizing it,
+      and an explicit ethical/pedagogical refusal to delegate thinking) is
+      NOT a prompting-skill problem and may not be fixable by this product
+      at all. Worth testing whether that split holds across more skeptics
+      before assuming "coach them better" converts everyone.
 - [ ] Which manager-dashboard metrics actually matter?
       → **Partially answered, unblocked from real data.** `dashboard/` mocks up
       a prioritized set — adoption, top coaching categories triggered (the
