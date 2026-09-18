@@ -54,9 +54,18 @@ so if it can't find the box we may need to update the selectors in
 
 **Confirmed hands-on (2026-09-17):** the coaching card and "Use improved
 prompt" button both work live on chatgpt.com, claude.ai, and
-gemini.google.com. "✨ Improve with AI" hasn't been confirmed with a real
-API key on live sites yet — it was tested thoroughly with mocked responses
-(see git history), but not end-to-end with a real key on a real page.
+gemini.google.com.
+
+**Found and fixed via real-world testing (2026-09-18):** clicking "✨ Improve
+with AI" blurs the prompt box (focus moves to the button), and a blur
+handler used to unconditionally hide the whole card 200ms later — so on a
+real network request (which takes longer than 200ms), the card was already
+hidden by the time the AI response arrived. It looked like nothing happened.
+Fixed in `content.js`: the blur handler now checks whether focus moved
+*inside* the card (i.e. you clicked one of its own buttons) before hiding —
+if so, it leaves the card open so the AI result is actually visible when it
+arrives. Verified with a simulated 800ms response delay and a real mouse
+click (not a synthetic one) to faithfully reproduce the original bug.
 
 ## What v1 does
 Detects common prompt problems (from real user interviews) and offers a

@@ -216,7 +216,18 @@
     if (box === currentBox) return;
     currentBox = box;
     box.addEventListener("input", onInput);
-    box.addEventListener("blur", function () { setTimeout(hideCard, 200); });
+    // Clicking a button inside the card (e.g. "Improve with AI") blurs the
+    // prompt box too, since focus moves to that button. Only auto-hide if
+    // focus actually left the card — otherwise a slow AI response (network
+    // latency > this 200ms delay) finishes updating a card that's already
+    // hidden, which looks like nothing happened. Explicit actions (dismiss,
+    // "Use improved prompt") still hide the card themselves either way.
+    box.addEventListener("blur", function () {
+      setTimeout(function () {
+        if (card && card.contains(document.activeElement)) return;
+        hideCard();
+      }, 200);
+    });
     console.log("[Prompt Coach] attached to prompt box");
   }
 
