@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Prompt Coach",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Coaches you to write better AI prompts, right as you type — with an optional AI-powered rewrite using your own API key.",
   "permissions": ["storage"],
   "host_permissions": [
@@ -11,6 +11,9 @@
     "service_worker": "src/background.js"
   },
   "options_page": "src/options.html",
+  "action": {
+    "default_popup": "src/profile.html"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -19,7 +22,7 @@
         "https://claude.ai/*",
         "https://gemini.google.com/*"
       ],
-      "js": ["src/rules.js", "src/content.js"],
+      "js": ["src/rules.js", "src/profile.js", "src/content.js"],
       "css": ["src/card.css"],
       "run_at": "document_idle"
     }

@@ -29,6 +29,31 @@
   var debounceTimer = null;
   var lastAnalysis = null;
 
+  // --- Auto AI-critique (live, cost-guarded) ----------------------------------
+  // See docs/PromptCoach_Direction_and_Roadmap.pdf: the paid rewrite can fire
+  // automatically after a pause, not just on click — but real money is on the
+  // line, so this is deliberately conservative: off by default (Settings
+  // toggle), a much longer pause than the free rules' 400ms, and a hard
+  // cooldown so someone drafting a long prompt with several pauses can't
+  // trigger a burst of calls.
+  var autoTimer = null;
+  var lastAutoFireAt = 0;
+  var lastAutoText = "";
+  var AUTO_PAUSE_MS = 3000;
+  var AUTO_COOLDOWN_MS = 15000;
+  var AUTO_MIN_WORDS = 6;
+
+  // --- "Doesn't refine" proxy + per-prompt profile recording ------------------
+  // Lightweight heuristic (see docs/PromptCoach_Direction_and_Roadmap.pdf):
+  // rather than reading the AI's reply off the page (fragile, site-specific,
+  // deferred), we just watch submissions: did you send a new prompt soon
+  // after the last one without ever using a suggestion?
+  var lastSubmitTime = 0;
+  var lastSubmitText = "";
+  var hasPriorSubmit = false;
+  var usedSuggestionSinceLastSubmit = false;
+  var REFINE_WINDOW_MS = 120000; // 2 minutes
+
   // --- Find the prompt box ---------------------------------------------------
   // These sites change their HTML often, so we try known selectors first
   // (most specific/reliable), then fall back to "the first contenteditable
@@ -102,6 +127,59 @@
       .replace(/"/g, "&quot;");
   }
 
+  // Small, non-blocking celebration when a suggestion is actually used — see
+  // docs/PromptCoach_Direction_and_Roadmap.pdf's "minimal aesthetic, small
+  // celebrations" direction. Web Animations API only — no library, no new
+  // CSS keyframes to maintain.
+  function celebrate() {
+    if (!card) return;
+    var colors = ["#2b59c3", "#5b7fd6", "#8aa6e6", "#3a4a7a", "#6f8fe0"];
+    for (var i = 0; i < 6; i++) {
+      var dot = document.createElement("div");
+      dot.style.cssText = "position:absolute;top:6px;left:50%;width:6px;height:6px;" +
+        "border-radius:1px;background:" + colors[i % colors.length] + ";pointer-events:none;";
+      card.appendChild(dot);
+      var dx = (Math.random() - 0.5) * 60;
+      var dy = -20 - Math.random() * 30;
+      var rot = (Math.random() - 0.5) * 180;
+      dot.animate(
+        [
+          { transform: "translate(0,0) rotate(0deg)", opacity: 1 },
+          { transform: "translate(" + dx + "px," + dy + "px) rotate(" + rot + "deg)", opacity: 0 }
+        ],
+        { duration: 600 + Math.random() * 200, easing: "ease-out" }
+      );
+      (function (d) { setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 900); })(dot);
+    }
+  }
+
+  // Record this prompt's detected issues (if any) into the local skill
+  // history, then reset submit-tracking for the next prompt. Called right
+  // before a submit is allowed to go through.
+  function recordSubmit(text) {
+    if (!window.PromptCoachProfile) return;
+
+    var now = Date.now();
+    if (hasPriorSubmit && (now - lastSubmitTime) < REFINE_WINDOW_MS &&
+        !usedSuggestionSinceLastSubmit &&
+        window.PromptCoach.classify(lastSubmitText) === "generative") {
+      // Sent a new prompt soon after the last one, never used a suggestion,
+      // and the prior prompt was the kind that benefits from iterating.
+      window.PromptCoachProfile.record("iterationMindset", false);
+    }
+
+    if (lastAnalysis && lastAnalysis.issues) {
+      lastAnalysis.issues.forEach(function (issue) {
+        if (issue.category) window.PromptCoachProfile.record(issue.category, usedSuggestionSinceLastSubmit);
+      });
+    }
+
+    lastSubmitTime = now;
+    lastSubmitText = text;
+    hasPriorSubmit = true;
+    usedSuggestionSinceLastSubmit = false;
+  }
+
   // --- Render the analysis into the card ------------------------------------
   function render(box, analysis) {
     ensureCard();
@@ -144,6 +222,8 @@
     var useBtn = card.querySelector(".pc-use");
     if (useBtn) {
       useBtn.addEventListener("click", function () {
+        usedSuggestionSinceLastSubmit = true;
+        celebrate();
         writeText(box, analysis.improvedPrompt);
         hideCard();
       });
@@ -194,9 +274,35 @@
         tipsHtml + '</div>';
 
       out.querySelector(".pc-ai-use").addEventListener("click", function () {
+        usedSuggestionSinceLastSubmit = true;
+        celebrate();
         writeText(box, result.improved);
         hideCard();
       });
+    });
+  }
+
+  // Auto-fire the paid AI critique after a long pause — only if the user
+  // opted in (Settings toggle, off by default), the prompt is the kind that
+  // benefits (classify() === "generative"), it's actually changed since the
+  // last auto-fire, and the cooldown has elapsed. See the guardrail constants
+  // declared above.
+  function maybeAutoCritique() {
+    if (!currentBox) return;
+    var text = readText(currentBox);
+    var trimmed = text.trim();
+    var wc = trimmed ? trimmed.split(/\s+/).length : 0;
+    if (wc < AUTO_MIN_WORDS) return;
+    if (text === lastAutoText) return;
+    if (window.PromptCoach.classify(text) !== "generative") return;
+    if (Date.now() - lastAutoFireAt < AUTO_COOLDOWN_MS) return;
+    if (typeof chrome === "undefined" || !chrome.storage) return;
+
+    chrome.storage.local.get("promptCoachAutoCritique", function (r) {
+      if (!r.promptCoachAutoCritique) return;
+      lastAutoFireAt = Date.now();
+      lastAutoText = text;
+      runAiImprove(currentBox);
     });
   }
 
@@ -209,6 +315,19 @@
       var analysis = window.PromptCoach.analyze(text);
       render(currentBox, analysis);
     }, 400);
+
+    if (autoTimer) clearTimeout(autoTimer);
+    autoTimer = setTimeout(maybeAutoCritique, AUTO_PAUSE_MS);
+  }
+
+  // Enter (without Shift) is the near-universal "send" gesture across these
+  // sites' prompt boxes — used only to observe a submission, never to block
+  // or alter it. Text is captured here, before the site's own handler runs,
+  // since some sites clear the box immediately after Enter.
+  function onKeydown(e) {
+    if (e.key !== "Enter" || e.shiftKey) return;
+    var text = readText(currentBox).trim();
+    if (text) recordSubmit(text);
   }
 
   // Attach our listener to the prompt box once we find it.
@@ -216,6 +335,7 @@
     if (box === currentBox) return;
     currentBox = box;
     box.addEventListener("input", onInput);
+    box.addEventListener("keydown", onKeydown);
     // Clicking a button inside the card (e.g. "Improve with AI") blurs the
     // prompt box too, since focus moves to that button. Only auto-hide if
     // focus actually left the card — otherwise a slow AI response (network

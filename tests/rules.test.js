@@ -10,10 +10,15 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { analyze, evaluateAll } = require("../extension/src/rules.js");
+const { analyze, evaluateAll, classify } = require("../extension/src/rules.js");
 
 function ids(text) {
   return evaluateAll(text).map((i) => i.id);
+}
+
+function categoryOf(text, id) {
+  const match = evaluateAll(text).find((i) => i.id === id);
+  return match ? match.category : undefined;
 }
 
 test("empty or single-word input produces no issues", () => {
@@ -191,4 +196,79 @@ test("selfCheck: a long task with no self-check ask is flagged", () => {
 });
 test("selfCheck: asking it to double-check suppresses the flag", () => {
   assert.ok(!ids("write a detailed step by step tutorial for beginners on how to change a car tire safely at home, double check your answer for mistakes").includes("selfCheck"));
+});
+
+// --- category tagging -----------------------------------------------------
+// Every rule maps into one of 8 broader buckets used by the per-user skill
+// dashboard (profile.js) — see docs/PromptCoach_Direction_and_Roadmap.pdf.
+// One test per rule, using the same prompts already verified above, so this
+// only checks the NEW thing (category) rather than re-deriving whether the
+// rule fires at all.
+test("every rule has exactly one of the 8 known categories", () => {
+  const known = new Set([
+    "safety", "accuracyGrounding", "missingConstraints", "iterationMindset",
+    "vagueAsk", "missingContext", "outputFormat", "tooBroad",
+  ]);
+  const seenIds = new Set();
+  // A battery of prompts broad enough to trigger all 20 rules at least once.
+  const prompts = [
+    "please help me write to foo@bar.com about the invoice",
+    "what is the capital of france",
+    "write a script to parse csv files and print a summary table",
+    "please revise this document and clean it up",
+    "write a poem about the ocean for me right now",
+    "help me plan trip",
+    "write a marketing plan for a new coffee shop",
+    "tell me about dogs",
+    "Compare AWS Lambda and Google Cloud Functions briefly for cost and cold start time so I can decide which to use for my new startup",
+    "write a blog post about hiking",
+    "please review this contract for potential legal issues",
+    "write the best email possible for this situation",
+    "write a detailed 20 word summary of this quarterly report for executives, be thorough and accurate",
+    "write a short poem",
+    "write a tagline for my bakery that specializes in sourdough bread and pastries for the downtown farmers market",
+    "what's the latest news on this topic",
+    "calculate the compound interest on $5000 at 4% over 10 years",
+    "what is the capital of france? and what is the population?",
+    "write a summary of this book",
+    "write a detailed step by step tutorial for beginners on how to change a car tire safely at home",
+  ];
+  for (const p of prompts) {
+    for (const issue of evaluateAll(p)) {
+      seenIds.add(issue.id);
+      assert.ok(issue.category, `rule ${issue.id} is missing a category`);
+      assert.ok(known.has(issue.category), `rule ${issue.id} has unknown category ${issue.category}`);
+    }
+  }
+  // Sanity check the battery actually exercised all 20 rules, not a subset.
+  assert.equal(seenIds.size, 20, `expected all 20 rules to fire across the battery, saw ${seenIds.size}: ${[...seenIds].sort()}`);
+});
+
+test("category mapping matches the documented taxonomy for representative rules", () => {
+  assert.equal(categoryOf("please help me write to foo@bar.com about the invoice", "sensitive"), "safety");
+  assert.equal(categoryOf("what is the capital of france", "grounding"), "accuracyGrounding");
+  assert.equal(categoryOf("write a script to parse csv files and print a summary table", "techConstraints"), "missingConstraints");
+  assert.equal(categoryOf("please revise this document and clean it up", "editInAI"), "iterationMindset");
+  assert.equal(categoryOf("write a poem about the ocean for me right now", "clarify"), "vagueAsk");
+  assert.equal(categoryOf("help me plan trip", "context"), "missingContext");
+  assert.equal(categoryOf("tell me about dogs", "format"), "outputFormat");
+  assert.equal(categoryOf("what is the capital of france? and what is the population?", "compound"), "tooBroad");
+});
+
+// --- classify() ------------------------------------------------------------
+// Gates whether refinement-style coaching (iteration nudges, auto AI
+// critique) applies at all — see docs/PromptCoach_Direction_and_Roadmap.pdf.
+test("classify: discrete factual questions are 'factual'", () => {
+  assert.equal(classify("what's 7*8"), "factual");
+  assert.equal(classify("what year did the Roman Empire fall?"), "factual");
+  assert.equal(classify("is the sky blue"), "factual");
+});
+test("classify: open-ended / generative asks are 'generative'", () => {
+  assert.equal(classify("write a poem about the ocean"), "generative");
+  assert.equal(classify("explain photosynthesis"), "generative");
+  assert.equal(classify("compare react and vue"), "generative");
+});
+test("classify: empty or whitespace-only input is 'factual' (nothing to coach)", () => {
+  assert.equal(classify(""), "factual");
+  assert.equal(classify("   "), "factual");
 });

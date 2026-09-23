@@ -42,6 +42,10 @@
   }
   .card b { color: var(--text); }
   a { color: #8ab0ff; }
+  .toggle-row { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+  .toggle-row input { margin-top: 3px; flex: 0 0 auto; }
+  .toggle-row .toggle-text { color: var(--muted); }
+  .toggle-row .toggle-text b { color: var(--text); }
 </style>
 </head>
 <body>
@@ -71,6 +75,20 @@
     Without a key, Prompt Coach still works: the free, offline, hard-coded
     rules keep running as you type. The key only powers the optional
     <b>"✨ Improve with AI"</b> button for a smarter rewrite.
+  </div>
+
+  <div class="card">
+    <label class="toggle-row">
+      <input type="checkbox" id="auto-critique" />
+      <span class="toggle-text">
+        <b>Auto-run AI critique while typing</b><br />
+        Off by default. When on, "Improve with AI" fires on its own about
+        3 seconds after you stop typing (only for longer, open-ended
+        prompts — not quick factual questions). This spends your API
+        credit automatically each time it fires, capped to roughly once
+        every 15 seconds. You can still use the manual button either way.
+      </span>
+    </label>
   </div>
 
   <script src="options.js"></script>

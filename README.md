@@ -30,7 +30,7 @@ no signup.
 | [`dashboard/`](dashboard/) | A manager-facing dashboard **mockup** (sample data) showing what a company buying this would want to see. |
 | [`server/`](server/) | *(legacy)* An earlier design where a server held the API key. Kept for the history — see its README for why it was replaced. |
 | [`docs/`](docs/) | The idea, the customer interviews, the business thinking, and the open questions — the "why" behind every decision above. |
-| [`tests/`](tests/) | Automated tests for the rules engine and telemetry sketch (Node's built-in test runner, zero dependencies). Runs in CI on every push — see the badge above. |
+| [`tests/`](tests/) | Automated tests for the rules engine, telemetry sketch, and skill-profile storage (Node's built-in test runner, zero dependencies). Runs in CI on every push — see the badge above. |
 
 ## How it works
 
@@ -53,6 +53,16 @@ no signup.
    is trending up over time, and a couple of high-signal outliers (sensitive
    data flags, skeptic conversion). See `docs/` for the reasoning behind why
    these and not others.
+4. **Your own progress, locally.** A toolbar popup (`extension/src/profile.html`)
+   shows *your* 30-day skill snapshot and week-over-week trend, backed by
+   `extension/src/profile.js` — separate from (and much simpler than) the
+   manager dashboard above, since nothing here ever leaves your browser.
+5. **Live, cost-guarded AI critique.** An opt-in Settings toggle turns
+   "Improve with AI" from a click into something that fires on its own a
+   few seconds after you stop typing — gated by a task classifier (only
+   for open-ended prompts) and a hard cooldown, so it can't run away with
+   your API credit. See `docs/PromptCoach_Direction_and_Roadmap.pdf` for
+   the full direction this came from.
 
 ## Documents
 - [IDEA.md](docs/IDEA.md) — the living idea document (vision, customer, product, business, risks)
@@ -62,10 +72,15 @@ no signup.
 - [GLOSSARY.md](docs/GLOSSARY.md) — plain-English definitions of startup/business terms
 - [ACTION-PLAN.md](docs/ACTION-PLAN.md) — concrete next steps, cheapest-first
 - [OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md) — things still unresolved, on purpose
+- [PromptCoach_Direction_and_Roadmap.pdf](docs/PromptCoach_Direction_and_Roadmap.pdf) — the v2 direction (motto, live coaching, skill dashboard) and the build sequence it came from
 
 ## Status
 
-Working prototype, confirmed hands-on end-to-end. Rule-based coaching runs
-live on chatgpt.com, claude.ai, and gemini.google.com; the AI-powered
-rewrite works with your own API key on all three; the manager dashboard is
-a mockup pending real (privacy-safe) telemetry — see `docs/OPEN-QUESTIONS.md`.
+Working prototype. The v1 core — rule-based coaching, and the AI-powered
+rewrite with your own API key — is confirmed hands-on end-to-end on
+chatgpt.com, claude.ai, and gemini.google.com. The v2 direction (category
+tagging, a task classifier, opt-in live auto-critique, a lightweight
+"doesn't refine" signal, and a local skill-progress popup) is built and
+verified with mocked browser/network calls, but not yet re-confirmed by
+hand on a real site with a real key. The manager dashboard is still a
+mockup pending real (privacy-safe) telemetry — see `docs/OPEN-QUESTIONS.md`.
