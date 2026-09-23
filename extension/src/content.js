@@ -288,18 +288,22 @@
   // last auto-fire, and the cooldown has elapsed. See the guardrail constants
   // declared above.
   function maybeAutoCritique() {
-    if (!currentBox) return;
+    var LOG = "[Prompt Coach Auto]";
+    if (!currentBox) { console.log(LOG, "skipped: no prompt box attached"); return; }
     var text = readText(currentBox);
     var trimmed = text.trim();
     var wc = trimmed ? trimmed.split(/\s+/).length : 0;
-    if (wc < AUTO_MIN_WORDS) return;
-    if (text === lastAutoText) return;
-    if (window.PromptCoach.classify(text) !== "generative") return;
-    if (Date.now() - lastAutoFireAt < AUTO_COOLDOWN_MS) return;
-    if (typeof chrome === "undefined" || !chrome.storage) return;
+    if (wc < AUTO_MIN_WORDS) { console.log(LOG, "skipped: too few words (" + wc + " < " + AUTO_MIN_WORDS + ")"); return; }
+    if (text === lastAutoText) { console.log(LOG, "skipped: text unchanged since last auto-fire"); return; }
+    var cls = window.PromptCoach.classify(text);
+    if (cls !== "generative") { console.log(LOG, "skipped: classified as '" + cls + "', not 'generative'"); return; }
+    var sinceLastFire = Date.now() - lastAutoFireAt;
+    if (sinceLastFire < AUTO_COOLDOWN_MS) { console.log(LOG, "skipped: cooldown (" + sinceLastFire + "ms < " + AUTO_COOLDOWN_MS + "ms)"); return; }
+    if (typeof chrome === "undefined" || !chrome.storage) { console.log(LOG, "skipped: no chrome.storage available"); return; }
 
     chrome.storage.local.get("promptCoachAutoCritique", function (r) {
-      if (!r.promptCoachAutoCritique) return;
+      if (!r.promptCoachAutoCritique) { console.log(LOG, "skipped: toggle is off in Settings"); return; }
+      console.log(LOG, "firing now");
       lastAutoFireAt = Date.now();
       lastAutoText = text;
       runAiImprove(currentBox);
