@@ -91,6 +91,23 @@ this round was verified with mocked `chrome.*`/network calls in a browser
 not yet hands-on on a real site with a real key** — that's the next thing
 worth doing by hand.
 
+## The on-page widget (v0.4)
+A small, minimal card that is **always on screen** — it opens docked to the
+top-right of the page on load, in **Improve** mode, and never hides itself.
+- **Improve | Teach toggle:** *Improve* has the AI rewrite your prompt
+  (with a **Use this** button and short tips; missing details become
+  `[placeholders]`, never invented facts). *Teach* doesn't rewrite — it names
+  one thing you did well and up to three improvements, each with a nudge, so
+  you make the edits yourself.
+- **Automatic:** a suggestion appears ~3 seconds after you stop typing (needs
+  your API key; turn off in Settings). The refresh arrow re-runs it on demand.
+- **Drag and collapse:** drag it by its title bar anywhere (position is
+  remembered); the minus button shrinks it to a small draggable "PC" icon, and
+  a click on the icon reopens it. While collapsed, no automatic calls are made.
+  Double-click the title bar to snap back to the default spot.
+- The free rule-based analysis still runs quietly to build your local
+  progress popup; it is no longer shown on the page.
+
 ## What v1 does
 Detects common prompt problems (from real user interviews), organized into
 8 categories (see `rules.js`'s header comment for the full mapping), and
@@ -110,7 +127,7 @@ and the auto-critique below only apply to the former.
 Optionally, with your own API key set in Settings:
 - **✨ Improve with AI** button sends the prompt to Claude for a smarter,
   context-aware rewrite plus 1–3 plain-English tips.
-- **Auto-run AI critique while typing** (Settings toggle, **off by default**):
+- **Auto-run AI critique while typing** (Settings toggle, **on by default**):
   fires the same rewrite automatically ~3 seconds after you stop typing, for
   generative prompts only, with a hard 15-second cooldown between auto-calls
   so it can't run away with your API credit.
@@ -139,7 +156,7 @@ Optionally, with your own API key set in Settings:
   never sent anywhere except `api.anthropic.com`.
 - The rule-based coaching (no key required) runs 100% locally — nothing you
   type is ever sent anywhere unless you click "Improve with AI" (or leave the
-  new auto-critique toggle on, which is off by default for exactly this reason).
+  auto-critique toggle on, which it is by default — turn it off in Settings if you would rather only send a prompt on request).
 - Your skill-progress popup (`profile.js`/`profile.html`) stores only
   category names and counts — never prompt text — and never leaves this
   browser either way. "Clear my data" in the popup wipes it on demand.

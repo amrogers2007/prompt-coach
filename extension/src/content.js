@@ -6,11 +6,12 @@
 // jobs:
 //   1. Find the prompt text box on the page.
 //   2. Watch what you type.
-//   3. Ask the "brain" (window.PromptCoach.analyze) what could be better
-//      (instant, free, rule-based).
+//   3. Quietly run the "brain" (window.PromptCoach.analyze) to feed the local
+//      skill history — its findings are not shown on the page.
 //   4. Optionally ask background.js for an AI-powered rewrite, using the
 //      user's OWN Anthropic API key (set in Settings) — see background.js.
-//   5. Show a little suggestion card, with "Use this" buttons.
+//   5. Show a small, always-visible, draggable card (collapsible to an icon)
+//      with the AI's suggested rewrite and a "Use this" button.
 //
 // findPromptBox() tries site-specific selectors first (they're the most
 // reliable when they match), then falls back to "the first contenteditable
@@ -28,20 +29,23 @@
   var currentBox = null;   // the prompt box we're watching
   var debounceTimer = null;
   var lastAnalysis = null;
+  var customPos = null;    // {left, top} once the user has dragged the card
+  var collapsed = false;   // true = shrunk to the small icon
+  var mode = "improve";    // "improve" (AI rewrites) or "teach" (AI coaches, you edit)
 
   // --- Auto AI-critique (live, cost-guarded) ----------------------------------
   // See docs/PromptCoach_Direction_and_Roadmap.pdf: the paid rewrite can fire
   // automatically after a pause, not just on click — but real money is on the
-  // line, so this is deliberately conservative: off by default (Settings
-  // toggle), a much longer pause than the free rules' 400ms, and a hard
-  // cooldown so someone drafting a long prompt with several pauses can't
-  // trigger a burst of calls.
+  // line, so it stays guarded: on by default (switchable off in Settings), a
+  // much longer pause than the free rules' 400ms, and a hard cooldown so
+  // someone drafting a long prompt with several pauses can't trigger a burst
+  // of calls.
   var autoTimer = null;
   var lastAutoFireAt = 0;
   var lastAutoText = "";
   var AUTO_PAUSE_MS = 3000;
   var AUTO_COOLDOWN_MS = 15000;
-  var AUTO_MIN_WORDS = 6;
+  var AUTO_MIN_WORDS = 3;
 
   // --- "Doesn't refine" proxy + per-prompt profile recording ------------------
   // Lightweight heuristic (see docs/PromptCoach_Direction_and_Roadmap.pdf):
@@ -99,58 +103,157 @@
     }
   }
 
-  // --- Build the suggestion card (once) -------------------------------------
+  // --- The widget: always on screen, either expanded or collapsed to an icon --
+  // It never hides itself (not on blur, not on clicks elsewhere). The user can
+  // collapse it to a small icon, drag either form anywhere, and click the icon
+  // to reopen it. Both the position and collapsed state are remembered
+  // (chrome.storage.local, shared across the supported sites). Only the
+  // position is remembered: every page load starts open, in Improve mode.
+  var CARD_W = 320, ICON_SIZE = 40;
+  var HINT = "Start typing and a suggestion will appear here.";
+
+  var REFRESH_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/></svg>';
+  var MIN_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
   function ensureCard() {
     if (card) return card;
     card = document.createElement("div");
     card.className = "pc-card";
     card.style.display = "none";
+    card.innerHTML =
+      '<div class="pc-panel">' +
+        '<div class="pc-head">' +
+          '<span class="pc-title">Prompt Coach</span>' +
+          '<span class="pc-actions">' +
+            '<button class="pc-ai" title="Get a new suggestion" aria-label="Get a new suggestion">' + REFRESH_SVG + '</button>' +
+            '<button class="pc-min" title="Collapse to icon" aria-label="Collapse to icon">' + MIN_SVG + '</button>' +
+          '</span>' +
+        '</div>' +
+        '<div class="pc-modes" role="tablist">' +
+          '<button class="pc-mode" data-mode="improve" title="The AI rewrites your prompt for you">Improve</button>' +
+          '<button class="pc-mode" data-mode="teach" title="The AI explains what to strengthen; you make the edits">Teach</button>' +
+        '</div>' +
+        '<div class="pc-ai-out"><div class="pc-ai-note">' + HINT + '</div></div>' +
+      '</div>' +
+      '<button class="pc-icon" title="Open Prompt Coach" aria-label="Open Prompt Coach">PC</button>';
     document.body.appendChild(card);
+
+    card.querySelector(".pc-ai").addEventListener("click", function () {
+      runAiImprove(currentBox || findPromptBox());
+    });
+    Array.prototype.forEach.call(card.querySelectorAll(".pc-mode"), function (b) {
+      b.addEventListener("click", function () {
+        var next = b.getAttribute("data-mode");
+        if (next === mode) return;
+        setMode(next);
+        // Re-run right away if there is something to work on.
+        var box = currentBox || findPromptBox();
+        if (box && readText(box).trim()) runAiImprove(box);
+      });
+    });
+    card.querySelector(".pc-min").addEventListener("click", function () { setCollapsed(true); });
+    enableDrag(card);
     return card;
   }
 
-  function hideCard() {
-    if (card) card.style.display = "none";
+  function setMode(next) {
+    mode = next === "teach" ? "teach" : "improve";
+    if (card) {
+      Array.prototype.forEach.call(card.querySelectorAll(".pc-mode"), function (b) {
+        var on = b.getAttribute("data-mode") === mode;
+        b.classList.toggle("pc-mode-on", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
+    }
   }
 
-  // Put the card just above the prompt box.
-  function positionCard(box) {
-    var rect = box.getBoundingClientRect();
-    card.style.left = rect.left + "px";
-    card.style.width = Math.min(rect.width, 520) + "px";
-    card.style.bottom = (window.innerHeight - rect.top + 8) + "px";
+  function setCollapsed(value) {
+    collapsed = !!value;
+    if (card) card.classList.toggle("pc-collapsed", collapsed);
+    positionCard();
+  }
+
+  // Drag the expanded card by its header, or the collapsed icon by itself.
+  // Listeners live on the card because the contents change; a press on the
+  // icon that barely moves counts as a click (reopens the card).
+  function enableDrag(el) {
+    function handle(e) {
+      if (e.button !== 0) return false;
+      if (collapsed) return !!e.target.closest(".pc-icon");
+      return !!e.target.closest(".pc-head") && !e.target.closest("button");
+    }
+
+    // Keep focus in the prompt box while grabbing (no focus steal).
+    el.addEventListener("mousedown", function (e) { if (handle(e)) e.preventDefault(); });
+
+    // Double-click the header to snap back to the automatic placement.
+    el.addEventListener("dblclick", function (e) {
+      if (collapsed || !e.target.closest(".pc-head") || e.target.closest("button")) return;
+      customPos = null;
+      try { chrome.storage.local.remove("promptCoachCardPos"); } catch (err) {}
+      positionCard();
+    });
+
+    el.addEventListener("pointerdown", function (e) {
+      if (!handle(e)) return;
+      var r = el.getBoundingClientRect();
+      var dx = e.clientX - r.left, dy = e.clientY - r.top;
+      var sx = e.clientX, sy = e.clientY, moved = false;
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      el.style.userSelect = "none";
+
+      function move(ev) {
+        if (!moved && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 4) return;
+        moved = true;
+        customPos = { left: ev.clientX - dx, top: ev.clientY - dy };
+        positionCard();
+      }
+      function up() {
+        el.removeEventListener("pointermove", move);
+        el.removeEventListener("pointerup", up);
+        el.removeEventListener("pointercancel", up);
+        el.style.userSelect = "";
+        if (moved) {
+          var rr = el.getBoundingClientRect(); // save the clamped, on-screen spot
+          customPos = { left: rr.left, top: rr.top };
+          try { chrome.storage.local.set({ promptCoachCardPos: customPos }); } catch (err) {}
+        } else if (collapsed) {
+          setCollapsed(false);
+        }
+      }
+      el.addEventListener("pointermove", move);
+      el.addEventListener("pointerup", up);
+      el.addEventListener("pointercancel", up);
+    });
+  }
+
+  // Default placement (until the user drags it): docked to the right edge,
+  // near the top. That keeps it clear of the prompt box (bottom centre) and of
+  // the conversation (centre), and the collapsed icon sits in the same spot so
+  // collapsing/reopening doesn't make it jump.
+  function positionCard() {
+    if (!card) return;
+    var W = window.innerWidth, H = window.innerHeight;
+    var w = collapsed ? ICON_SIZE : Math.min(CARD_W, W - 32);
+    card.style.top = card.style.bottom = card.style.left = card.style.right = "auto";
+    card.style.width = w + "px";
+
+    if (customPos) {
+      card.style.left = Math.max(0, Math.min(customPos.left, W - w)) + "px";
+      card.style.top = Math.max(0, Math.min(customPos.top, H - (collapsed ? ICON_SIZE : 48))) + "px";
+      return;
+    }
+    card.style.right = "16px";
+    card.style.top = Math.min(80, Math.max(8, H - 120)) + "px";
   }
 
   function escapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
-  }
-
-  // Small, non-blocking celebration when a suggestion is actually used — see
-  // docs/PromptCoach_Direction_and_Roadmap.pdf's "minimal aesthetic, small
-  // celebrations" direction. Web Animations API only — no library, no new
-  // CSS keyframes to maintain.
-  function celebrate() {
-    if (!card) return;
-    var colors = ["#2b59c3", "#5b7fd6", "#8aa6e6", "#3a4a7a", "#6f8fe0"];
-    for (var i = 0; i < 6; i++) {
-      var dot = document.createElement("div");
-      dot.style.cssText = "position:absolute;top:6px;left:50%;width:6px;height:6px;" +
-        "border-radius:1px;background:" + colors[i % colors.length] + ";pointer-events:none;";
-      card.appendChild(dot);
-      var dx = (Math.random() - 0.5) * 60;
-      var dy = -20 - Math.random() * 30;
-      var rot = (Math.random() - 0.5) * 180;
-      dot.animate(
-        [
-          { transform: "translate(0,0) rotate(0deg)", opacity: 1 },
-          { transform: "translate(" + dx + "px," + dy + "px) rotate(" + rot + "deg)", opacity: 0 }
-        ],
-        { duration: 600 + Math.random() * 200, easing: "ease-out" }
-      );
-      (function (d) { setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 900); })(dot);
-    }
   }
 
   // Record this prompt's detected issues (if any) into the local skill
@@ -180,69 +283,24 @@
     usedSuggestionSinceLastSubmit = false;
   }
 
-  // --- Render the analysis into the card ------------------------------------
-  function render(box, analysis) {
-    ensureCard();
-    lastAnalysis = analysis;
-
-    var wc = readText(box).trim() ? readText(box).trim().split(/\s+/).length : 0;
-    if (wc < 2) { hideCard(); return; }
-
-    var html = '<div class="pc-head">' +
-      '<span class="pc-title">✨ Prompt Coach</span>' +
-      '<button class="pc-x" title="Dismiss">×</button>' +
-      '</div>';
-
-    if (analysis.issues.length) {
-      html += '<ul class="pc-list">';
-      analysis.issues.forEach(function (issue) {
-        html += '<li class="pc-item">' +
-          '<div class="pc-item-title">' + escapeHtml(issue.title) + '</div>' +
-          '<div class="pc-why">' + escapeHtml(issue.why) + '</div>' +
-          (issue.eg ? '<div class="pc-eg">Try: “' + escapeHtml(issue.eg) + '”</div>' : '') +
-          '</li>';
-      });
-      html += '</ul>';
-
-      var improvedDiffers = analysis.improvedPrompt && analysis.improvedPrompt !== readText(box);
-      if (improvedDiffers) {
-        html += '<button class="pc-use">Use improved prompt</button>';
-      }
-    } else {
-      html += '<div class="pc-solid">✅ Looks solid.</div>';
-    }
-
-    // Optional AI-powered rewrite, using the user's own key (background.js).
-    html += '<button class="pc-ai">✨ Improve with AI</button>';
-    html += '<div class="pc-ai-out"></div>';
-
-    card.innerHTML = html;
-
-    card.querySelector(".pc-x").addEventListener("click", hideCard);
-    var useBtn = card.querySelector(".pc-use");
-    if (useBtn) {
-      useBtn.addEventListener("click", function () {
-        usedSuggestionSinceLastSubmit = true;
-        celebrate();
-        writeText(box, analysis.improvedPrompt);
-        hideCard();
-      });
-    }
-    card.querySelector(".pc-ai").addEventListener("click", function () {
-      runAiImprove(box);
-    });
-
-    positionCard(box);
-    card.style.display = "block";
-  }
-
   // --- "Improve with AI" — asks background.js, which uses the user's OWN key
+  // A newer request supersedes an older one (requestId), so a slow reply can't
+  // overwrite a fresher suggestion.
+  var requestId = 0;
   function runAiImprove(box) {
+    ensureCard();
     var out = card.querySelector(".pc-ai-out");
-    var text = readText(box);
-    out.innerHTML = '<div class="pc-ai-note">🤔 Asking Claude…</div>';
+    var text = box ? readText(box) : "";
+    if (!text.trim()) {
+      out.innerHTML = '<div class="pc-ai-note">Type a prompt first, then refresh.</div>';
+      return;
+    }
+    var myId = ++requestId;
+    var reqMode = mode;
+    out.innerHTML = '<div class="pc-ai-note">Thinking…</div>';
 
-    chrome.runtime.sendMessage({ type: "PROMPT_COACH_IMPROVE", prompt: text }, function (result) {
+    chrome.runtime.sendMessage({ type: "PROMPT_COACH_IMPROVE", prompt: text, mode: mode }, function (result) {
+      if (myId !== requestId) return;
       if (chrome.runtime.lastError) {
         out.innerHTML = '<div class="pc-ai-err">Something went wrong reaching the extension. Try reloading the page.</div>';
         return;
@@ -259,7 +317,20 @@
         return;
       }
       if (result.error) {
-        out.innerHTML = '<div class="pc-ai-err">⚠️ ' + escapeHtml(result.message || "Request failed.") + '</div>';
+        out.innerHTML = '<div class="pc-ai-err">' + escapeHtml(result.message || "Request failed.") + '</div>';
+        return;
+      }
+
+      if (reqMode === "teach") {
+        var sug = (result.suggestions || []).map(function (x) {
+          return '<div class="pc-sug">' +
+            '<div class="pc-sug-title">' + escapeHtml(x.title) + '</div>' +
+            '<div class="pc-why">' + escapeHtml(x.why) + '</div>' +
+            '<div class="pc-try">' + escapeHtml(x.try) + '</div></div>';
+        }).join("");
+        out.innerHTML =
+          (result.strength ? '<div class="pc-strength">' + escapeHtml(result.strength) + '</div>' : '') +
+          (sug || '<div class="pc-ai-note">Nothing major to add. This prompt is in good shape.</div>');
         return;
       }
 
@@ -268,41 +339,44 @@
       }).join("");
       out.innerHTML =
         '<div class="pc-ai-card">' +
-        '<div class="pc-ai-head"><span>🤖 AI-improved prompt</span>' +
+        '<div class="pc-ai-head"><span>Suggested prompt</span>' +
         '<button class="pc-ai-use">Use this</button></div>' +
         '<div class="pc-ai-text">' + escapeHtml(result.improved) + '</div>' +
         tipsHtml + '</div>';
 
       out.querySelector(".pc-ai-use").addEventListener("click", function () {
         usedSuggestionSinceLastSubmit = true;
-        celebrate();
         writeText(box, result.improved);
-        hideCard();
+        out.innerHTML = '<div class="pc-ai-note">' + HINT + '</div>';
       });
     });
   }
 
-  // Auto-fire the paid AI critique after a long pause — only if the user
-  // opted in (Settings toggle, off by default), the prompt is the kind that
-  // benefits (classify() === "generative"), it's actually changed since the
-  // last auto-fire, and the cooldown has elapsed. See the guardrail constants
-  // declared above.
+  // Auto-fire the paid AI critique after a pause — on unless the user turned
+  // it off in Settings or collapsed the widget, the prompt is at least a few
+  // words, it has changed since the last auto-fire, and the cooldown has
+  // elapsed. See the guardrail constants declared above.
   function maybeAutoCritique() {
     var LOG = "[Prompt Coach Auto]";
     if (!currentBox) { console.log(LOG, "skipped: no prompt box attached"); return; }
+    if (collapsed) { console.log(LOG, "skipped: widget is collapsed"); return; }
     var text = readText(currentBox);
     var trimmed = text.trim();
     var wc = trimmed ? trimmed.split(/\s+/).length : 0;
     if (wc < AUTO_MIN_WORDS) { console.log(LOG, "skipped: too few words (" + wc + " < " + AUTO_MIN_WORDS + ")"); return; }
     if (text === lastAutoText) { console.log(LOG, "skipped: text unchanged since last auto-fire"); return; }
-    var cls = window.PromptCoach.classify(text);
-    if (cls !== "generative") { console.log(LOG, "skipped: classified as '" + cls + "', not 'generative'"); return; }
     var sinceLastFire = Date.now() - lastAutoFireAt;
-    if (sinceLastFire < AUTO_COOLDOWN_MS) { console.log(LOG, "skipped: cooldown (" + sinceLastFire + "ms < " + AUTO_COOLDOWN_MS + "ms)"); return; }
+    if (sinceLastFire < AUTO_COOLDOWN_MS) {
+      // Don't drop the request — try again once the cooldown has passed.
+      console.log(LOG, "cooldown (" + sinceLastFire + "ms < " + AUTO_COOLDOWN_MS + "ms), retrying when it ends");
+      if (autoTimer) clearTimeout(autoTimer);
+      autoTimer = setTimeout(maybeAutoCritique, AUTO_COOLDOWN_MS - sinceLastFire + 50);
+      return;
+    }
     if (typeof chrome === "undefined" || !chrome.storage) { console.log(LOG, "skipped: no chrome.storage available"); return; }
 
     chrome.storage.local.get("promptCoachAutoCritique", function (r) {
-      if (!r.promptCoachAutoCritique) { console.log(LOG, "skipped: toggle is off in Settings"); return; }
+      if (r.promptCoachAutoCritique === false) { console.log(LOG, "skipped: toggle is off in Settings"); return; }
       console.log(LOG, "firing now");
       lastAutoFireAt = Date.now();
       lastAutoText = text;
@@ -311,13 +385,13 @@
   }
 
   // --- The main loop: react to typing (debounced so it's not jumpy) ---------
+  // The free rule-based analysis still runs (it feeds the local skill history
+  // in recordSubmit), but only the AI critique is shown on the page.
   function onInput() {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(function () {
       if (!currentBox) return;
-      var text = readText(currentBox);
-      var analysis = window.PromptCoach.analyze(text);
-      render(currentBox, analysis);
+      lastAnalysis = window.PromptCoach.analyze(readText(currentBox));
     }, 400);
 
     if (autoTimer) clearTimeout(autoTimer);
@@ -340,25 +414,30 @@
     currentBox = box;
     box.addEventListener("input", onInput);
     box.addEventListener("keydown", onKeydown);
-    // Clicking a button inside the card (e.g. "Improve with AI") blurs the
-    // prompt box too, since focus moves to that button. Only auto-hide if
-    // focus actually left the card — otherwise a slow AI response (network
-    // latency > this 200ms delay) finishes updating a card that's already
-    // hidden, which looks like nothing happened. Explicit actions (dismiss,
-    // "Use improved prompt") still hide the card themselves either way.
-    box.addEventListener("blur", function () {
-      setTimeout(function () {
-        if (card && card.contains(document.activeElement)) return;
-        hideCard();
-      }, 200);
-    });
+    positionCard();
     console.log("[Prompt Coach] attached to prompt box");
   }
 
-  // ChatGPT loads slowly and re-renders, so keep checking for the box.
-  setInterval(function () {
-    var box = findPromptBox();
-    if (box && box !== currentBox) attach(box);
-    if (card && card.style.display === "block" && currentBox) positionCard(currentBox);
-  }, 1000);
+  // Show the widget right away (restoring saved position/collapsed state),
+  // then keep it alive: these sites re-render, so re-attach it if the page
+  // drops it, and keep looking for the prompt box (ChatGPT loads slowly).
+  function start() {
+    ensureCard();
+    function show() { setMode(mode); setCollapsed(collapsed); card.style.display = "block"; }
+    try {
+      chrome.storage.local.get("promptCoachCardPos", function (r) {
+        if (r && r.promptCoachCardPos) customPos = r.promptCoachCardPos;
+        show();
+      });
+    } catch (e) { show(); }
+
+    setInterval(function () {
+      if (!document.body.contains(card)) document.body.appendChild(card);
+      var box = findPromptBox();
+      if (box && box !== currentBox) attach(box);
+      positionCard();
+    }, 1000);
+  }
+
+  start();
 })();

@@ -79,7 +79,7 @@ no signup.
 Working prototype. The v1 core — rule-based coaching, and the AI-powered
 rewrite with your own API key — is confirmed hands-on end-to-end on
 chatgpt.com, claude.ai, and gemini.google.com. The v2 direction (category
-tagging, a task classifier, opt-in live auto-critique, a lightweight
+tagging, a task classifier, live auto-critique, a lightweight
 "doesn't refine" signal, and a local skill-progress popup) is built and
 verified with mocked browser/network calls, but not yet re-confirmed by
 hand on a real site with a real key. The manager dashboard is still a

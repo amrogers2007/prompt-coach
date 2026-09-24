@@ -1,27 +1,29 @@
-/* The suggestion card. Prefixed with "pc-" so it can't clash with ChatGPT.
-   Palette: minimal gray/white base + a cobalt-blue accent — see
-   docs/PromptCoach_Direction_and_Roadmap.pdf's "Aesthetic Direction".
-   The accent is explicitly called out there as a placeholder, so it's a
-   single custom property here for an easy later swap. */
+/* The suggestion card. Prefixed with "pc-" so it can't clash with the host site.
+   Palette: neutral white/gray base, cobalt-blue accent used sparingly (one
+   filled button, thin rules) — see docs/PromptCoach_Direction_and_Roadmap.pdf's
+   "Aesthetic Direction". The accent is a single custom property for an easy
+   later swap. Placement logic lives in content.js (positionCard). */
 
 .pc-card {
   --pc-accent: #2b59c3;
   --pc-accent-dark: #234a9e;
-  --pc-accent-wash: #eaf0fb;
-  --pc-accent-wash-border: #c9d8f5;
+  --pc-text: #1a1a1a;
+  --pc-muted: #6b6b70;
+  --pc-line: #e6e6e8;
 
   position: fixed;
   z-index: 2147483647;               /* sit on top of everything */
+  box-sizing: border-box;
   background: #ffffff;
-  color: #1a1a1a;
-  border: 1px solid #e2e2e2;
-  border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+  color: var(--pc-text);
+  border: 1px solid var(--pc-line);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   padding: 12px 14px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 13px;
-  line-height: 1.4;
-  max-height: 60vh;
+  line-height: 1.45;
+  max-height: 70vh;
   overflow-y: auto;
 }
 
@@ -29,102 +31,108 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+}
+.pc-head { cursor: grab; touch-action: none; }
+.pc-head:active { cursor: grabbing; }
+.pc-head button { cursor: pointer; }
+.pc-head + .pc-ai-out:not(:empty) { margin-top: 8px; }
+
+.pc-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pc-muted);
 }
 
-.pc-title { font-weight: 600; }
+.pc-actions { display: flex; align-items: center; gap: 6px; }
 
-.pc-x {
+/* Refresh and collapse: small icon-only buttons. */
+.pc-ai, .pc-min {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  color: #888;
-}
-.pc-x:hover { color: #222; }
-
-.pc-list { list-style: none; margin: 0; padding: 0; }
-
-.pc-item {
-  padding: 8px 0;
-  border-top: 1px solid #f0f0f0;
-}
-.pc-item:first-child { border-top: none; }
-
-.pc-item-title { font-weight: 600; margin-bottom: 2px; }
-.pc-why { color: #555; }
-.pc-eg { color: var(--pc-accent); margin-top: 3px; font-style: italic; }
-
-.pc-use {
-  margin-top: 10px;
-  width: 100%;
-  border: none;
-  border-radius: 8px;
-  padding: 9px 12px;
-  background: var(--pc-accent);
-  color: white;
-  font-weight: 600;
-  font-size: 13px;
+  color: var(--pc-muted);
+  padding: 2px;
   cursor: pointer;
 }
-.pc-use:hover { background: var(--pc-accent-dark); }
+.pc-ai:hover, .pc-min:hover { color: var(--pc-accent); }
 
-.pc-solid { color: var(--pc-accent-dark); font-weight: 600; padding: 4px 0 2px; }
-
-.pc-ai {
-  margin-top: 10px;
-  width: 100%;
-  border: 1px solid var(--pc-accent-wash-border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  background: var(--pc-accent-wash);
-  color: var(--pc-accent-dark);
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
+/* Improve / Teach toggle. */
+.pc-modes {
+  display: flex; margin: 8px 0 0; padding: 2px;
+  background: var(--pc-line); border-radius: 8px;
 }
-.pc-ai:hover { background: #dbe6f8; }
+.pc-mode {
+  flex: 1; border: none; background: transparent; color: var(--pc-muted);
+  font: inherit; font-size: 12px; font-weight: 600; padding: 4px 0;
+  border-radius: 6px; cursor: pointer;
+}
+.pc-mode-on { background: #fff; color: var(--pc-accent); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+/* Teach mode output. */
+.pc-strength { margin-top: 10px; color: var(--pc-muted); }
+.pc-sug { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--pc-line); }
+.pc-sug:first-of-type { border-top: none; }
+.pc-sug-title { font-weight: 600; }
+.pc-try { margin-top: 4px; color: var(--pc-accent); }
+
+/* Collapsed: the whole widget is a small draggable icon; click to reopen. */
+.pc-icon { display: none; }
+.pc-collapsed { padding: 0; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
+.pc-collapsed .pc-panel { display: none; }
+.pc-collapsed .pc-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; border: none; border-radius: 50%;
+  background: transparent; color: var(--pc-accent);
+  font: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+  cursor: grab; touch-action: none;
+}
+.pc-collapsed .pc-icon:hover { color: var(--pc-accent-dark); }
 
 .pc-ai-out:empty { display: none; }
-.pc-ai-note { margin-top: 8px; color: #666; }
-.pc-ai-err { margin-top: 8px; color: #b3261e; }
+.pc-ai-note { margin-top: 10px; color: var(--pc-muted); }
+.pc-ai-err { margin-top: 10px; color: #b3261e; }
 .pc-ai-settings {
   border: none; background: none; padding: 0; color: var(--pc-accent);
   text-decoration: underline; cursor: pointer; font: inherit;
 }
 
-.pc-ai-card {
-  margin-top: 8px;
-  background: var(--pc-accent-wash);
-  border: 1px solid var(--pc-accent-wash-border);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
+.pc-ai-card { margin-top: 12px; }
 .pc-ai-head {
   display: flex; align-items: center; justify-content: space-between;
-  font-weight: 600; color: var(--pc-accent-dark); margin-bottom: 6px;
+  margin-bottom: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--pc-muted);
 }
 .pc-ai-use {
-  border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer;
-  background: var(--pc-accent); color: white; font-weight: 600; font-size: 12px;
+  border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer;
+  background: var(--pc-accent); color: #fff; font-weight: 600; font-size: 12px;
+  letter-spacing: 0; text-transform: none;
 }
 .pc-ai-use:hover { background: var(--pc-accent-dark); }
-.pc-ai-text { white-space: pre-wrap; color: #1a2c52; margin-bottom: 6px; }
+.pc-ai-text {
+  white-space: pre-wrap;
+  color: var(--pc-text);
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--pc-line);
+  margin-bottom: 8px;
+}
+.pc-why { color: var(--pc-muted); margin-top: 4px; }
 
 /* Dark mode friendliness */
 @media (prefers-color-scheme: dark) {
   .pc-card {
-    --pc-accent: #5b8fe0;
-    --pc-accent-dark: #7ba5e8;
-    --pc-accent-wash: #16233f;
-    --pc-accent-wash-border: #2c4270;
-    background: #232323; color: #f0f0f0; border-color: #444;
+    --pc-accent: #6f9be8;
+    --pc-accent-dark: #5b8fe0;
+    --pc-text: #ececec;
+    --pc-muted: #9a9aa0;
+    --pc-line: #3a3a3d;
+    background: #212121;
   }
-  .pc-why { color: #bbb; }
-  .pc-item { border-top-color: #3a3a3a; }
-  .pc-solid { color: var(--pc-accent-dark); }
-  .pc-ai-note { color: #bbb; }
-  .pc-ai-head { color: var(--pc-accent-dark); }
-  .pc-ai-text { color: #dfe8fa; }
+  .pc-ai-use { color: #10203f; }
+  .pc-mode-on { background: #2f2f32; }
 }

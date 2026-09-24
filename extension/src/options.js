@@ -43,13 +43,13 @@ document.getElementById("clear").addEventListener("click", () => {
   });
 });
 
-// Auto-critique toggle: off by default (see content.js's maybeAutoCritique
+// Auto-critique toggle: on by default (see content.js's maybeAutoCritique
 // and its cost-guardrail constants). Reflect/persist it here, nothing more —
 // content.js reads this same key straight from chrome.storage.local itself.
 const autoCritiqueInput = document.getElementById("auto-critique");
 
 chrome.storage.local.get("promptCoachAutoCritique", ({ promptCoachAutoCritique }) => {
-  autoCritiqueInput.checked = !!promptCoachAutoCritique;
+  autoCritiqueInput.checked = promptCoachAutoCritique !== false; // on unless explicitly turned off
 });
 
 autoCritiqueInput.addEventListener("change", () => {

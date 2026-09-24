@@ -49,7 +49,7 @@
 </style>
 </head>
 <body>
-  <h1>✨ Prompt Coach — Settings</h1>
+  <h1>Prompt Coach — Settings</h1>
   <p class="sub">
     Add your own Anthropic API key to turn on <b>AI-improved prompts</b>.
     Your key is stored only in your browser and is sent straight from your
@@ -72,9 +72,9 @@
     </a>
     and create one. You'll need to add a small amount of credit — a prompt
     rewrite costs a fraction of a cent.<br /><br />
-    Without a key, Prompt Coach still works: the free, offline, hard-coded
-    rules keep running as you type. The key only powers the optional
-    <b>"✨ Improve with AI"</b> button for a smarter rewrite.
+    The key powers the refresh button on the Prompt Coach card. Without
+    one, the on-page suggestion can't run; the free, offline rules still run
+    quietly in the background to build your progress view.
   </div>
 
   <div class="card">
@@ -82,11 +82,11 @@
       <input type="checkbox" id="auto-critique" />
       <span class="toggle-text">
         <b>Auto-run AI critique while typing</b><br />
-        Off by default. When on, "Improve with AI" fires on its own about
+        On by default. The suggestion runs on its own about
         3 seconds after you stop typing (only for longer, open-ended
         prompts — not quick factual questions). This spends your API
         credit automatically each time it fires, capped to roughly once
-        every 15 seconds. You can still use the manual button either way.
+        every 15 seconds. Turn this off to only get a suggestion when you click the refresh arrow.
       </span>
     </label>
   </div>

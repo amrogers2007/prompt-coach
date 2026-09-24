@@ -53,7 +53,7 @@ function render() {
     var safetyShown = (snapshot.safety && snapshot.safety.shown) || 0;
     if (safetyShown > 0) {
       safetyNote.style.display = "block";
-      safetyNote.textContent = "⚠️ Sensitive-data pattern flagged " + safetyShown + " time" + (safetyShown === 1 ? "" : "s") + " in the last 30 days.";
+      safetyNote.textContent = "Sensitive-data pattern flagged " + safetyShown + " time" + (safetyShown === 1 ? "" : "s") + " in the last 30 days.";
     } else {
       safetyNote.style.display = "none";
     }
