@@ -1,0 +1,4 @@
+# Shell scripts must keep LF endings even on Windows checkouts (a stray CR breaks `sh`).
+*.sh text eol=lf
+coach/scripts/run.sh text eol=lf
+install/install.sh text eol=lf

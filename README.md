@@ -15,7 +15,23 @@ rough and unedited.
 > project — a complete, working example of product thinking + full-stack build,
 > from customer interviews through a shipped Chrome extension.
 
-## Try it in 60 seconds (no install)
+## New direction: the coach inside Claude ([`coach/`](coach/))
+
+The next version of the idea is a **plugin that puts a coach inside the AI itself**: it asks
+questions instead of rewriting prompts, pushes you to revise the decks and PDFs the AI makes,
+remembers how you've done, and turns that into an **AI Fluency level** (Beginner to Expert) you can show
+a manager. Adaptive coaching cadence, streaks, achievements, a shareable scoreboard, no prompt text
+ever stored. See [`coach/README.md`](coach/README.md) for install and how the levels work, and
+[`docs/COACH-DESIGN.md`](docs/COACH-DESIGN.md) for the reasoning and what's still open.
+
+```bash
+claude plugin marketplace add amrogers2007/prompt-coach
+claude plugin install prompt-coach@prompt-coach
+```
+
+The browser extension below still works and covers ChatGPT and Gemini too.
+
+## Try the extension playground in 60 seconds (no install)
 
 Open [`playground/index.html`](playground/index.html) in any browser. Type a
 prompt and watch the coaching appear live — no Chrome extension, no server,
@@ -25,6 +41,7 @@ no signup.
 
 | Folder | What it is |
 |---|---|
+| [`coach/`](coach/) | **The new direction:** a Claude plugin (hooks + skills + agent, Python) that coaches, tracks habits, and levels you up. 96 tests. |
 | [`extension/`](extension/) | The real Chrome extension (Manifest V3). Coaches you live on chatgpt.com, claude.ai, and gemini.google.com. |
 | [`playground/`](playground/) | A standalone page that runs the same coaching logic — the fastest way to try it or tune the rules. |
 | [`dashboard/`](dashboard/) | A manager-facing dashboard **mockup** (sample data) showing what a company buying this would want to see. |

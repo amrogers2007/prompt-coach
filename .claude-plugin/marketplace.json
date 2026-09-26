@@ -1,0 +1,12 @@
+{
+  "name": "prompt-coach",
+  "description": "Prompt Coach: a coach that teaches people to use AI well.",
+  "owner": { "name": "Amanda Rogers" },
+  "plugins": [
+    {
+      "name": "prompt-coach",
+      "source": "./coach",
+      "description": "An AI coach inside Claude: adaptive coaching questions, draft-revision nudges, and a local AI Fluency level."
+    }
+  ]
+}
