@@ -294,7 +294,9 @@ class Robustness(CoachTestCase):
             p.stdin.write(json.dumps(prompt("write a short poem about the number %d please" % i, sid="s%d" % i)))
             p.stdin.close()
         for p in procs:
-            p.communicate(timeout=60)     # also closes the pipes
+            p.wait(timeout=60)
+            p.stdout.close()              # (communicate() after closing stdin raises on Python < 3.12)
+            p.stderr.close()
             self.assertEqual(p.returncode, 0)
         st = store.load_state()
         self.assertEqual(st["totals"]["prompts"], 8)
