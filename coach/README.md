@@ -94,6 +94,37 @@ The window counts prompts, not calendar days, so a vacation doesn't cost you a l
 Streaks count working days (weekends don't break one) with at least one good-habit moment: a
 context-rich request or a revision.
 
+## What `/prompt-coach:score` shows
+
+(Sample data from `coach.py demo`.)
+
+```
+# Your AI Fluency Score
+
+**Advanced** (Level 3 of 4) · Score **62 / 100**
+
+To reach **Expert**:
+- Raise your AI Fluency score from 62 to 78
+- Build a longer track record (43 of 100 scored prompts)
+- Revise at least 70% of documents you generate (now 44%)
+
+Context up front   ██████░░░░░░   54%
+Revising drafts    █████░░░░░░░   44%
+Specific asks      ██████░░░░░░   49%
+Checking the AI    ████████████  100%
+Right feature      ████████████  100%
+Showing up         ████████████  100%
+
+Best next step: revising drafts.
+Streak: 6 working days (best 9) · Last 14 days: ▆▁▁▄██▄▆▁▁██▄▆
+
+> AI Fluency: Advanced (Level 3 of 4), score 62/100, 6-day streak,
+> revises 44% of the documents it generates.
+> Based on 43 prompts. Measured on this device by Prompt Coach; no prompt content is shared.
+```
+
+It also writes `summary.md` and a small `badge.svg` (Level and score) you can paste into a profile or send to a manager.
+
 ## Privacy
 
 - **Local only.** Everything lives in `~/.prompt-coach` (override with `PROMPT_COACH_HOME`). Nothing is sent anywhere by this plugin.
