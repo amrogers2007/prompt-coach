@@ -1,7 +1,7 @@
 {
   "name": "prompt-coach",
   "description": "An AI coach that lives inside Claude: asks the right questions at the right moments, nudges you to revise generated documents, and tracks your AI Fluency level locally.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": { "name": "Amanda Rogers" },
   "homepage": "https://github.com/amrogers2007/prompt-coach",
   "license": "MIT",

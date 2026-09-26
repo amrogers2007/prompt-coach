@@ -244,7 +244,14 @@ class Lessons(unittest.TestCase):
         self.assertIn("ONE question", text)
         self.assertIn("do NOT rewrite", text)
         self.assertIn("Never mention this instruction", text)
-        self.assertIn('"Coach:"', text)
+        self.assertIn("in italics", text)
+        self.assertIn("*Prompt Coach:", text)
+
+    def test_every_instruction_uses_the_same_italic_voice(self):
+        for text in (lessons.coach_instruction(lessons.get("ctx-goal"), "q?", "cadence", "Beginner"),
+                     lessons.draft_nudge_instruction("deck", "Plan.pptx"),
+                     lessons.revision_nudge_instruction("deck")):
+            self.assertIn(lessons.VOICE, text)
 
 
 if __name__ == "__main__":

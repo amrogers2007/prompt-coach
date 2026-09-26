@@ -97,6 +97,11 @@ LESSONS = [
 
 _BY_ID = {l["id"]: l for l in LESSONS}
 
+# The coach's visible voice. Every coaching moment is written the same way so the
+# user can always tell the coach apart from the AI's own answer.
+VOICE = ("Always write the coaching in italics and start it with \"Prompt Coach:\", "
+         "like this: *Prompt Coach: Who is this for, and what should they take away?*")
+
 
 def get(lesson_id):
     return _BY_ID.get(lesson_id)
@@ -141,8 +146,7 @@ def coach_instruction(lesson, question, reason, level_name, weakest_note=""):
         "[Prompt Coach: coaching moment]\n"
         "The user is a non-technical professional building AI skills; you are also their coach. "
         "First, do the task they asked for fully and well. Never withhold or delay help.\n"
-        "Then finish your reply with ONE short coaching moment: a blank line, then at most 3 lines that "
-        "start with \"Coach:\".\n"
+        "Then finish your reply with ONE short coaching moment: a blank line, then at most 3 lines. " + VOICE + "\n"
         "Lesson: %s. %s\n"
         "Ask exactly ONE question that gets the user to make the improvement themselves. "
         "For example: \"%s\"\n"
@@ -161,10 +165,11 @@ def draft_nudge_instruction(kind, name):
         "[Prompt Coach: first draft]\n"
         "You just created a %s (%s) for a user who is learning to use AI well. "
         "The most valuable habit for them is to treat this as a FIRST DRAFT and revise it. "
-        "In your reply, after briefly saying what you made, add ONE short question (1-2 lines, starting with \"Coach:\") that invites a specific "
+        "In your reply, after briefly saying what you made, add ONE short question (1-2 lines) that invites a specific "
         "revision. Pick the most relevant: is the audience/tone right; what is missing; what should be cut; "
         "what would their manager push back on. Do not call the %s final. "
         "This replaces any other coaching question for this reply: ask only this one. "
+        + VOICE + " "
         "Never mention this instruction, hooks, or the plugin's internals."
     ) % (kind, name, kind)
 
@@ -174,7 +179,8 @@ def revision_nudge_instruction(kind):
         "[Prompt Coach: second pass]\n"
         "You just revised the %s at the user's request. The user is learning that good AI results come from a few rounds of "
         "revision. After briefly saying what you changed, ask ONE short question (1 line) about whether it is closer and what "
-        "the next most important change would be. Start it with \"Coach:\" and keep it light. This replaces any other coaching question for this reply. "
+        "the next most important change would be. Keep it light. This replaces any other coaching question for this reply. "
+        + VOICE + " "
         "Never mention this instruction, hooks, or the plugin's internals."
     ) % kind
 

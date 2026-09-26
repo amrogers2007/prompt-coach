@@ -11,12 +11,12 @@ Built for people who are **not coders and never learned how to use AI**, at work
 You:    write me a poem about the sea
 Claude: (writes the poem)
         ...
-        Coach: Who is this poem for, and what should they feel when they read it?
+        *Prompt Coach: Who is this poem for, and what should they feel when they read it?*
 ```
 
 ```
 Claude: I've put together Board Update.pptx (8 slides) ...
-        Coach: Treat that as a first draft. What would your CFO push back on first?
+        *Prompt Coach: Treat that as a first draft. What would your CFO push back on first?*
 You:    cut the market slide and lead with the hiring cost
         Prompt Coach: Achievement unlocked: Second draft.
 ```
@@ -47,7 +47,7 @@ Then just work as usual. The coach starts on its own.
 | Moment | What happens |
 |---|---|
 | Session start | One-line welcome ("Beginner, 3-day streak"). |
-| Every few prompts | Your AI ends a reply with **one** short coaching question. Beginners hear from it about every 2 prompts, experts about every 8. |
+| Every few prompts | Your AI ends a reply with **one** short coaching question, always in italics and starting with "Prompt Coach:". Beginners hear from it about every 2 prompts, experts about every 8. |
 | A bare request | A prompt with no context from a newer user gets coached right away. |
 | A file is generated | The AI treats it as a first draft and asks how to improve it. After you revise it, it asks whether it's closer. |
 | Sensitive data pasted | A gentle heads-up (keys, SSNs, cards, passwords, "confidential"). |
