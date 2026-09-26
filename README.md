@@ -41,7 +41,7 @@ no signup.
 
 | Folder | What it is |
 |---|---|
-| [`coach/`](coach/) | **The new direction:** a Claude plugin (hooks + skills + agent, Python) that coaches, tracks habits, and levels you up. 96 tests. |
+| [`coach/`](coach/) | **The new direction:** a Claude plugin (hooks + skills + agent, Python) that coaches, tracks habits, and levels you up. 108 tests. |
 | [`extension/`](extension/) | The real Chrome extension (Manifest V3). Coaches you live on chatgpt.com, claude.ai, and gemini.google.com. |
 | [`playground/`](playground/) | A standalone page that runs the same coaching logic — the fastest way to try it or tune the rules. |
 | [`dashboard/`](dashboard/) | A manager-facing dashboard **mockup** (sample data) showing what a company buying this would want to see. |

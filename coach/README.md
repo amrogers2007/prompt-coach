@@ -113,6 +113,7 @@ context-rich request or a revision.
 
 ## Limits worth knowing
 
+- Coding prompts (code fences, source files, stack traces, dev jargon) are deliberately ignored: this coach is for everyday work, and rules built for prose would judge them unfairly.
 - Scoring is heuristic (keyword and structure signals), tuned to be fair on average, not perfect on any one prompt.
 - The coach can only see what hooks can: it can't read the AI's reply to judge it, so "did you accept the draft?" is inferred from your next prompt.
 - The coaching question is delivered *by the AI following an instruction*, so it can occasionally skip or word it differently.
@@ -121,7 +122,7 @@ context-rich request or a revision.
 ## Develop
 
 ```bash
-python -m unittest discover -s coach/tests -v     # 96 tests, standard library only
+python -m unittest discover -s coach/tests -v     # 108 tests, standard library only
 claude plugin validate ./coach                    # manifest + skills check
 claude --plugin-dir ./coach                       # run it live
 PROMPT_COACH_HOME=/tmp/demo python coach/scripts/coach.py demo    # sample profile
