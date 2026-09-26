@@ -57,6 +57,11 @@ class PromptFlow(CoachTestCase):
         self.assertIsNone(self.send("/prompt-coach:score"))
         self.assertEqual(store.load_state()["totals"]["prompts"], 0)
 
+    def test_coding_prompts_are_left_alone(self):
+        self.assertIsNone(self.send("fix the bug in content.js where the card disappears"))
+        self.assertIsNone(self.send("refactor this function and add unit tests please"))
+        self.assertEqual(store.load_state()["totals"]["prompts"], 0)
+
     def test_pause_silences_coaching_but_not_tracking(self):
         st = store.load_state()
         st["settings"]["paused_until"] = self.t + 10_000
@@ -289,7 +294,7 @@ class Robustness(CoachTestCase):
             p.stdin.write(json.dumps(prompt("write a short poem about the number %d please" % i, sid="s%d" % i)))
             p.stdin.close()
         for p in procs:
-            p.wait(timeout=60)
+            p.communicate(timeout=60)     # also closes the pipes
             self.assertEqual(p.returncode, 0)
         st = store.load_state()
         self.assertEqual(st["totals"]["prompts"], 8)

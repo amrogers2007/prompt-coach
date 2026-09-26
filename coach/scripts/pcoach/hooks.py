@@ -88,7 +88,7 @@ def handle_session(payload):
     session["pending_gen"] = None
     store.prune_events()
 
-    events = store.read_events()
+    events = store.read_events(tail_bytes=store.RECENT_BYTES)
     m = scoring.compute_metrics(events, state["gens"])
     level = scoring.resolve_level(m, state["level"])
     state["level"] = level
@@ -160,7 +160,7 @@ def handle_prompt(payload):
     ts = store.now()
     sid = payload.get("session_id") or "unknown"
 
-    if signals.is_trivial(text):
+    if signals.is_trivial(text) or signals.is_coding_prompt(text):
         return None
 
     state = store.load_state()
@@ -215,7 +215,7 @@ def handle_prompt(payload):
     streak_grew = game.touch_streak(state, ts) if game.is_good_habit(analysis) else None
 
     # -- level (rolling window, can go down) ---------------------------------------------
-    events = store.read_events()
+    events = store.read_events(tail_bytes=store.RECENT_BYTES)
     metrics = scoring.compute_metrics(events, state["gens"])
     old_level = state["level"]
     level = scoring.resolve_level(metrics, old_level)

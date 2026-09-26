@@ -46,7 +46,7 @@ def daily_counts(events, days=14):
 
 def build(state=None, events=None):
     state = state or store.load_state()
-    events = events if events is not None else store.read_events()
+    events = events if events is not None else store.read_events(tail_bytes=store.RECENT_BYTES)
     m = scoring.compute_metrics(events, state["gens"])
     level = scoring.resolve_level(m, state["level"])
     return {

@@ -77,6 +77,20 @@ class Triviality(unittest.TestCase):
         self.assertFalse(signals.is_trivial("shorter please"))
 
 
+class CodingPrompts(unittest.TestCase):
+    def test_coding_prompts_are_recognised(self):
+        for t in ["fix the bug in content.js where the card disappears",
+                  "why does this throw?\n```python\nprint(x)\n```",
+                  "refactor this function and add unit tests",
+                  "run npm install and then git commit the changes"]:
+            self.assertTrue(signals.is_coding_prompt(t), t)
+
+    def test_everyday_prompts_are_not(self):
+        for t in [RICH, BARE, "write an email about the bug in our billing process to my customer",
+                  "summarize the python course syllabus for my manager"]:
+            self.assertFalse(signals.is_coding_prompt(t), t)
+
+
 class Features(unittest.TestCase):
     def test_file_reference_is_good(self):
         self.assertEqual(signals.feature_signal("Summarize @reports/q3.docx for me"), 1.0)

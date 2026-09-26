@@ -235,6 +235,26 @@ def is_vague_refinement(text):
     return len(words(text)) <= 3 and not re.search(r"\d", text or "")
 
 
+CODE_STRONG = re.compile(
+    r"(```|\b[\w./\-]+\.(py|js|jsx|ts|tsx|java|kt|swift|c|cc|cpp|h|hpp|rs|go|rb|php|cs|sh|ps1|sql|"
+    r"json|ya?ml|toml|css|scss|vue|ipynb)\b|\bTraceback\b|\bstack ?trace\b|\bnpm (install|run|test)\b|"
+    r"\bpip install\b|\bgit (commit|push|pull|rebase|merge|checkout|diff)\b)", re.I)
+CODE_WEAK = re.compile(
+    r"\b(function|variable|bug|debug|compile|refactor|repo(sitory)?|pull request|unit tests?|"
+    r"api endpoint|regex|typescript|javascript|python|dockerfile|exception|null pointer|"
+    r"segfault|linter|dependency|dependencies|lint)\b", re.I)
+
+
+def is_coding_prompt(text):
+    """Coding work isn't this coach's audience (everyday non-technical tasks), so
+    such prompts are left out of scoring and coaching rather than being judged
+    by rules that don't fit them."""
+    t = text or ""
+    if CODE_STRONG.search(t):
+        return True
+    return len(set(m.group(0).lower() for m in CODE_WEAK.finditer(t))) >= 2
+
+
 def is_trivial(text):
     """Too short/ceremonial to be worth scoring (yes, thanks, ok...)."""
     t = (text or "").strip()

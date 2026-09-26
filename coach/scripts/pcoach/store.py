@@ -125,12 +125,24 @@ def append_event(event):
         f.write(json.dumps(event, sort_keys=True) + "\n")
 
 
-def read_events(since_ts=0):
+def read_events(since_ts=0, tail_bytes=None):
+    """Events at or after since_ts. With tail_bytes, only the end of the file is
+    read (scoring only needs the most recent activity), which keeps every hook
+    fast however long the history grows."""
     out = []
     try:
-        with open(_path("events.jsonl"), "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
+        with open(_path("events.jsonl"), "rb") as f:
+            if tail_bytes:
+                size = f.seek(0, os.SEEK_END)
+                if size > tail_bytes:
+                    f.seek(size - tail_bytes)
+                    f.readline()          # drop the partial line we landed in
+                else:
+                    f.seek(0)
+            else:
+                f.seek(0)
+            for raw in f:
+                line = raw.decode("utf-8", "replace").strip()
                 if not line:
                     continue
                 try:
@@ -142,6 +154,9 @@ def read_events(since_ts=0):
     except OSError:
         pass
     return out
+
+
+RECENT_BYTES = 400_000
 
 
 def prune_events(max_days=MAX_EVENT_DAYS):
