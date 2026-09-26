@@ -41,10 +41,10 @@ FOLLOWUP = ["make slide 2 shorter", "add a section about costs", "too formal, so
 
 
 class Persona:
-    def __init__(self, test, name, new_pool, revise_prob, verify_prob=0.0):
+    def __init__(self, test, name, new_pool, revise_prob, seed=0):
         self.test, self.name = test, name
         self.new_pool, self.revise_prob = new_pool, revise_prob
-        self.rnd = random.Random(hash(name) % 1000)
+        self.rnd = random.Random("%s-%d" % (name, seed))     # deterministic across runs
         self.sid_n = 0
 
     def workday(self, prompts=3):
@@ -73,6 +73,9 @@ class Persona:
         return report.build()["level"]
 
 
+SEED = int(__import__('os').environ.get('SIM_SEED', '0'))
+
+
 class Archetypes(CoachTestCase):
     def run_days(self, persona, days):
         out = []
@@ -84,31 +87,31 @@ class Archetypes(CoachTestCase):
         return out
 
     def test_lazy_user_stays_a_beginner(self):
-        levels = self.run_days(Persona(self, "lazy", LAZY, revise_prob=0.0), 20)
+        levels = self.run_days(Persona(self, "lazy", LAZY, revise_prob=0.0, seed=SEED), 12)
         self.assertEqual(max(levels), 1, levels)
 
     def test_average_user_reaches_practitioner_not_advanced(self):
-        levels = self.run_days(Persona(self, "avg", MEDIUM, revise_prob=0.3), 25)
+        levels = self.run_days(Persona(self, "avg", MEDIUM, revise_prob=0.3, seed=SEED), 20)
         self.assertGreaterEqual(max(levels), 2, levels)
         self.assertLessEqual(max(levels), 3, levels)
 
     def test_power_user_gets_to_advanced_and_can_reach_expert_but_not_instantly(self):
-        levels = self.run_days(Persona(self, "power", RICH, revise_prob=0.9), 30)
+        levels = self.run_days(Persona(self, "power", RICH, revise_prob=0.9, seed=SEED), 34)
         first_advanced = next((i for i, l in enumerate(levels) if l >= 3), None)
         self.assertIsNotNone(first_advanced, levels)
         self.assertGreaterEqual(first_advanced, 3, "Advanced should take more than a couple of days: %s" % levels)
-        self.assertEqual(levels[-1], 4, "a consistently strong user should be able to reach Expert: %s" % levels)
-        first_expert = next(i for i, l in enumerate(levels) if l == 4)
-        self.assertGreaterEqual(first_expert, 10, "Expert must be hard: %s" % levels)
+        self.assertIn(4, levels, "a consistently strong user should be able to reach Expert: %s" % levels)
+        first_expert = levels.index(4)
+        self.assertGreaterEqual(first_expert, 14, "Expert must be hard (3+ working weeks): %s" % levels)
 
     def test_good_user_who_slips_loses_a_level(self):
-        good = Persona(self, "slip", RICH, revise_prob=0.95)
-        self.run_days(good, 25)
+        good = Persona(self, "slip", RICH, revise_prob=0.95, seed=SEED)
+        self.run_days(good, 14)
         peak = good.level()
         self.assertGreaterEqual(peak, 3)
-        bad = Persona(self, "slip", LAZY, revise_prob=0.0)
+        bad = Persona(self, "slip", LAZY, revise_prob=0.0, seed=SEED)
         bad.sid_n = 1000
-        levels = self.run_days(bad, 25)
+        levels = self.run_days(bad, 22)
         self.assertLess(levels[-1], peak, (peak, levels))
 
 

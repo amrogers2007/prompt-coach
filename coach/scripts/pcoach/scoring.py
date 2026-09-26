@@ -8,7 +8,7 @@ Design goals (from the product brief):
   * vacation-proof: the window is the last N prompts, not the last N days.
 """
 
-WINDOW_PROMPTS = 60
+WINDOW_PROMPTS = 100
 WINDOW_GENS = 12
 
 WEIGHTS = {
@@ -24,8 +24,8 @@ LEVELS = {1: "Beginner", 2: "Practitioner", 3: "Advanced", 4: "Expert"}
 
 GATES = {
     2: {"score": 30, "scored": 8},
-    3: {"score": 55, "scored": 25, "days": 4, "gens": 3},
-    4: {"score": 78, "scored": 60, "days": 10, "gens": 8, "iter": 0.7, "clean": True},
+    3: {"score": 55, "scored": 30, "days": 5, "gens": 4},
+    4: {"score": 78, "scored": 100, "days": 15, "gens": 10, "iter": 0.7, "clean": True},
 }
 
 SLACK_SCORE = 6      # points below a gate before a level is actually lost

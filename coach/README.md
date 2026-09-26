@@ -65,7 +65,7 @@ Commands (all optional):
 
 ## How your level works
 
-It's **behavior-based**: computed from what you actually do, not a quiz, over your most recent 60
+It's **behavior-based**: computed from what you actually do, not a quiz, over your most recent 100
 prompts and 12 generated documents. Six habits, weighted:
 
 | Habit | Weight | Earned by |
@@ -85,8 +85,8 @@ Levels are deliberately hard and **can go down** if habits slip:
 |---|---|
 | 1 Beginner | Everyone starts here |
 | 2 Practitioner | Score 30+, 8+ prompts |
-| 3 Advanced | Score 55+, 25+ prompts on 4+ days, 3+ documents revised |
-| 4 Expert | Score 78+, 60+ prompts on 10+ days, 8+ documents with at least 70% revised, no sensitive-data flags |
+| 3 Advanced | Score 55+, 30+ prompts on 5+ days, 4+ documents revised |
+| 4 Expert | Score 78+, 100 prompts on 15+ days, 10+ documents with at least 70% revised, no sensitive-data flags (about 3+ working weeks of consistently strong habits) |
 
 A level is only lost when you fall about 6 points **below** its gate, so one off day doesn't flip it.
 The window counts prompts, not calendar days, so a vacation doesn't cost you a level.

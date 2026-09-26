@@ -48,10 +48,10 @@ class Metrics(unittest.TestCase):
         self.assertEqual(clean["score"] - dirty["score"], 10)
 
     def test_window_uses_recent_prompts(self):
-        old_bad = many(100, context=0.0, precision=0.0)
-        recent_good = many(60, context=1.0, precision=1.0)
+        old_bad = many(150, context=0.0, precision=0.0)
+        recent_good = many(100, context=1.0, precision=1.0)
         m = scoring.compute_metrics(old_bad + recent_good, [])
-        self.assertGreater(m["score"], 70)  # only the recent 60 count
+        self.assertGreater(m["score"], 70)  # only the recent 100 count
 
     def test_weakest_component(self):
         events = many(10, context=0.95, precision=0.05, verify=True)
@@ -60,7 +60,7 @@ class Metrics(unittest.TestCase):
 
 
 class Levels(unittest.TestCase):
-    def strong(self, n=70, days=12, gens=10, revs=2):
+    def strong(self, n=110, days=16, gens=12, revs=2):
         return scoring.compute_metrics(
             many(n, days=days, context=0.95, precision=0.95, verify=True, feature=1.0),
             [gen(revs) for _ in range(gens)])
@@ -74,22 +74,22 @@ class Levels(unittest.TestCase):
         self.assertEqual(scoring.earned_level(m), 2)
 
     def test_advanced_requires_document_iteration(self):
-        no_docs = scoring.compute_metrics(many(30, days=6, context=0.95, precision=0.95, verify=True, feature=1.0), [])
+        no_docs = scoring.compute_metrics(many(40, days=6, context=0.95, precision=0.95, verify=True, feature=1.0), [])
         self.assertLess(scoring.earned_level(no_docs), 3)
-        with_docs = scoring.compute_metrics(many(30, days=6, context=0.95, precision=0.95, verify=True, feature=1.0),
-                                            [gen(2) for _ in range(4)])
+        with_docs = scoring.compute_metrics(many(40, days=6, context=0.95, precision=0.95, verify=True, feature=1.0),
+                                            [gen(2) for _ in range(5)])
         self.assertEqual(scoring.earned_level(with_docs), 3)
 
     def test_expert_is_hard(self):
         self.assertEqual(scoring.earned_level(self.strong()), 4)
         # same great prompts but one sensitive-data slip blocks Expert
-        events = many(70, days=12, context=0.95, precision=0.95, verify=True, feature=1.0)
+        events = many(110, days=16, context=0.95, precision=0.95, verify=True, feature=1.0)
         events[-1]["sensitive"] = ["api_key"]
-        m = scoring.compute_metrics(events, [gen(2) for _ in range(10)])
+        m = scoring.compute_metrics(events, [gen(2) for _ in range(12)])
         self.assertLess(scoring.earned_level(m), 4)
         # and accepting first drafts blocks it too
-        m = scoring.compute_metrics(many(70, days=12, context=0.95, precision=0.95, verify=True, feature=1.0),
-                                    [gen(0) for _ in range(10)])
+        m = scoring.compute_metrics(many(110, days=16, context=0.95, precision=0.95, verify=True, feature=1.0),
+                                    [gen(0) for _ in range(12)])
         self.assertLess(scoring.earned_level(m), 4)
 
     def test_level_can_drop_but_with_a_buffer(self):
@@ -99,7 +99,7 @@ class Levels(unittest.TestCase):
         slightly = dict(strong, score=strong["score"] - 3)
         self.assertEqual(scoring.resolve_level(slightly, 4), 4)
         # clearly worse habits: drop
-        weak = scoring.compute_metrics(many(70, days=12, context=0.1, precision=0.1), [gen(0) for _ in range(10)])
+        weak = scoring.compute_metrics(many(110, days=16, context=0.1, precision=0.1), [gen(0) for _ in range(12)])
         self.assertLess(scoring.resolve_level(weak, 4), 4)
 
     def test_rising_needs_full_gate(self):
