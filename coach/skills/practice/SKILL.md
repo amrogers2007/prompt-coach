@@ -1,6 +1,6 @@
 ---
 name: practice
-description: Run a short, low-stakes practice round where the user writes a prompt for a realistic work scenario and gets coached on it. Use when the user asks to practice, train, or take a quick lesson on prompting.
+description: "Run a short, low-stakes practice round where the user writes a prompt for a realistic work scenario and gets coached on it. Use when the user asks to practice, train, or take a quick lesson on prompting."
 argument-hint: "[topic, e.g. context | iteration | verification]"
 disable-model-invocation: true
 ---

@@ -67,10 +67,34 @@ def _expire_pending(state, session, ts):
         session["pending_gen"] = None
 
 
-def _output(system_lines=None, context=None, event="UserPromptSubmit"):
+def delivery_mode(settings):
+    """How short status messages (welcome, level-ups, streaks) reach the user.
+
+    'system': the hook's systemMessage, which the terminal shows directly.
+    'chat':   Claude says it in its reply. The Claude desktop app records a
+              hook's systemMessage but doesn't display it, so there the coach
+              has to speak through the conversation to be seen at all.
+    'auto' (default) picks 'chat' inside the desktop app, 'system' elsewhere.
+    """
+    mode = settings.get("toasts", "auto")
+    if mode in ("system", "chat"):
+        return mode
+    entry = os.environ.get("CLAUDE_CODE_ENTRYPOINT", "")
+    return "chat" if entry.startswith("claude-desktop") else "system"
+
+
+def _output(system_lines=None, context=None, event="UserPromptSubmit", mode="system", where="end"):
     out = {}
-    if system_lines:
-        out["systemMessage"] = "Prompt Coach: " + " ".join(system_lines)
+    text = "Prompt Coach: " + " ".join(system_lines) if system_lines else ""
+    if text and mode == "chat":
+        place = ("at the very start of your reply, then continue with your normal answer"
+                 if where == "start" else "at the very end of your reply, after everything else")
+        note = ("[Prompt Coach: status note]\nInclude this exact one-line note %s, on its own line and in italics. "
+                "It is a friendly status message for the user, not part of your answer, so do not comment on it:\n*%s*"
+                % (place, text))
+        context = (context + "\n\n" + note) if context else note
+    elif text:
+        out["systemMessage"] = text
     if context:
         out["hookSpecificOutput"] = {"hookEventName": event, "additionalContext": context}
     return out or None
@@ -97,11 +121,15 @@ def handle_session(payload):
     if not state["settings"].get("enabled", True):
         return None
 
+    mode = delivery_mode(state["settings"])
     lines = []
-    if first_run:
+    if first_run or not state.get("welcomed"):
         lines.append("I'm your AI coach. Just work as usual; every so often I'll ask a question to help you "
                      "get more out of AI. Type /prompt-coach:score any time to see your level.")
-    else:
+        state["welcomed"] = True
+        store.save_state(state)
+    elif mode == "system":
+        # Terminal users see this directly; in chat mode a greeting every session would be noise.
         streak = state["streak"]["count"]
         bits = ["%s (Level %d of 4)" % (game.level_name(level), level)]
         if streak >= 2:
@@ -114,7 +142,7 @@ def handle_session(payload):
         "follow those when they appear, and otherwise just be helpful as normal. "
         "Current level: %s." % game.level_name(level)
     )
-    return _output(lines, context, "SessionStart")
+    return _output(lines, context, "SessionStart", mode, where="start")
 
 
 def choose_skill(reason, analysis, metrics, level, last_focus):
@@ -252,7 +280,7 @@ def handle_prompt(payload):
         lines = lines[:2]
 
     store.save_state(state)
-    return _output(lines, context, "UserPromptSubmit")
+    return _output(lines, context, "UserPromptSubmit", delivery_mode(state["settings"]))
 
 
 # --- PostToolUse ----------------------------------------------------------------------------

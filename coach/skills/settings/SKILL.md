@@ -1,7 +1,7 @@
 ---
 name: settings
-description: Change Prompt Coach settings: pause or resume coaching, turn it off, make coaching lighter or more frequent, export or delete the user's data, or check that the coach is working.
-argument-hint: "[status | pause 2h | resume | off | intensity light|normal|frequent | export | reset | doctor]"
+description: "Change Prompt Coach settings: pause or resume coaching, turn it off, make coaching lighter or more frequent, export or delete the user's data, or check that the coach is working."
+argument-hint: "[status | pause 2h | resume | off | intensity light|normal|frequent | toasts chat|system|auto | export | reset | doctor]"
 allowed-tools: Bash(sh *scripts/run.sh *)
 ---
 
@@ -15,6 +15,7 @@ Map what they asked to one of these commands and run it with the Bash tool
 - `sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" settings resume`
 - `sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" settings off`
 - `sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" settings intensity light` (or `normal`, `frequent`)
+- `sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" settings toasts chat` (or `system`, `auto`): how short status notes such as the welcome and level-ups are delivered. `chat` = Claude says them in its reply; `system` = shown by the app. Default `auto` uses `chat` in the Claude desktop app.
 - `sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" settings export` (aggregate numbers only, as JSON)
 - `sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" doctor` (health check)
 - `sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" settings reset` deletes ALL their scores, streaks and history.

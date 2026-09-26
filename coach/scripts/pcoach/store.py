@@ -40,7 +40,7 @@ def default_state():
     return {
         "version": VERSION,
         "created": t,
-        "settings": {"enabled": True, "intensity": "normal", "paused_until": 0},
+        "settings": {"enabled": True, "intensity": "normal", "paused_until": 0, "toasts": "auto"},
         "xp": 0,
         "level": 1,
         "streak": {"count": 0, "best": 0, "last_day": ""},

@@ -1,6 +1,6 @@
 ---
 name: score
-description: Show the user's AI Fluency level, score, streak and a shareable summary. Use when the user asks about their AI score, level, progress, streak, or wants something to show a manager.
+description: "Show the user's AI Fluency level, score, streak and a shareable summary. Use when the user asks about their AI score, level, progress, streak, or wants something to show a manager."
 argument-hint: "[--json]"
 allowed-tools: Bash(sh *scripts/run.sh *)
 ---

@@ -1,6 +1,6 @@
 ---
 name: coach
-description: Gives the user a fuller AI-skills check-up. Use when the user asks for a deeper review of how they use AI, a personal improvement plan, or "how am I doing overall". Reads their local skill profile and turns it into a concrete plan.
+description: "Gives the user a fuller AI-skills check-up. Use when the user asks for a deeper review of how they use AI, a personal improvement plan, or \"how am I doing overall\". Reads their local skill profile and turns it into a concrete plan."
 tools: Bash, Read
 ---
 

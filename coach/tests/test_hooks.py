@@ -256,6 +256,61 @@ class SessionFlow(CoachTestCase):
         self.assertIsNone(hooks.handle_session({"session_id": SID}))
 
 
+class ToastDelivery(CoachTestCase):
+    def set_mode(self, mode):
+        st = store.load_state()
+        st["settings"]["toasts"] = mode
+        store.save_state(st)
+
+    def test_terminal_gets_a_system_message(self):
+        out = hooks.handle_session({"session_id": SID})
+        self.assertIn("AI coach", out["systemMessage"])
+        self.assertNotIn("status note", context_of(out))
+
+    def test_chat_mode_has_claude_say_it_and_skips_system_message(self):
+        self.set_mode("chat")
+        out = hooks.handle_session({"session_id": SID})
+        self.assertNotIn("systemMessage", out)
+        text = context_of(out)
+        self.assertIn("status note", text)
+        self.assertIn("at the very start", text)
+        self.assertIn("I'm your AI coach", text)
+
+    def test_desktop_app_is_detected_automatically(self):
+        os.environ["CLAUDE_CODE_ENTRYPOINT"] = "claude-desktop"
+        try:
+            out = hooks.handle_session({"session_id": SID})
+        finally:
+            del os.environ["CLAUDE_CODE_ENTRYPOINT"]
+        self.assertNotIn("systemMessage", out)
+        self.assertIn("status note", context_of(out))
+
+    def test_intro_shows_once_even_for_existing_users(self):
+        self.set_mode("chat")
+        hooks.handle_prompt(prompt(BARE))            # existing user: has history, never welcomed
+        first = hooks.handle_session({"session_id": "second-session-1"})
+        self.assertIn("I'm your AI coach", context_of(first))
+        later = hooks.handle_session({"session_id": "third-session-12"})
+        self.assertNotIn("status note", context_of(later))     # no repeated greeting in chat mode
+
+    def test_level_up_toast_goes_through_chat_in_chat_mode(self):
+        self.set_mode("chat")
+        outs = [hooks.handle_prompt(prompt(RICH + " variation %d" % i)) for i in range(10)]
+        notes = [context_of(o) for o in outs if o and "Level up" in context_of(o)]
+        self.assertTrue(notes)
+        self.assertIn("at the very end", notes[0])
+        self.assertTrue(all("systemMessage" not in o for o in outs if o))
+
+    def test_toasts_setting_command(self):
+        env = dict(os.environ, PROMPT_COACH_HOME=self.tmp)
+        cmd = [sys.executable, os.path.join(SCRIPTS, "coach.py"), "settings", "toasts"]
+        r = subprocess.run(cmd + ["chat"], capture_output=True, text=True, env=env, timeout=30)
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(store.load_state()["settings"]["toasts"], "chat")
+        r = subprocess.run(cmd + ["bogus"], capture_output=True, text=True, env=env, timeout=30)
+        self.assertEqual(r.returncode, 1)
+
+
 class Robustness(CoachTestCase):
     def run_cli(self, args, stdin=""):
         env = dict(os.environ, PROMPT_COACH_HOME=self.tmp)

@@ -21,11 +21,14 @@ class CoachTestCase(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="pcoach-test-")
         self._old_home = os.environ.get("PROMPT_COACH_HOME")
         os.environ["PROMPT_COACH_HOME"] = self.tmp
+        self._old_entry = os.environ.pop("CLAUDE_CODE_ENTRYPOINT", None)   # tests must not depend on where they run
         self._old_now = store.now
         self.t = float(self.START)
         store.now = lambda: self.t
 
     def tearDown(self):
+        if self._old_entry is not None:
+            os.environ["CLAUDE_CODE_ENTRYPOINT"] = self._old_entry
         store.now = self._old_now
         if self._old_home is None:
             os.environ.pop("PROMPT_COACH_HOME", None)

@@ -94,6 +94,13 @@ def cmd_settings(args):
             return 1
         s["intensity"] = level
         msg = "Coaching intensity set to %s." % level
+    elif action == "toasts":
+        how = (args[1].lower() if len(args) > 1 else "")
+        if how not in ("auto", "chat", "system"):
+            print("Usage: toasts auto|chat|system   (chat = Claude says status notes in its reply; system = shown by the app)")
+            return 1
+        s["toasts"] = how
+        msg = "Status notes will be delivered via: %s." % how
     elif action == "reset":
         if "--yes" not in args:
             print("This deletes your score, streak, and history. Re-run with: reset --yes")
@@ -112,7 +119,7 @@ def cmd_settings(args):
             s.get("intensity", "normal"), store.home()))
         return 0
     else:
-        print("Unknown setting. Try: status | pause [2h] | resume | off | intensity light|normal|frequent | export | reset --yes")
+        print("Unknown setting. Try: status | pause [2h] | resume | off | intensity light|normal|frequent | toasts auto|chat|system | export | reset --yes")
         return 1
 
     store.save_state(state)

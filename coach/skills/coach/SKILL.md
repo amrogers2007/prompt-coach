@@ -1,6 +1,6 @@
 ---
 name: coach
-description: Coach the user on how they are using AI. Use when the user asks for feedback on their prompt or approach, asks how to get better results from AI, or invokes it to get a coaching moment about what they just did. Also the guide for delivering any "[Prompt Coach: ...]" coaching instruction.
+description: "Coach the user on how they are using AI. Use when the user asks for feedback on their prompt or approach, asks how to get better results from AI, or invokes it to get a coaching moment about what they just did. Also the guide for delivering any \"[Prompt Coach: ...]\" coaching instruction."
 argument-hint: "[what you want coaching on]"
 ---
 
