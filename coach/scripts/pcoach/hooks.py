@@ -87,7 +87,8 @@ def _output(system_lines=None, context=None, event="UserPromptSubmit", mode="sys
     out = {}
     text = "Prompt Coach: " + " ".join(system_lines) if system_lines else ""
     if text and mode == "chat":
-        place = ("at the very start of your reply, then continue with your normal answer"
+        place = ("at the very start of your FIRST reply in this conversation, whatever the user asks (put the note "
+                 "first, then answer their request normally)"
                  if where == "start" else "at the very end of your reply, after everything else")
         note = ("[Prompt Coach: status note]\nInclude this exact one-line note %s, on its own line and in italics. "
                 "It is a friendly status message for the user, not part of your answer, so do not comment on it:\n*%s*"
@@ -106,7 +107,6 @@ def handle_session(payload):
     ts = store.now()
     state = store.load_state()
     sid = payload.get("session_id") or "unknown"
-    first_run = state["totals"]["prompts"] == 0 and not state["achievements"] and state["xp"] == 0
     session = _session(state, sid, ts)
     session["prompts"] = 0
     session["pending_gen"] = None
@@ -123,18 +123,19 @@ def handle_session(payload):
 
     mode = delivery_mode(state["settings"])
     lines = []
-    if first_run or not state.get("welcomed"):
+    if not state.get("welcomed"):
         lines.append("I'm your AI coach. Just work as usual; every so often I'll ask a question to help you "
                      "get more out of AI. Type /prompt-coach:score any time to see your level.")
         state["welcomed"] = True
         store.save_state(state)
-    elif mode == "system":
-        # Terminal users see this directly; in chat mode a greeting every session would be noise.
+    else:
+        # Every session opens with the coach introducing itself, so it is always clear it is on.
         streak = state["streak"]["count"]
         bits = ["%s (Level %d of 4)" % (game.level_name(level), level)]
         if streak >= 2:
             bits.append("%d-day streak" % streak)
-        lines.append("Welcome back. " + ", ".join(bits) + ".")
+        lines.append("Welcome back, I'm your AI coach (%s). I'll pop in with a question now and then "
+                     "to help you get more out of AI." % ", ".join(bits))
 
     context = (
         "Prompt Coach is active for this user, a non-technical professional learning to use AI well. "

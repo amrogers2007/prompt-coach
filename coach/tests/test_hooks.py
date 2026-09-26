@@ -285,13 +285,22 @@ class ToastDelivery(CoachTestCase):
         self.assertNotIn("systemMessage", out)
         self.assertIn("status note", context_of(out))
 
-    def test_intro_shows_once_even_for_existing_users(self):
+    def test_every_session_opens_with_an_introduction(self):
         self.set_mode("chat")
         hooks.handle_prompt(prompt(BARE))            # existing user: has history, never welcomed
         first = hooks.handle_session({"session_id": "second-session-1"})
         self.assertIn("I'm your AI coach", context_of(first))
-        later = hooks.handle_session({"session_id": "third-session-12"})
-        self.assertNotIn("status note", context_of(later))     # no repeated greeting in chat mode
+        for sid in ("third-session-12", "fourth-session-1"):
+            later = hooks.handle_session({"session_id": sid})
+            text = context_of(later)
+            self.assertIn("status note", text, sid)
+            self.assertIn("Welcome back, I'm your AI coach", text)
+            self.assertIn("FIRST reply", text)
+
+    def test_terminal_sessions_also_greet_every_time(self):
+        hooks.handle_session({"session_id": SID})
+        again = hooks.handle_session({"session_id": "another-session-1"})
+        self.assertIn("Welcome back, I'm your AI coach", again["systemMessage"])
 
     def test_level_up_toast_goes_through_chat_in_chat_mode(self):
         self.set_mode("chat")
