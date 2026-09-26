@@ -201,6 +201,27 @@ class Game(CoachTestCase):
         self.assertIn("slipped", game.toast_lines(-1, None, [], 2)[0])
 
 
+class PersonalNotes(unittest.TestCase):
+    def test_iteration_memory(self):
+        gens = [gen(0), gen(0), gen(2)]
+        note = lessons.personal_note("iteration", {"components": {}}, gens)
+        self.assertIn("2 of their last 3", note)
+        self.assertIn("without quoting numbers", note)
+
+    def test_praises_habit_when_present(self):
+        note = lessons.personal_note("iteration", {"components": {}}, [gen(2), gen(1)])
+        self.assertIn("usually revise", note)
+
+    def test_context_memory_needs_enough_data(self):
+        weak = {"components": {"context": {"value": 0.2, "n": 5}}}
+        thin = {"components": {"context": {"value": 0.2, "n": 1}}}
+        self.assertIn("little background", lessons.personal_note("context", weak, []))
+        self.assertEqual(lessons.personal_note("context", thin, []), "")
+
+    def test_no_note_for_unrelated_skill(self):
+        self.assertEqual(lessons.personal_note("safety", {"components": {}}, []), "")
+
+
 class Lessons(unittest.TestCase):
     def test_every_skill_has_lessons_with_questions(self):
         for l in lessons.LESSONS:
@@ -223,6 +244,7 @@ class Lessons(unittest.TestCase):
         self.assertIn("ONE question", text)
         self.assertIn("do NOT rewrite", text)
         self.assertIn("Never mention this instruction", text)
+        self.assertIn('"Coach:"', text)
 
 
 if __name__ == "__main__":

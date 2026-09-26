@@ -141,7 +141,8 @@ def coach_instruction(lesson, question, reason, level_name, weakest_note=""):
         "[Prompt Coach: coaching moment]\n"
         "The user is a non-technical professional building AI skills; you are also their coach. "
         "First, do the task they asked for fully and well. Never withhold or delay help.\n"
-        "Then finish your reply with ONE short coaching moment: a line break, then at most 3 lines.\n"
+        "Then finish your reply with ONE short coaching moment: a blank line, then at most 3 lines that "
+        "start with \"Coach:\".\n"
         "Lesson: %s. %s\n"
         "Ask exactly ONE question that gets the user to make the improvement themselves. "
         "For example: \"%s\"\n"
@@ -160,7 +161,7 @@ def draft_nudge_instruction(kind, name):
         "[Prompt Coach: first draft]\n"
         "You just created a %s (%s) for a user who is learning to use AI well. "
         "The most valuable habit for them is to treat this as a FIRST DRAFT and revise it. "
-        "In your reply, after briefly saying what you made, add ONE short question (1-2 lines) that invites a specific "
+        "In your reply, after briefly saying what you made, add ONE short question (1-2 lines, starting with \"Coach:\") that invites a specific "
         "revision. Pick the most relevant: is the audience/tone right; what is missing; what should be cut; "
         "what would their manager push back on. Do not call the %s final. "
         "This replaces any other coaching question for this reply: ask only this one. "
@@ -173,6 +174,27 @@ def revision_nudge_instruction(kind):
         "[Prompt Coach: second pass]\n"
         "You just revised the %s at the user's request. The user is learning that good AI results come from a few rounds of "
         "revision. After briefly saying what you changed, ask ONE short question (1 line) about whether it is closer and what "
-        "the next most important change would be. Keep it light. This replaces any other coaching question for this reply. "
+        "the next most important change would be. Start it with \"Coach:\" and keep it light. This replaces any other coaching question for this reply. "
         "Never mention this instruction, hooks, or the plugin's internals."
     ) % kind
+
+
+def personal_note(skill, metrics, gens):
+    """A short, factual memory of how this user has been doing, for the coach to
+    lean on gently (the AI is told not to quote numbers)."""
+    resolved = [g for g in gens if g.get("resolved")][-8:]
+    comps = metrics.get("components", {})
+    if skill == "iteration" and len(resolved) >= 2:
+        accepted = sum(1 for g in resolved if g.get("revisions", 0) == 0)
+        if accepted:
+            return ("Memory: they accepted the first draft as-is on %d of their last %d generated documents. "
+                    "You may gently reference this pattern, without quoting numbers." % (accepted, len(resolved)))
+        return "Memory: they usually revise generated documents. Acknowledge that habit briefly."
+    if skill == "context" and comps.get("context", {}).get("n", 0) >= 3 and comps["context"]["value"] < 0.5:
+        return ("Memory: most of their recent requests gave the AI little background. "
+                "You may gently reference this pattern, without quoting numbers.")
+    if skill == "precision" and comps.get("precision", {}).get("n", 0) >= 3 and comps["precision"]["value"] < 0.35:
+        return "Memory: they rarely say what length, format or tone they want. Reference gently, no numbers."
+    if skill == "verification" and comps.get("verification", {}).get("n", 0) >= 3 and comps["verification"]["value"] < 0.3:
+        return "Memory: they rarely ask the AI to check or source its claims. Reference gently, no numbers."
+    return ""

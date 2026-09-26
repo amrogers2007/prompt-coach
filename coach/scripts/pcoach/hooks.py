@@ -229,15 +229,11 @@ def handle_prompt(payload):
     should, reason = cadence.decide(state, analysis, level, ts)
     context = None
     if should:
-        weakest = metrics.get("weakest")
         skill = choose_skill(reason, analysis, metrics, level, coach["last_focus"])
         recent_ids = [l["id"] for l in coach["lessons"]]
         lesson = lessons.pick(skill, level, recent_ids)
         question = lessons.question_for(lesson, totals["coached"])
-        note = ""
-        if weakest and reason == "cadence":
-            note = "Their weakest habit lately: %s." % lessons.SKILL_TITLES.get(
-                lessons.COMPONENT_TO_SKILL.get(weakest, "context"), weakest)
+        note = lessons.personal_note(lesson["skill"], metrics, state["gens"])
         context = lessons.coach_instruction(lesson, question, reason, game.level_name(level), note)
         coach["prompts_since"] = 0
         coach["last_ts"] = ts

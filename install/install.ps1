@@ -19,12 +19,12 @@ $py = $null
 foreach ($c in "python3", "python", "py") {
   $cmd = Get-Command $c -ErrorAction SilentlyContinue
   if ($cmd) {
-    & $cmd.Source -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" 2>$null
+    & $cmd.Source -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" 2>$null
     if ($LASTEXITCODE -eq 0) { $py = $cmd.Source; break }
   }
 }
 if (-not $py) {
-  Write-Host "Prompt Coach needs Python 3.8 or newer: https://www.python.org/downloads/  (tick 'Add python.exe to PATH'). Then re-run this script."
+  Write-Host "Prompt Coach needs Python 3.9 or newer: https://www.python.org/downloads/  (tick 'Add python.exe to PATH'). Then re-run this script."
   exit 1
 }
 

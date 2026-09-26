@@ -13,10 +13,10 @@ fi
 
 PY=""
 for c in python3 python py; do
-  if command -v "$c" >/dev/null 2>&1 && "$c" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" >/dev/null 2>&1; then PY="$c"; break; fi
+  if command -v "$c" >/dev/null 2>&1 && "$c" -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" >/dev/null 2>&1; then PY="$c"; break; fi
 done
 if [ -z "$PY" ]; then
-  echo "Prompt Coach needs Python 3.8 or newer (https://www.python.org/downloads/). Install it, then re-run this script."
+  echo "Prompt Coach needs Python 3.9 or newer (https://www.python.org/downloads/). Install it, then re-run this script."
   exit 1
 fi
 

@@ -2,7 +2,7 @@
 name: settings
 description: Change Prompt Coach settings: pause or resume coaching, turn it off, make coaching lighter or more frequent, export or delete the user's data, or check that the coach is working.
 argument-hint: "[status | pause 2h | resume | off | intensity light|normal|frequent | export | reset | doctor]"
-allowed-tools: Bash
+allowed-tools: Bash(sh *scripts/run.sh *)
 ---
 
 Manage Prompt Coach for the user.

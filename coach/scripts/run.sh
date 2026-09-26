@@ -5,7 +5,7 @@
 # missing we exit 0 silently: coaching must never break the user's session.
 dir=$(dirname "$0")
 for py in python3 python py; do
-  if command -v "$py" >/dev/null 2>&1 && "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" >/dev/null 2>&1; then
+  if command -v "$py" >/dev/null 2>&1 && "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" >/dev/null 2>&1; then
     exec "$py" "$dir/coach.py" "$@"
   fi
 done

@@ -39,7 +39,7 @@ agents and skills load in Cowork; see "Where it runs" below for the caveats.
 
 **Try it without installing:** `claude --plugin-dir ./coach`
 
-Requires Python 3.8+ on the machine (standard library only, nothing to `pip install`).
+Requires Python 3.9+ on the machine (standard library only, nothing to `pip install`).
 Then just work as usual. The coach starts on its own.
 
 ## What you'll see
@@ -107,7 +107,7 @@ context-rich request or a revision.
 | Surface | Status |
 |---|---|
 | Claude Code (terminal, IDE, desktop Code tab) | Full: hooks, coaching, file detection, score. Tested. |
-| Claude desktop app, Cowork | Hooks, agents and skills load there too per Anthropic's plugin docs. Not yet tested by hand; confirm the machine/sandbox has Python 3.8+ (run `/prompt-coach:settings doctor`). |
+| Claude desktop app, Cowork | Hooks, agents and skills load there too per Anthropic's plugin docs. Not yet tested by hand; confirm the machine/sandbox has Python 3.9+ (run `/prompt-coach:settings doctor`). |
 | claude.ai chat | Skills only (`/score`, `/coach`, `/practice`); hooks aren't loaded in chat, so no automatic coaching there. |
 | ChatGPT, Copilot, Gemini | Not supported by this plugin. The browser extension in `../extension` covers those websites. |
 

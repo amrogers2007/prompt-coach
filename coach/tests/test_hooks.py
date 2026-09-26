@@ -280,6 +280,22 @@ class Robustness(CoachTestCase):
         with store.lock(timeout=1) as lk:
             self.assertTrue(lk.held)
 
+    def test_parallel_hook_processes_keep_an_accurate_count(self):
+        env = dict(os.environ, PROMPT_COACH_HOME=self.tmp)
+        cmd = [sys.executable, os.path.join(SCRIPTS, "coach.py"), "prompt"]
+        procs = [subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                  text=True, env=env) for _ in range(8)]
+        for i, p in enumerate(procs):
+            p.stdin.write(json.dumps(prompt("write a short poem about the number %d please" % i, sid="s%d" % i)))
+            p.stdin.close()
+        for p in procs:
+            p.wait(timeout=60)
+            self.assertEqual(p.returncode, 0)
+        st = store.load_state()
+        self.assertEqual(st["totals"]["prompts"], 8)
+        self.assertEqual(len([e for e in store.read_events() if e["type"] == "prompt"]), 8)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "errors.log")))
+
     def test_corrupt_state_recovers(self):
         os.makedirs(self.tmp, exist_ok=True)
         with open(os.path.join(self.tmp, "state.json"), "w") as f:

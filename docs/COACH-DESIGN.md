@@ -20,7 +20,7 @@ how the user has done over time, and converts that into a level a manager can un
 | **Behavior-based, hard, reversible levels** | Requested: 4 levels, "a bit hard", can drop. Computed from a rolling window with a small buffer, so it is fair rather than jumpy, and vacation-proof (window counts prompts, not days). |
 | **Iteration is 30% of the score** | The research behind the project says the single biggest gap for novices is accepting the first draft. So a generated document is tracked as a "draft" and scored by how many revisions follow. |
 | **No prompt text stored, ever** | Enterprise trust. Signals are reduced to small numbers immediately; only those persist. |
-| **Python, standard library only** | Testable here, no install step, works on macOS/Linux/Windows. Cost: users need Python 3.8+ (checked by the installer and `doctor`). Node would allow reusing `extension/src/rules.js`, but Python wasn't a blocker and Node isn't installed on most non-coder machines either. |
+| **Python, standard library only** | Testable here, no install step, works on macOS/Linux/Windows. Cost: users need Python 3.9+ (checked by the installer and `doctor`). Node would allow reusing `extension/src/rules.js`, but Python wasn't a blocker and Node isn't installed on most non-coder machines either. |
 | **Hooks fail silent** | A coach must never break someone's AI session: every hook exits 0 and logs errors to `~/.prompt-coach/errors.log`. |
 
 ## How a turn flows

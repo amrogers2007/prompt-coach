@@ -63,10 +63,20 @@ def _merge_defaults(state, defaults):
     return state
 
 
+def _read_text(path):
+    for attempt in range(4):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
+        except PermissionError:
+            time.sleep(0.02 * (attempt + 1))
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 def load_state():
     try:
-        with open(_path("state.json"), "r", encoding="utf-8") as f:
-            state = json.load(f)
+        state = json.loads(_read_text(_path("state.json")))
         if not isinstance(state, dict):
             raise ValueError("state is not an object")
         return _merge_defaults(state, default_state())
@@ -80,7 +90,15 @@ def _atomic_write(path, text):
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(text)
-        os.replace(tmp, path)
+        for attempt in range(6):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                # Windows: the target may be open in another process for a moment.
+                if attempt == 5:
+                    raise
+                time.sleep(0.02 * (attempt + 1))
     except Exception:
         try:
             os.unlink(tmp)
@@ -158,7 +176,8 @@ class lock:
                 os.close(fd)
                 self.held = True
                 return self
-            except FileExistsError:
+            except (FileExistsError, PermissionError):
+                # PermissionError: on Windows a lock file that is mid-delete refuses to open.
                 try:
                     if time.time() - os.path.getmtime(self.path) > self.stale:
                         os.unlink(self.path)
