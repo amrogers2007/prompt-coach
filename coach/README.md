@@ -33,9 +33,17 @@ claude plugin install prompt-coach@prompt-coach
 Or run the guided installer, which also checks your setup: `sh install/install.sh`
 (macOS/Linux/Git Bash) or `powershell -ExecutionPolicy Bypass -File install\install.ps1` (Windows).
 
-**Claude desktop app (Cowork):** run `python coach/scripts/build_zip.py`, then in the app open
-*Customize > Plugins > Add > Upload plugin* and choose `dist/prompt-coach-plugin.zip`. Hooks,
-agents and skills load in Cowork; see "Where it runs" below for the caveats.
+**Claude desktop app, Chat and Cowork:** chat can't run hooks, so there the coach is a small local
+helper that Claude calls each turn.
+1. `python coach/scripts/build_mcpb.py` builds `dist/prompt-coach.mcpb` and `dist/prompt-coach-chat-skill.zip`.
+2. Double-click `prompt-coach.mcpb` (or Settings > Extensions > Advanced > Install Extension) and choose **Install**.
+   In each tool's permission prompt pick **Always allow** so it doesn't ask every message.
+3. Upload `prompt-coach-chat-skill.zip` under *Customize > Skills*: it tells Claude to use the coach in every conversation.
+4. Start a new chat. Claude should open with an italic *Prompt Coach:* greeting.
+
+Your score is shared with the Code tab (same `~/.prompt-coach` folder), and a message that reaches both channels is
+only counted once. In Cowork you can also upload `dist/prompt-coach-plugin.zip` (*Customize > Plugins > Add >
+Upload plugin*); see "Where it runs".
 
 **Try it without installing:** `claude --plugin-dir ./coach`
 
@@ -138,8 +146,9 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 | Surface | Status |
 |---|---|
 | Claude Code (terminal, IDE, desktop Code tab) | Full: hooks, coaching, file detection, score. Tested. |
-| Claude desktop app, Cowork | Hooks, agents and skills load there too per Anthropic's plugin docs. Not yet tested by hand; confirm the machine/sandbox has Python 3.9+ (run `/prompt-coach:settings doctor`). |
-| claude.ai chat | Skills only (`/score`, `/coach`, `/practice`); hooks aren't loaded in chat, so no automatic coaching there. |
+| Claude desktop, Chat | Through the desktop extension + skill: Claude calls the coach's tools each turn (greeting, coaching, document nudges, score). Less reliable than hooks because Claude has to choose to call them, and it adds a small tool call per message. The helper is tested with an MCP client; the in-app behavior is not yet tested by hand. |
+| Claude desktop, Cowork | Same extension works there if the session runs on your computer. The plugin zip's hooks may also load, but Cowork runs in a sandbox whose home folder is reportedly not kept between conversations, so prefer the extension (it keeps your data on your computer). Not yet tested by hand. |
+| claude.ai in a browser | Skills only; no local helper, so no tracking. |
 | ChatGPT, Copilot, Gemini | Not supported by this plugin. The browser extension in `../extension` covers those websites. |
 
 ## Limits worth knowing

@@ -12,8 +12,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = os.path.dirname(ROOT)
 
 
+def read(path):
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
 def frontmatter(path):
-    text = open(path, encoding="utf-8").read()
+    text = read(path)
     m = re.match(r"^---\r?\n(.*?)\r?\n---\r?\n", text, re.S)
     assert m, "%s has no front matter" % path
     fields = {}
@@ -30,10 +35,10 @@ class PluginFiles(unittest.TestCase):
                 glob.glob(os.path.join(ROOT, "agents", "*.md")))
 
     def test_manifest_and_marketplace(self):
-        manifest = json.load(open(os.path.join(ROOT, ".claude-plugin", "plugin.json"), encoding="utf-8"))
+        manifest = json.loads(read(os.path.join(ROOT, ".claude-plugin", "plugin.json")))
         self.assertEqual(manifest["name"], "prompt-coach")
         self.assertRegex(manifest["version"], r"^\d+\.\d+\.\d+$")
-        market = json.load(open(os.path.join(REPO, ".claude-plugin", "marketplace.json"), encoding="utf-8"))
+        market = json.loads(read(os.path.join(REPO, ".claude-plugin", "marketplace.json")))
         entry = market["plugins"][0]
         self.assertEqual(entry["name"], manifest["name"])          # entry name must equal manifest name
         self.assertTrue(os.path.isdir(os.path.join(REPO, entry["source"])))
@@ -53,7 +58,7 @@ class PluginFiles(unittest.TestCase):
                 self.assertNotIn(" #", desc, path)
 
     def test_hooks_config_points_at_real_scripts(self):
-        hooks = json.load(open(os.path.join(ROOT, "hooks", "hooks.json"), encoding="utf-8"))["hooks"]
+        hooks = json.loads(read(os.path.join(ROOT, "hooks", "hooks.json")))["hooks"]
         for event in ("SessionStart", "UserPromptSubmit", "PostToolUse"):
             self.assertIn(event, hooks)
         for groups in hooks.values():
@@ -66,9 +71,10 @@ class PluginFiles(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(ROOT, "scripts", "coach.py")))
 
     def test_launcher_has_lf_endings_and_python_floor_matches_docs(self):
-        data = open(os.path.join(ROOT, "scripts", "run.sh"), "rb").read()
+        with open(os.path.join(ROOT, "scripts", "run.sh"), "rb") as f:
+            data = f.read()
         self.assertNotIn(b"\r", data)
-        readme = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+        readme = read(os.path.join(ROOT, "README.md"))
         self.assertIn("Python 3.9+", readme)
         self.assertIn(b"(3, 9)", data)
 

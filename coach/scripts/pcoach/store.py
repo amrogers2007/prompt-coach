@@ -49,6 +49,7 @@ def default_state():
         "coach": {"prompts_since": 0, "last_ts": 0, "lessons": [], "last_focus": ""},
         "gens": [],
         "sessions": {},
+        "recent": [],
         "totals": {"prompts": 0, "coached": 0, "revisions": 0, "first_drafts_accepted": 0,
                    "rich_prompts": 0, "verifies": 0, "sensitive": 0, "docs": 0},
     }

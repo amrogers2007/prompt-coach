@@ -28,3 +28,4 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: python -m unittest discover -s coach/tests -v
       - run: python coach/scripts/build_zip.py
+      - run: python coach/scripts/build_mcpb.py

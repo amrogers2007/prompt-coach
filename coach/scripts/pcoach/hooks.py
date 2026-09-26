@@ -103,7 +103,7 @@ def _output(system_lines=None, context=None, event="UserPromptSubmit", mode="sys
 
 # --- SessionStart -------------------------------------------------------------------------
 
-def handle_session(payload):
+def handle_session(payload, delivery=None):
     ts = store.now()
     state = store.load_state()
     sid = payload.get("session_id") or "unknown"
@@ -121,7 +121,7 @@ def handle_session(payload):
     if not state["settings"].get("enabled", True):
         return None
 
-    mode = delivery_mode(state["settings"])
+    mode = delivery or delivery_mode(state["settings"])
     lines = []
     if not state.get("welcomed"):
         lines.append("I'm your AI coach. Just work as usual; every so often I'll ask a question to help you "
@@ -184,7 +184,19 @@ def choose_skill(reason, analysis, metrics, level, last_focus):
 
 # --- UserPromptSubmit ---------------------------------------------------------------------
 
-def handle_prompt(payload):
+def _already_handled(state, text, ts, source):
+    """The same message can reach us twice when both the hooks (Code tab) and the
+    desktop helper (chat tools) are active. The first channel to see it wins."""
+    digest = hashlib.sha1(text.strip().encode("utf-8", "replace")).hexdigest()[:12]
+    recent = [r for r in state.get("recent", []) if ts - r[1] < 120]
+    seen_elsewhere = any(r[0] == digest and r[2] != source for r in recent)
+    if not any(r[0] == digest and r[2] == source for r in recent):
+        recent.append([digest, ts, source])
+    state["recent"] = recent[-20:]
+    return seen_elsewhere
+
+
+def handle_prompt(payload, delivery=None, source="hook"):
     text = payload.get("prompt") or ""
     ts = store.now()
     sid = payload.get("session_id") or "unknown"
@@ -194,6 +206,9 @@ def handle_prompt(payload):
 
     state = store.load_state()
     if not state["settings"].get("enabled", True):
+        return None
+    if _already_handled(state, text, ts, source):
+        store.save_state(state)
         return None
 
     session = _session(state, sid, ts)
@@ -281,7 +296,7 @@ def handle_prompt(payload):
         lines = lines[:2]
 
     store.save_state(state)
-    return _output(lines, context, "UserPromptSubmit", delivery_mode(state["settings"]))
+    return _output(lines, context, "UserPromptSubmit", delivery or delivery_mode(state["settings"]))
 
 
 # --- PostToolUse ----------------------------------------------------------------------------
@@ -323,21 +338,36 @@ def _candidate_docs(payload):
     return out
 
 
-def handle_tool(payload):
+def handle_tool(payload, delivery=None):
     if (payload.get("tool_name") or "") not in _DOC_TOOLS:
         return None
     docs = _candidate_docs(payload)
     if not docs:
         return None
+    path, kind = docs[0]
+    return document_flow(payload.get("session_id") or "unknown", path, kind)
 
+
+DOC_KINDS = {"deck": "deck", "slides": "deck", "presentation": "deck", "powerpoint": "deck",
+             "document": "document", "doc": "document", "report": "document", "memo": "document", "letter": "document",
+             "pdf": "PDF", "spreadsheet": "spreadsheet", "sheet": "spreadsheet", "excel": "spreadsheet",
+             "page": "page", "html": "page", "text": "document"}
+
+
+def handle_document(payload):
+    """A document was produced by some route that has no file hook (chat artifacts,
+    files made through connectors...). payload: {session_id, name, kind}."""
+    kind = DOC_KINDS.get(str(payload.get("kind") or "document").strip().lower(), "document")
+    name = str(payload.get("name") or kind)
+    return document_flow(payload.get("session_id") or "unknown", name, kind)
+
+
+def document_flow(sid, path, kind):
     ts = store.now()
-    sid = payload.get("session_id") or "unknown"
     state = store.load_state()
     if not state["settings"].get("enabled", True):
         return None
     session = _session(state, sid, ts)
-
-    path, kind = docs[0]
     key = _path_key(path)
 
     # A draft is awaiting feedback and the user just asked for a revision: this

@@ -44,6 +44,21 @@ have enough data (so a new user isn't scored 0 for lacking document history, but
 levels have activity gates as well as score gates). See `coach/README.md` for weights and gates and
 `coach/scripts/pcoach/scoring.py` for the implementation (tested in `coach/tests/test_scoring.py`).
 
+## Desktop chat and Cowork (v0.2)
+
+Anthropic's docs say chat loads skills only (hooks, agents and local MCP servers in plugins are ignored) and
+Cowork runs in a Linux sandbox whose plugin data folder is reportedly not persistent between conversations. So hooks alone
+cannot cover "all of desktop Claude". The answer is a local MCP server (`pcoach/mcp_server.py`, packaged as a
+`.mcpb` desktop extension) that reuses the same engine as the hooks:
+
+- `coach_start` / `coach_turn` / `coach_document` / `coach_score` / `coach_settings`, with server-level instructions plus a small
+  skill telling Claude to call them each turn. Status notes (welcome, level-ups) are delivered as instructions for Claude to say,
+  because the app doesn't show hook `systemMessage`s.
+- One shared profile in `~/.prompt-coach`, so the Code tab, chat and Cowork add up to one level. A message seen by both channels is
+  deduplicated (first channel wins, 120 s window).
+- Cost of the design: reliability depends on Claude deciding to call the tools (hooks are guaranteed), and there is one extra tool call per message.
+- Runtime: Claude Desktop ships Node.js but not Python, so the helper uses the user's Python 3.9+. A Node port (or the MCPB `uv` runtime) would remove that requirement.
+
 ## Open questions / next steps
 
 1. **Cowork/Desktop in practice.** Anthropic's docs say hooks/agents/skills load in Cowork. Untested by hand here.
