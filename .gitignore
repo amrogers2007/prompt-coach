@@ -5,3 +5,6 @@ node_modules/
 __pycache__/
 *.pyc
 dist/
+
+# Kept private: the full business case (a public summary is docs/COACHING-LOOP.md)
+docs/BUSINESS-CASE.pdf

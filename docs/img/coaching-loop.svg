@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 476" width="1200" height="476" role="img" aria-labelledby="title desc" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif">
+  <title id="title">The Prompt Coach loop</title>
+  <desc id="desc">Five steps in a loop. 1 Detect: spot a teachable moment as you work; 27 checks run on every message and only labels are stored, never your words. 2 Coach: one short tip, offered, not forced; picked from 76 best practices and matched to your level. 3 Act: take the better step right away; say yes and the AI does it, and new drafts get a revision nudge. 4 Verify: check that it actually helped; was the tip taken, and did the issue come back less. 5 Improve: feed results back into the coach; unhelpful tips are paused and the checks are re-tested on 220 prompts. The coach runs on your computer and never stores what you type.</desc>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <!-- solid background so it reads in GitHub's light and dark themes -->
+  <rect x="0" y="0" width="1200" height="476" rx="18" fill="#FFFFFF"/>
+
+  <text x="600" y="50" text-anchor="middle" font-size="34" font-weight="700" fill="#0F172A">The Prompt Coach loop</text>
+  <text x="600" y="83" text-anchor="middle" font-size="18" fill="#475569">The idea on top. What Prompt Coach does today below.</text>
+
+  <!-- 1 Detect -->
+  <rect x="20" y="102" width="216" height="232" rx="14" fill="#FFFFFF" stroke="#93C5FD" stroke-width="2"/>
+  <path d="M20,116 a14,14 0 0 1 14,-14 h188 a14,14 0 0 1 14,14 v86 h-216 z" fill="#DBEAFE"/>
+  <text x="38" y="142" font-size="28" font-weight="700" fill="#1E3A8A">1  Detect</text>
+  <text x="38" y="170" font-size="17.5" fill="#1E3A8A">Spot a teachable</text>
+  <text x="38" y="192" font-size="17.5" fill="#1E3A8A">moment as you work</text>
+  <g font-size="19" fill="#1F2937">
+    <text x="38" y="238">•</text><text x="56" y="238">27 checks on</text><text x="56" y="261">every message</text>
+    <text x="38" y="295">•</text><text x="56" y="295">Stores labels,</text><text x="56" y="318">never your words</text>
+  </g>
+
+  <!-- 2 Coach -->
+  <rect x="256" y="102" width="216" height="232" rx="14" fill="#FFFFFF" stroke="#86EFAC" stroke-width="2"/>
+  <path d="M256,116 a14,14 0 0 1 14,-14 h188 a14,14 0 0 1 14,14 v86 h-216 z" fill="#DCFCE7"/>
+  <text x="274" y="142" font-size="28" font-weight="700" fill="#14532D">2  Coach</text>
+  <text x="274" y="170" font-size="17.5" fill="#14532D">One short tip,</text>
+  <text x="274" y="192" font-size="17.5" fill="#14532D">offered, not forced</text>
+  <g font-size="19" fill="#1F2937">
+    <text x="274" y="238">•</text><text x="292" y="238">Picked from 76</text><text x="292" y="261">best practices</text>
+    <text x="274" y="295">•</text><text x="292" y="295">Matched to</text><text x="292" y="318">your level</text>
+  </g>
+
+  <!-- 3 Act -->
+  <rect x="492" y="102" width="216" height="232" rx="14" fill="#FFFFFF" stroke="#FCD34D" stroke-width="2"/>
+  <path d="M492,116 a14,14 0 0 1 14,-14 h188 a14,14 0 0 1 14,14 v86 h-216 z" fill="#FEF3C7"/>
+  <text x="510" y="142" font-size="28" font-weight="700" fill="#78350F">3  Act</text>
+  <text x="510" y="170" font-size="17.5" fill="#78350F">Take the better</text>
+  <text x="510" y="192" font-size="17.5" fill="#78350F">step right away</text>
+  <g font-size="19" fill="#1F2937">
+    <text x="510" y="238">•</text><text x="528" y="238">Say “yes” and</text><text x="528" y="261">the AI does it</text>
+    <text x="510" y="295">•</text><text x="528" y="295">New drafts get a</text><text x="528" y="318">revision nudge</text>
+  </g>
+
+  <!-- 4 Verify -->
+  <rect x="728" y="102" width="216" height="232" rx="14" fill="#FFFFFF" stroke="#C4B5FD" stroke-width="2"/>
+  <path d="M728,116 a14,14 0 0 1 14,-14 h188 a14,14 0 0 1 14,14 v86 h-216 z" fill="#EDE9FE"/>
+  <text x="746" y="142" font-size="28" font-weight="700" fill="#4C1D95">4  Verify</text>
+  <text x="746" y="170" font-size="17.5" fill="#4C1D95">Check that it</text>
+  <text x="746" y="192" font-size="17.5" fill="#4C1D95">actually helped</text>
+  <g font-size="19" fill="#1F2937">
+    <text x="746" y="238">•</text><text x="764" y="238">Was the tip</text><text x="764" y="261">taken?</text>
+    <text x="746" y="295">•</text><text x="764" y="295">Did the issue</text><text x="764" y="318">come back less?</text>
+  </g>
+
+  <!-- 5 Improve -->
+  <rect x="964" y="102" width="216" height="232" rx="14" fill="#FFFFFF" stroke="#F9A8D4" stroke-width="2"/>
+  <path d="M964,116 a14,14 0 0 1 14,-14 h188 a14,14 0 0 1 14,14 v86 h-216 z" fill="#FCE7F3"/>
+  <text x="982" y="142" font-size="28" font-weight="700" fill="#831843">5  Improve</text>
+  <text x="982" y="170" font-size="17.5" fill="#831843">Feed results back</text>
+  <text x="982" y="192" font-size="17.5" fill="#831843">into the coach</text>
+  <g font-size="19" fill="#1F2937">
+    <text x="982" y="238">•</text><text x="1000" y="238">Unhelpful tips</text><text x="1000" y="261">are paused</text>
+    <text x="982" y="295">•</text><text x="1000" y="295">Checks re-tested</text><text x="1000" y="318">on 220 prompts</text>
+  </g>
+
+  <!-- arrows between steps -->
+  <g fill="#64748B">
+    <path d="M240,207 l12,11 l-12,11 z"/>
+    <path d="M476,207 l12,11 l-12,11 z"/>
+    <path d="M712,207 l12,11 l-12,11 z"/>
+    <path d="M948,207 l12,11 l-12,11 z"/>
+  </g>
+
+  <!-- the loop back -->
+  <path d="M1072,336 V360 H128 V340" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#head)"/>
+  <text x="600" y="387" text-anchor="middle" font-size="17" font-style="italic" fill="#475569">What the coach learns improves the next tip</text>
+
+  <!-- privacy band -->
+  <rect x="20" y="404" width="1160" height="54" rx="12" fill="#F1F5F9"/>
+  <text x="600" y="438" text-anchor="middle" font-size="18" fill="#1E293B"><tspan font-weight="700">Private by design:</tspan> runs on your computer  ·  never stores what you type  ·  ask “why?”, mute or pause</text>
+</svg>
