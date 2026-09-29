@@ -6,9 +6,16 @@ Claude calls each message (scripts/coach_mcp.py). This script registers that hel
 in Claude desktop's config file, pointing at this folder, so chat always runs the
 latest code here: after `git pull` there is nothing to reinstall.
 
-    python coach/scripts/setup_desktop.py            connect it (then quit and reopen Claude)
+    python coach/scripts/setup_desktop.py --wait     recommended: run it from a terminal (not inside Claude),
+                                                     then quit Claude; it connects the coach while Claude is
+                                                     closed, reopens Claude and confirms the coach started
+    python coach/scripts/setup_desktop.py            connect it now (only while Claude is fully closed)
     python coach/scripts/setup_desktop.py --check    show what is configured and test-launch the helper
     python coach/scripts/setup_desktop.py --remove   disconnect it
+
+Claude must be fully closed when the config changes: a running Claude keeps its settings in
+memory and writes them back every few seconds, erasing any edit made in the meantime. Closing
+the window isn't enough (Claude keeps running in the system tray); use Quit.
 
 What it takes care of:
   * Claude installed from the Microsoft Store / MSIX keeps its settings in a private copy
@@ -153,9 +160,155 @@ def test_launch(entry, timeout=60):
         return True, "helper answered with %d tools (%s)" % (len(tools), ", ".join(tools))
 
 
+# --- the Claude app itself ----------------------------------------------------------------------
+
+def _is_desktop_path(path):
+    """The Claude desktop app (Microsoft Store/MSIX or classic install), not the Claude Code
+    command-line tool, which is also called claude.exe."""
+    p = (path or "").lower().replace("/", "\\")
+    return "\\windowsapps\\claude_" in p or "\\anthropicclaude\\" in p
+
+
+def desktop_running():
+    try:
+        if sys.platform == "win32":
+            ps = "Get-Process -Name claude -ErrorAction SilentlyContinue | ForEach-Object { $_.Path }"
+            out = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                                 capture_output=True, text=True, timeout=30).stdout
+            return any(_is_desktop_path(line.strip()) for line in out.splitlines())
+        if sys.platform == "darwin":
+            return subprocess.run(["pgrep", "-f", "Claude.app/Contents/MacOS/Claude"],
+                                  capture_output=True).returncode == 0
+        return subprocess.run(["pgrep", "-if", "claude-desktop"], capture_output=True).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def relaunch():
+    """Open Claude again. Returns True if it was asked to start."""
+    try:
+        if sys.platform == "win32":
+            ps = "(Get-StartApps | Where-Object { $_.Name -eq 'Claude' } | Select-Object -First 1).AppID"
+            app_id = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                                    capture_output=True, text=True, timeout=30).stdout.strip()
+            if app_id:
+                subprocess.Popen(["explorer.exe", "shell:AppsFolder\\" + app_id])
+                return True
+            classic = os.path.join(os.environ.get("LOCALAPPDATA", ""), "AnthropicClaude", "claude.exe")
+            if os.path.exists(classic):
+                subprocess.Popen([classic])
+                return True
+            return False
+        if sys.platform == "darwin":
+            return subprocess.run(["open", "-a", "Claude"]).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return False
+
+
+def log_dir():
+    if sys.platform == "win32":
+        return os.path.join(os.environ.get("LOCALAPPDATA", ""), "Claude", "logs")
+    if sys.platform == "darwin":
+        return os.path.expanduser("~/Library/Logs/Claude")
+    return os.path.expanduser("~/.config/Claude/logs")
+
+
+def startup_verdict(log_text):
+    """What Claude's log for our server says about its latest start: 'ok', 'failed' or None."""
+    starts = log_text.rsplit("Initializing server", 1)
+    if len(starts) < 2:
+        return None
+    latest = starts[1]
+    # Only signs that *our* process died count; Claude also logs unrelated errors here.
+    if any(bad in latest for bad in ("closed unexpectedly", "can't open file", "Traceback", "No such file")):
+        return "failed"
+    if "Server started and connected successfully" in latest and "tools/list" in latest:
+        return "ok"
+    return None
+
+
+def wait_and_apply(config_path, cdir, keep_extension=False, out=print, running=desktop_running,
+                   reopen=relaunch, sleep=time.sleep, poll=2.0, timeout=1800, confirm_timeout=120,
+                   read_log=None, reopen_app=True):
+    """Wait for Claude to be fully closed, connect the coach, reopen Claude and confirm."""
+    python = find_python()
+    if not python:
+        return install(config_path, cdir, out=out, next_steps=False)      # prints the Python advice
+    ok, detail = test_launch(server_entry(python))
+    if not ok:
+        out("The coach helper didn't start with %s: %s\nNothing was changed." % (python, detail))
+        return 1
+
+    if running():
+        out("Ready. Now quit Claude completely:\n"
+            "  right-click the Claude icon in the system tray (bottom right, maybe under the ^ arrow) > Quit,\n"
+            "  or in Claude's window use the menu (top left) > File > Exit.\n"
+            "Closing the window is not enough: Claude keeps running in the background.\n"
+            "Waiting for Claude to close...")
+    waited, quiet = 0.0, 0
+    while quiet < 2:                       # two quiet checks in a row: Claude is really gone
+        if running():
+            quiet = 0
+            if waited and waited % 60 < poll:
+                out("  ...Claude is still running. If you only closed its window, use Quit from the tray icon.")
+            if waited >= timeout:
+                out("Gave up waiting (Claude never fully closed). Nothing was changed.")
+                return 1
+        else:
+            quiet += 1
+        sleep(poll)
+        waited += poll
+
+    out("Claude is closed. Connecting Prompt Coach...")
+    rc = install(config_path, cdir, keep_extension=keep_extension, python=python, out=out, next_steps=False)
+    if rc or not reopen_app:
+        if not rc:
+            out("\nDone. Open Claude again and start a new chat.")
+        return rc
+
+    started_at = time.time()
+    if not reopen():
+        out("\nDone. Please open Claude again, then start a new chat.")
+        return 0
+    out("\nReopening Claude and checking that the coach starts (up to %d seconds)..." % confirm_timeout)
+    read_log = read_log or (lambda: _read_text(os.path.join(log_dir(), "mcp-server-%s.log" % SERVER_NAME), started_at))
+    waited = 0.0
+    while waited < confirm_timeout:
+        sleep(poll)
+        waited += poll
+        if SERVER_NAME not in read_json(config_path).get("mcpServers", {}):
+            out("Problem: Claude removed the Prompt Coach entry from its config when it started. This version of\n"
+                "Claude may not accept locally configured helpers; the desktop extension route is the fallback.")
+            return 1
+        verdict = startup_verdict(read_log() or "")
+        if verdict == "ok":
+            out("Success: Claude started the Prompt Coach helper.\n"
+                "Start a NEW chat: it should open with an italic 'Prompt Coach:' greeting.\n"
+                "When Claude asks to use a Prompt Coach tool, choose 'Always allow'.")
+            return 0
+        if verdict == "failed":
+            out("Problem: Claude tried to start the helper and it failed. Details are in:\n  %s"
+                % os.path.join(log_dir(), "mcp-server-%s.log" % SERVER_NAME))
+            return 1
+    out("Claude reopened with Prompt Coach connected in its config, but its log didn't confirm the start yet.\n"
+        "Start a new chat and look for the 'Prompt Coach:' greeting; if it's missing, run this script with --check.")
+    return 0
+
+
+def _read_text(path, newer_than=0.0):
+    try:
+        if os.path.getmtime(path) < newer_than:
+            return ""
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return f.read()
+    except OSError:
+        return ""
+
+
 # --- commands ----------------------------------------------------------------------------------
 
-def install(config_path, cdir, keep_extension=False, python=None, out=print):
+def install(config_path, cdir, keep_extension=False, python=None, out=print, next_steps=True):
     python = python or find_python()
     if not python:
         out("Couldn't find a regular Python 3.9+ (the Microsoft Store Python can't be used: it is sandboxed).\n"
@@ -184,6 +337,12 @@ def install(config_path, cdir, keep_extension=False, python=None, out=print):
             if set_extension_enabled(settings, False):
                 out("Switched off the old Prompt Coach desktop extension (%s)." % os.path.basename(settings)[:-5])
 
+    if not next_steps:
+        return 0
+    if desktop_running():
+        out("\nWarning: Claude is running right now, and a running Claude overwrites this change within seconds.\n"
+            "Run this instead from a terminal outside Claude, then quit Claude:  python %s --wait"
+            % os.path.relpath(os.path.abspath(__file__)))
     out("\nNext:\n"
         "  1. Quit Claude completely (right-click its icon in the system tray > Quit) and open it again.\n"
         "  2. Start a new chat. Claude should open with an italic 'Prompt Coach:' greeting.\n"
@@ -229,6 +388,9 @@ def check(config_path, cdir, out=print):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Connect Prompt Coach to Claude desktop chat.")
+    ap.add_argument("--wait", action="store_true",
+                    help="wait for Claude to be fully closed, connect the coach, reopen Claude and confirm")
+    ap.add_argument("--no-reopen", action="store_true", help="with --wait: don't reopen Claude afterwards")
     ap.add_argument("--check", action="store_true", help="show the current setup and test-launch the helper")
     ap.add_argument("--remove", action="store_true", help="disconnect Prompt Coach from Claude desktop")
     ap.add_argument("--keep-extension", action="store_true", help="don't switch off an old Prompt Coach extension")
@@ -238,6 +400,8 @@ def main(argv=None):
     config_path = os.path.abspath(args.config) if args.config else os.path.join(cdir, "claude_desktop_config.json")
     if args.check:
         return check(config_path, cdir)
+    if args.wait:
+        return wait_and_apply(config_path, cdir, keep_extension=args.keep_extension, reopen_app=not args.no_reopen)
     if args.remove:
         return remove(config_path)
     return install(config_path, cdir, keep_extension=args.keep_extension)

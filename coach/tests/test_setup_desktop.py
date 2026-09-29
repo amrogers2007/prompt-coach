@@ -91,6 +91,68 @@ class SetupDesktop(unittest.TestCase):
         found = setup_desktop.find_python()
         self.assertTrue(found is None or not setup_desktop.is_store_python(found))
 
+    # --- --wait: the change must land while Claude is closed --------------------------------------
+
+    GOOD_LOG = ("2026-09-29 [prompt-coach] [info] Initializing server...\n"
+                "[prompt-coach] [info] Server started and connected successfully\n"
+                "[prompt-coach] [info] Message from client: method=\"tools/list\" id=1\n")
+
+    def wait(self, running_seq, reopen=None, log=GOOD_LOG, timeout=60):
+        seen_while_running = []
+        states = list(running_seq)
+
+        def running():
+            state = states.pop(0) if states else False
+            if state:   # the entry must never be written while Claude is still running
+                seen_while_running.append("prompt-coach" in self.config_now().get("mcpServers", {}))
+            return state
+        rc = setup_desktop.wait_and_apply(
+            self.config, self.dir, out=self.say, running=running, reopen=reopen or (lambda: True),
+            sleep=lambda s: None, poll=1, timeout=timeout, confirm_timeout=5, read_log=lambda: log)
+        return rc, seen_while_running
+
+    def test_wait_applies_only_after_claude_has_closed_then_confirms(self):
+        rc, seen = self.wait([True, True, True, False, False])
+        self.assertEqual(rc, 0, self.out.getvalue())
+        self.assertEqual(seen, [False, False, False])     # never written while Claude was still running
+        self.assertIn("prompt-coach", self.config_now()["mcpServers"])
+        self.assertIn("Success: Claude started the Prompt Coach helper", self.out.getvalue())
+
+    def test_wait_gives_up_if_claude_never_closes(self):
+        before = self.config_now()
+        rc, _ = self.wait([True] * 200, timeout=10)
+        self.assertEqual(rc, 1)
+        self.assertEqual(self.config_now(), before)
+        self.assertIn("Nothing was changed", self.out.getvalue())
+
+    def test_wait_reports_a_helper_that_crashes_on_start(self):
+        crash = self.GOOD_LOG.split("Server started")[0] + "python3: can't open file 'x': [Errno 2] No such file"
+        rc, _ = self.wait([False, False], log=crash)
+        self.assertEqual(rc, 1)
+        self.assertIn("it failed", self.out.getvalue())
+
+    def test_wait_notices_if_claude_strips_the_entry(self):
+        def reopen_and_strip():
+            data = self.config_now()
+            del data["mcpServers"]["prompt-coach"]
+            setup_desktop.write_json(self.config, data)
+            return True
+        rc, _ = self.wait([False, False], reopen=reopen_and_strip)
+        self.assertEqual(rc, 1)
+        self.assertIn("removed the Prompt Coach entry", self.out.getvalue())
+
+    def test_desktop_app_is_told_apart_from_the_claude_code_cli(self):
+        self.assertTrue(setup_desktop._is_desktop_path(
+            r"C:\Program Files\WindowsApps\Claude_2.9939.4.0_x64__pzs8sxrjxfjjc\app\Claude.exe"))
+        self.assertTrue(setup_desktop._is_desktop_path(r"C:\Users\a\AppData\Local\AnthropicClaude\app-1.0\claude.exe"))
+        self.assertFalse(setup_desktop._is_desktop_path(r"C:\Users\a\AppData\Roaming\Claude\claude-code\2.1.284\claude.exe"))
+
+    def test_startup_verdict(self):
+        self.assertEqual(setup_desktop.startup_verdict(self.GOOD_LOG), "ok")
+        self.assertIsNone(setup_desktop.startup_verdict(""))
+        old_fail_then_ok = "Initializing server...\nclosed unexpectedly\n" + self.GOOD_LOG
+        self.assertEqual(setup_desktop.startup_verdict(old_fail_then_ok), "ok")     # only the latest start counts
+
     def test_a_helper_that_fails_to_start_changes_nothing(self):
         before = self.config_now()
         rc = setup_desktop.install(self.config, self.dir, out=self.say,

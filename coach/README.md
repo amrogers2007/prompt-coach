@@ -34,19 +34,27 @@ Or run the guided installer, which also checks your setup: `sh install/install.s
 (macOS/Linux/Git Bash) or `powershell -ExecutionPolicy Bypass -File install\install.ps1` (Windows).
 
 **Claude desktop app, Chat and Cowork:** chat can't run hooks, so there the coach is a small local
-helper that Claude calls each turn. Connect it with one command from a clone of this repo:
+helper that Claude calls each turn. Connect it from a clone of this repo:
 
-```bash
-python coach/scripts/setup_desktop.py
-```
+1. Open a terminal **outside Claude** (Windows: Start > PowerShell; Mac: Terminal) and run:
 
-1. The script registers the helper in Claude desktop's config (backing the file up first), using a regular Python and
-   the code in your clone, so later updates need no reinstall. It test-launches the helper before changing anything.
-2. Quit Claude completely (system tray icon > **Quit**) and open it again.
+   ```bash
+   python coach/scripts/setup_desktop.py --wait
+   ```
+
+2. When it says so, quit Claude completely: system tray icon > **Quit** (or Claude's menu > File > Exit). Closing
+   the window isn't enough, because Claude keeps running in the background. The script waits, registers the helper
+   in Claude desktop's config while Claude is closed (backing the file up first), reopens Claude, and confirms from
+   Claude's log that the helper started. It uses a regular Python and the code in your clone, so later updates
+   need no reinstall.
 3. Upload the chat skill once: `python coach/scripts/build_mcpb.py` writes `dist/prompt-coach-chat-skill.zip`; add it
    under *Customize > Skills*. It tells Claude to use the coach in every conversation.
 4. Start a new chat. Claude should open with an italic *Prompt Coach:* greeting. When it asks to use a Prompt Coach
    tool, pick **Always allow**.
+
+Why the waiting: a running Claude keeps its settings in memory and writes them back every few seconds, so a config
+edit made while it runs (even with Claude's own *Edit Config*) is erased before the next start. And the terminal
+must be outside Claude, because anything started from inside Claude closes with it.
 
 `setup_desktop.py --check` shows what's connected and test-launches it; `--remove` disconnects it.
 

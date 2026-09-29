@@ -68,6 +68,11 @@ cannot cover "all of desktop Claude". The answer is a local MCP server (`pcoach/
   the helper in `claude_desktop_config.json` with an absolute path to a regular Python and the repo's own
   `coach_mcp.py`. It writes the config inside the MSIX package folder when there is one, and test-launches the helper
   before touching anything. As a side effect, chat runs the latest code in the repo with no reinstall.
+- First real attempt, same day: the entry vanished. The running Claude keeps `claude_desktop_config.json` in memory
+  and rewrites the whole file every few seconds, and "reopening" from the window only started a second instance
+  that handed over to the first ("Not main instance" in main.log). So `setup_desktop.py --wait` runs from a terminal
+  outside Claude, waits until no desktop Claude process remains, writes the config, reopens Claude
+  (`shell:AppsFolder\<AppID>`), and reads `mcp-server-prompt-coach.log` to confirm the helper started.
 
 ## Recommendation library and the evidence loop (v0.3)
 
