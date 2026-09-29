@@ -14,6 +14,7 @@ import hashlib
 import os
 import random
 import re
+import tempfile
 
 from . import cadence, game, lessons, scoring, signals, store
 
@@ -420,6 +421,24 @@ _WRITES = re.compile(
 _DOC_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit", "Bash")
 
 
+def _is_scratch_text(path):
+    """A text-type file (.md/.txt/.html) Claude wrote in a temp or scratchpad folder is its
+    own working note (a commit message, a draft plan), not a document the user asked for."""
+    if os.path.splitext(path or "")[1].lower() not in signals.SOFT_DOC_EXTS:
+        return False
+    full = os.path.normcase(os.path.abspath(path))
+    parts = full.replace("\\", "/").split("/")
+    if "scratchpad" in parts:
+        return True
+    temps = {tempfile.gettempdir(), os.environ.get("TEMP", ""), os.environ.get("TMP", ""), "/tmp"}
+    for t in temps:
+        if t:
+            root = os.path.normcase(os.path.abspath(t))
+            if full.startswith(root.rstrip("\\/") + os.sep):
+                return True
+    return False
+
+
 def _candidate_docs(payload):
     """(path, kind) for documents the tool call produced or changed."""
     name = payload.get("tool_name") or ""
@@ -431,7 +450,7 @@ def _candidate_docs(payload):
         content = tin.get("content") or tin.get("new_string") or ""
         kind = signals.doc_kind_for_path(path, soft_min_chars=1500, content_len=len(content)) \
             if name == "Write" else signals.doc_kind_for_path(path)
-        if kind:
+        if kind and not _is_scratch_text(path):
             out.append((path, kind))
     elif name == "Bash":
         command = tin.get("command") or ""

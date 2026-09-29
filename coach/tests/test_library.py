@@ -293,6 +293,23 @@ class ConversationRegressions(CoachTestCase):
         # "yes" now answers the draft question, not the hidden offer.
         self.assertNotIn("follow-up", self.send("yes"))
 
+    def test_claudes_own_scratch_notes_are_not_user_documents(self):
+        import tempfile
+        long_text = "notes " * 400
+        scratch = os.path.join(tempfile.mkdtemp(), "scratchpad", "commit-msg.txt")
+        in_temp = os.path.join(tempfile.mkdtemp(), "plan.md")
+        for path in (scratch, in_temp):
+            out = hooks.handle_tool({"session_id": SID, "tool_name": "Write",
+                                     "tool_input": {"file_path": path, "content": long_text}})
+            self.assertIsNone(out, path)
+        # A real document the user asked for, even in a temp folder, still counts.
+        deck = os.path.join(tempfile.mkdtemp(), "Plan.pptx")
+        out = hooks.handle_tool({"session_id": SID, "tool_name": "Write",
+                                 "tool_input": {"file_path": deck, "content": "x"}})
+        self.assertIn("first draft", context_of(out))
+        # And a long Markdown report in the user's own folder does too.
+        self.assertFalse(hooks._is_scratch_text(os.path.join(os.path.expanduser("~"), "Documents", "report.md")))
+
     def test_short_new_request_is_new_work(self):
         self.assertEqual(signals.classify_kind("write me a poem about autumn", 3, False), "new")
         self.assertEqual(signals.classify_kind("write it shorter", 3, False), "followup")
