@@ -1,92 +1,81 @@
-"""The desktop pieces (extension + chat skill) must build, be self-contained, and run
-from the unpacked bundle exactly as Claude Desktop would run them."""
+"""The two files people upload to the Claude desktop app must build and be complete:
+the chat skill (tells Claude to use the coach's tools) and the plugin zip."""
 
 import json
 import os
-import subprocess
-import sys
 import tempfile
 import unittest
 import zipfile
 
 from helpers import SCRIPTS  # noqa: F401  (also puts scripts/ on sys.path)
-import build_mcpb
-from pcoach import mcp_server
+import build_chat_skill
+import build_zip
+from pcoach import __version__, mcp_server
 
 
-class Packaging(unittest.TestCase):
+class ChatSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.out = tempfile.mkdtemp(prefix="pcoach-dist-")
-        cls.old_out = build_mcpb.OUT_DIR
-        build_mcpb.OUT_DIR = cls.out
-        build_mcpb.main()
-        cls.mcpb = os.path.join(cls.out, "prompt-coach-windows.mcpb")
-        cls.mcpb_unix = os.path.join(cls.out, "prompt-coach-mac-linux.mcpb")
+        cls.old_out = build_chat_skill.OUT_DIR
+        build_chat_skill.OUT_DIR = cls.out
+        build_chat_skill.main()
         cls.skill = os.path.join(cls.out, "prompt-coach-chat-skill.zip")
 
     @classmethod
     def tearDownClass(cls):
-        build_mcpb.OUT_DIR = cls.old_out
+        build_chat_skill.OUT_DIR = cls.old_out
 
-    def test_manifest_has_what_the_spec_requires(self):
-        m = json.loads(zipfile.ZipFile(self.mcpb).read("manifest.json"))
-        for key in ("manifest_version", "name", "version", "description", "author", "server"):
-            self.assertIn(key, m)
-        self.assertEqual(m["author"]["name"], "Amanda Rogers")
-        self.assertEqual(m["server"]["type"], "python")
-        self.assertIn("${__dirname}", m["server"]["mcp_config"]["args"][0])
-        self.assertEqual(m["server"]["mcp_config"]["command"], "python")       # never python3 on Windows (Store alias)
-        self.assertEqual(m["compatibility"]["platforms"], ["win32"])
-        unix = json.loads(zipfile.ZipFile(self.mcpb_unix).read("manifest.json"))
-        self.assertEqual(unix["server"]["mcp_config"]["command"], "python3")
-        self.assertEqual(unix["compatibility"]["platforms"], ["darwin", "linux"])
-        self.assertNotIn("platform_overrides", m["server"]["mcp_config"])       # ignored by Claude Desktop
-        self.assertEqual([t["name"] for t in m["tools"]], [t["name"] for t in mcp_server.TOOLS])
-        self.assertIn(">=3.9", m["compatibility"]["runtimes"]["python"])
-        names = zipfile.ZipFile(self.mcpb).namelist()
-        self.assertIn(m["server"]["entry_point"], names)
-        self.assertFalse([n for n in names if "__pycache__" in n or n.endswith(".pyc")])
-
-    def test_version_matches_the_plugin(self):
-        m = json.loads(zipfile.ZipFile(self.mcpb).read("manifest.json"))
-        with open(os.path.join(os.path.dirname(SCRIPTS), ".claude-plugin", "plugin.json"), encoding="utf-8") as f:
-            plugin = json.load(f)
-        self.assertEqual(m["version"], plugin["version"])
-
-    def test_bundle_runs_on_its_own(self):
-        with tempfile.TemporaryDirectory() as unpacked, tempfile.TemporaryDirectory() as home:
-            zipfile.ZipFile(self.mcpb).extractall(unpacked)
-            server = os.path.join(unpacked, "server", "coach_mcp.py")
-            env = dict(os.environ, PROMPT_COACH_HOME=home)
-            env.pop("PYTHONPATH", None)
-            data = "".join(json.dumps(m) + "\n" for m in (
-                {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
-                {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
-                {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
-                 "params": {"name": "coach_start", "arguments": {}}},
-                {"jsonrpc": "2.0", "id": 4, "method": "tools/call",
-                 "params": {"name": "coach_turn", "arguments": {"message": "explain how compound interest works"}}},
-                {"jsonrpc": "2.0", "id": 5, "method": "tools/call",
-                 "params": {"name": "coach_turn", "arguments": {"message": "write an email about the office move"}}}))
-            p = subprocess.run([sys.executable, server], input=data, capture_output=True, text=True, env=env,
-                               timeout=60, cwd=unpacked)
-            self.assertEqual(p.returncode, 0, p.stderr)
-            replies = [json.loads(l) for l in p.stdout.splitlines()]
-            self.assertEqual(len(replies[1]["result"]["tools"]), 5)
-            self.assertIn("I'm your AI coach", replies[2]["result"]["content"][0]["text"])
-            # The recommendation library must travel with the bundle, or coaching silently stops.
-            self.assertIn("Recommendation: Say who it's for", replies[4]["result"]["content"][0]["text"])
-
-    def test_chat_skill_is_valid_and_carries_the_instructions(self):
+    def parts(self):
         text = zipfile.ZipFile(self.skill).read("prompt-coach/SKILL.md").decode("utf-8")
         head, body = text.split("---\n", 2)[1:]
+        return head, body
+
+    def test_front_matter_is_valid(self):
+        head, _body = self.parts()
         self.assertIn("name: prompt-coach", head)
         desc = [l for l in head.splitlines() if l.startswith("description:")][0]
         self.assertTrue(desc.split(": ", 1)[1].startswith('"') and desc.endswith('"'))      # quoted YAML
-        for tool in ("coach_start", "coach_turn", "coach_document", "coach_score"):
-            self.assertIn(tool, body)
-        self.assertIn("ignore this skill completely", body)          # safe when the extension is absent
+
+    def test_it_carries_the_helpers_own_instructions(self):
+        _head, body = self.parts()
+        self.assertIn(mcp_server.INSTRUCTIONS, body)
+        for tool in mcp_server.TOOLS:
+            self.assertIn(tool["name"], body)
+        self.assertIn("ignore this skill completely", body)          # safe when the helper isn't connected
+
+    def test_the_zip_holds_only_the_skill(self):
+        self.assertEqual(zipfile.ZipFile(self.skill).namelist(), ["prompt-coach/SKILL.md"])
+
+
+class PluginZip(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.out = tempfile.mkdtemp(prefix="pcoach-dist-")
+        cls.old_out = build_zip.OUT_DIR
+        build_zip.OUT_DIR = cls.out
+        build_zip.main()
+        cls.names = zipfile.ZipFile(os.path.join(cls.out, "prompt-coach-plugin.zip")).namelist()
+        cls.zip = zipfile.ZipFile(os.path.join(cls.out, "prompt-coach-plugin.zip"))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.zip.close()
+        build_zip.OUT_DIR = cls.old_out
+
+    def test_everything_the_coach_needs_travels_with_it(self):
+        for needed in (".claude-plugin/plugin.json", "hooks/hooks.json", "scripts/run.sh", "scripts/coach.py",
+                       "scripts/coach_mcp.py", "scripts/pcoach/hooks.py", "scripts/pcoach/dashboard_page.html",
+                       "library/recommendations.md", "skills/coach/SKILL.md", "skills/dashboard/SKILL.md",
+                       "agents/coach.md"):
+            self.assertIn(needed, self.names, needed)
+
+    def test_no_tests_or_caches_are_shipped(self):
+        self.assertFalse([n for n in self.names if n.startswith("tests/") or "__pycache__" in n or n.endswith(".pyc")])
+
+    def test_version_matches_the_code(self):
+        manifest = json.loads(self.zip.read(".claude-plugin/plugin.json"))
+        self.assertEqual(manifest["version"], __version__)
 
 
 if __name__ == "__main__":

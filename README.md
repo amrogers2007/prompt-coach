@@ -2,103 +2,76 @@
 
 [![Test](https://github.com/amrogers2007/prompt-coach/actions/workflows/test.yml/badge.svg)](https://github.com/amrogers2007/prompt-coach/actions/workflows/test.yml)
 
-**An in-the-flow AI coach that watches how you write prompts and teaches you to
-get more out of AI — right as you type, with zero setup cost to you.**
+**A coach that lives inside Claude and teaches you to use AI well, while you work.**
 
-Built by Amanda Rogers (CS + Physics, Harvey Mudd) as a self-directed project:
-take a real idea from a napkin sketch to a working prototype, the way a real
-product gets built — talk to users first, then prototype, then build. The
-`docs/` folder is the actual paper trail of that process, kept intentionally
-rough and unedited.
+Prompt Coach is a plugin for Claude: the desktop app and Claude Code. It doesn't rewrite your prompts. It spots a
+teachable moment, offers one short tip, and if you say yes, the AI does the better step with you. What it learns
+about your habits stays on your computer, where it becomes an **AI Fluency level** and a private dashboard that
+shows how your habits change.
 
-> This started as a startup idea (see `docs/`). It's now primarily a portfolio
-> project — a complete, working example of product thinking + full-stack build,
-> from customer interviews through a shipped Chrome extension.
+Built by Amanda Rogers (CS + Physics, Harvey Mudd) as a self-directed project: take a real idea from user
+interviews to a working, tested product.
 
-## New direction: the coach inside Claude ([`coach/`](coach/))
+```
+You:    write an email about the office move
+Claude: (writes the email)
+        ...
+        *Prompt Coach: Knowing who will read this would sharpen the tone. Who is it for?*
+```
 
-The next version of the idea is a **plugin that puts a coach inside the AI itself**: it asks
-questions instead of rewriting prompts, pushes you to revise the decks and PDFs the AI makes,
-remembers how you've done, and turns that into an **AI Fluency level** (Beginner to Expert) you can show
-a manager. Adaptive coaching cadence, streaks, achievements, a shareable scoreboard, no prompt text
-ever stored. See [`coach/README.md`](coach/README.md) for install and how the levels work,
-[`docs/COACHING-LOOP.md`](docs/COACHING-LOOP.md) for why it works this way (the problem, the loop, and how it's
-tested), and [`docs/COACH-DESIGN.md`](docs/COACH-DESIGN.md) for the reasoning and what's still open.
+## Install
 
 ```bash
 claude plugin marketplace add amrogers2007/prompt-coach
 claude plugin install prompt-coach@prompt-coach
 ```
 
-The browser extension below still works and covers ChatGPT and Gemini too.
+That covers Claude Code and the desktop app's Code tab. To coach in the desktop app's regular chat as well, follow
+the short setup in [`coach/README.md`](coach/README.md#install). Requires Python 3.9 or newer; nothing else to
+install.
 
-## Try the extension playground in 60 seconds (no install)
+## How it works
 
-Open [`playground/index.html`](playground/index.html) in any browser. Type a
-prompt and watch the coaching appear live — no Chrome extension, no server,
-no signup.
+![The Prompt Coach loop: Detect, Coach, Act, Verify, Improve](docs/img/coaching-loop.svg)
+
+| Step | What Prompt Coach does |
+|---|---|
+| **1. Detect** | 27 checks spot moments like a missing audience or an unchecked number. Only labels are stored. |
+| **2. Coach** | Offers one short tip, after the answer, from a [library of 76 best practices](coach/library/recommendations.md). |
+| **3. Act** | If you say "yes", the AI does the better step with you, such as asking who your reader is. |
+| **4. Verify** | Tracks whether tips are taken and whether the issue comes back less often. |
+| **5. Improve** | Pauses tips people keep turning down. Re-tests the checks on every change. |
+
+You also get:
+
+- **An AI Fluency level** (Beginner, Practitioner, Advanced, Expert) based on what you do, not a quiz.
+- **A private dashboard** of your habits over time, with goals, a weekly recap, and badges.
+- **Control:** ask why a tip appeared, mute it, pause the coach, or turn it off.
+- **Privacy:** the coach runs on your computer and never stores what you type.
 
 ## What's in this repo
 
 | Folder | What it is |
 |---|---|
-| [`coach/`](coach/) | **The new direction:** a Claude plugin (hooks + skills + agent, Python) that coaches, tracks habits, and levels you up. 200 tests. |
-| [`extension/`](extension/) | The real Chrome extension (Manifest V3). Coaches you live on chatgpt.com, claude.ai, and gemini.google.com. |
-| [`playground/`](playground/) | A standalone page that runs the same coaching logic — the fastest way to try it or tune the rules. |
-| [`dashboard/`](dashboard/) | A manager-facing dashboard **mockup** (sample data) showing what a company buying this would want to see. |
-| [`server/`](server/) | *(legacy)* An earlier design where a server held the API key. Kept for the history — see its README for why it was replaced. |
-| [`docs/`](docs/) | The idea, the customer interviews, the business thinking, and the open questions — the "why" behind every decision above. |
-| [`tests/`](tests/) | Automated tests for the rules engine, telemetry sketch, and skill-profile storage (Node's built-in test runner, zero dependencies). Runs in CI on every push — see the badge above. |
-
-## How it works
-
-1. **The rules engine** (`extension/src/rules.js`) is the "brain": pure,
-   dependency-free JavaScript that reads a prompt and flags concrete,
-   research-backed weaknesses (no source-checking, no format specified, too
-   little context, missing technical/planning constraints, no structured
-   output ask, no persona for expert tasks, editing habits that belong in the
-   AI instead of Word, and more — 20 rules total) — instantly, for free,
-   fully offline.
-2. **Bring-your-own-key AI rewrite.** Click "✨ Improve with AI" and, if you've
-   added your own Anthropic API key in the extension's Settings, it calls
-   Claude *directly from your browser* to produce a smarter rewrite. Your key
-   never leaves your machine except to talk to Anthropic — nothing routes
-   through a server anyone else runs, and usage is billed to **your** account,
-   not the developer's. See [`extension/src/background.js`](extension/src/background.js).
-3. **The manager dashboard** (mockup) shows the metrics a company would
-   actually want if they rolled this out org-wide: adoption, which coaching
-   categories fire most (i.e. what to train on next), whether prompt quality
-   is trending up over time, and a couple of high-signal outliers (sensitive
-   data flags, skeptic conversion). See `docs/` for the reasoning behind why
-   these and not others.
-4. **Your own progress, locally.** A toolbar popup (`extension/src/profile.html`)
-   shows *your* 30-day skill snapshot and week-over-week trend, backed by
-   `extension/src/profile.js` — separate from (and much simpler than) the
-   manager dashboard above, since nothing here ever leaves your browser.
-5. **Live, cost-guarded AI critique.** An opt-in Settings toggle turns
-   "Improve with AI" from a click into something that fires on its own a
-   few seconds after you stop typing — gated by a task classifier (only
-   for open-ended prompts) and a hard cooldown, so it can't run away with
-   your API credit. See `docs/PromptCoach_Direction_and_Roadmap.pdf` for
-   the full direction this came from.
+| [`coach/`](coach/) | The plugin: hooks, skills, the coach agent, the recommendation library, and 200+ automated tests (Python, standard library only). |
+| [`docs/`](docs/) | Why it works the way it does: the coaching loop, design notes, user interviews, and the research behind the library. |
+| [`install/`](install/) | Guided installers for macOS, Linux and Windows. |
 
 ## Documents
-- [IDEA.md](docs/IDEA.md) — the living idea document (vision, customer, product, business, risks)
-- [APPROACHES.md](docs/APPROACHES.md) — the full menu of product directions considered
-- [PROTOTYPE-SPEC.md](docs/PROTOTYPE-SPEC.md) — what v1 actually is and isn't
-- [INTERVIEW-NOTES.md](docs/INTERVIEW-NOTES.md) — real early user interviews and the pain points they surfaced
-- [GLOSSARY.md](docs/GLOSSARY.md) — plain-English definitions of startup/business terms
-- [ACTION-PLAN.md](docs/ACTION-PLAN.md) — concrete next steps, cheapest-first
-- [OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md) — things still unresolved, on purpose
-- [PromptCoach_Direction_and_Roadmap.pdf](docs/PromptCoach_Direction_and_Roadmap.pdf) — the v2 direction (motto, live coaching, skill dashboard) and the build sequence it came from
+
+- [COACHING-LOOP.md](docs/COACHING-LOOP.md): the problem, the loop, and how it's tested. Start here.
+- [COACH-DESIGN.md](docs/COACH-DESIGN.md): design decisions and what's still open.
+- [BEST-PRACTICES-SOURCE.md](docs/BEST-PRACTICES-SOURCE.md): the research table many recommendations came from.
+- [INTERVIEW-NOTES.md](docs/INTERVIEW-NOTES.md): early user interviews and the pain points they surfaced.
+- [GLOSSARY.md](docs/GLOSSARY.md): plain-English definitions of startup and business terms.
+- [history/](docs/history/): early planning notes, kept for the record.
 
 ## Status
 
-Working prototype. The v1 core — rule-based coaching, and the AI-powered
-rewrite with your own API key — is confirmed hands-on end-to-end on
-chatgpt.com, claude.ai, and gemini.google.com. The v2 direction (category
-tagging, a task classifier, live auto-critique, a lightweight
-"doesn't refine" signal, and a local skill-progress popup) is built and
-verified with mocked browser/network calls, but not yet re-confirmed by
-hand on a real site with a real key. The manager dashboard is still a
-mockup pending real (privacy-safe) telemetry — see `docs/OPEN-QUESTIONS.md`.
+Working and tested. The plugin runs in Claude Code and in the Claude desktop app's chat, both confirmed by hand on
+Windows. How accurately it spots teachable moments is measured against 220 labeled prompts, and the results,
+including the weaker blind-test scores, are in [COACHING-LOOP.md](docs/COACHING-LOOP.md).
+
+Not done yet: a pilot with real users. That's the next step.
+
+Released under the MIT license.

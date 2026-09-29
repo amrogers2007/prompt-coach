@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Connect Prompt Coach to Claude desktop's regular chat (and Cowork), without an extension package.
+"""Connect Prompt Coach to Claude desktop's regular chat (and Cowork).
 
 Chat can't run the plugin's hooks, so there the coach is a small local helper that
 Claude calls each message (scripts/coach_mcp.py). This script registers that helper
@@ -21,11 +21,9 @@ What it takes care of:
   * Claude installed from the Microsoft Store / MSIX keeps its settings in a private copy
     of AppData; the config there is the one Claude reads, so that is the one edited.
   * The helper must be started with a real Python. The Microsoft Store Python is
-    sandboxed and can't see other apps' files (it made the old desktop extension fail
-    with "No such file or directory"), so an absolute path to a regular Python is used.
+    sandboxed and can't see other apps' files (the helper fails with "No such file or
+    directory"), so an absolute path to a regular Python is used.
   * The config file is backed up before any change, and every other setting is kept.
-  * An older "Prompt Coach" desktop extension is switched off so the two don't clash
-    (use --keep-extension to leave it alone).
 """
 
 import argparse
@@ -114,21 +112,6 @@ def backup(path):
 
 def server_entry(python):
     return {"command": python, "args": [SERVER_SCRIPT]}
-
-
-def old_extensions(cdir):
-    """Settings files of installed 'prompt-coach' desktop extensions."""
-    return sorted(glob.glob(os.path.join(cdir, "Claude Extensions Settings", "*prompt-coach*.json")))
-
-
-def set_extension_enabled(settings_path, enabled):
-    data = read_json(settings_path)
-    if data.get("isEnabled", True) == enabled:
-        return False
-    backup(settings_path)
-    data["isEnabled"] = enabled
-    write_json(settings_path, data)
-    return True
 
 
 # --- test launch -------------------------------------------------------------------------------
@@ -228,7 +211,7 @@ def startup_verdict(log_text):
     return None
 
 
-def wait_and_apply(config_path, cdir, keep_extension=False, out=print, running=desktop_running,
+def wait_and_apply(config_path, cdir, out=print, running=desktop_running,
                    reopen=relaunch, sleep=time.sleep, poll=2.0, timeout=1800, confirm_timeout=120,
                    read_log=None, reopen_app=True):
     """Wait for Claude to be fully closed, connect the coach, reopen Claude and confirm."""
@@ -261,7 +244,7 @@ def wait_and_apply(config_path, cdir, keep_extension=False, out=print, running=d
         waited += poll
 
     out("Claude is closed. Connecting Prompt Coach...")
-    rc = install(config_path, cdir, keep_extension=keep_extension, python=python, out=out, next_steps=False)
+    rc = install(config_path, cdir, python=python, out=out, next_steps=False)
     if rc or not reopen_app:
         if not rc:
             out("\nDone. Open Claude again and start a new chat.")
@@ -279,7 +262,7 @@ def wait_and_apply(config_path, cdir, keep_extension=False, out=print, running=d
         waited += poll
         if SERVER_NAME not in read_json(config_path).get("mcpServers", {}):
             out("Problem: Claude removed the Prompt Coach entry from its config when it started. This version of\n"
-                "Claude may not accept locally configured helpers; the desktop extension route is the fallback.")
+                "Claude may not accept locally configured helpers. Please report it with your Claude version.")
             return 1
         verdict = startup_verdict(read_log() or "")
         if verdict == "ok":
@@ -308,7 +291,7 @@ def _read_text(path, newer_than=0.0):
 
 # --- commands ----------------------------------------------------------------------------------
 
-def install(config_path, cdir, keep_extension=False, python=None, out=print, next_steps=True):
+def install(config_path, cdir, python=None, out=print, next_steps=True):
     python = python or find_python()
     if not python:
         out("Couldn't find a regular Python 3.9+ (the Microsoft Store Python can't be used: it is sandboxed).\n"
@@ -332,11 +315,6 @@ def install(config_path, cdir, keep_extension=False, python=None, out=print, nex
             config_path, ("\n  backup: %s" % saved) if saved else ""))
     out("  python: %s\n  helper: %s\n  check:  %s" % (python, SERVER_SCRIPT, detail))
 
-    if not keep_extension:
-        for settings in old_extensions(cdir):
-            if set_extension_enabled(settings, False):
-                out("Switched off the old Prompt Coach desktop extension (%s)." % os.path.basename(settings)[:-5])
-
     if not next_steps:
         return 0
     if desktop_running():
@@ -348,7 +326,7 @@ def install(config_path, cdir, keep_extension=False, python=None, out=print, nex
         "  2. Start a new chat. Claude should open with an italic 'Prompt Coach:' greeting.\n"
         "  3. When Claude asks to use a Prompt Coach tool, choose 'Always allow'.\n"
         "  If there's no greeting: make sure the Prompt Coach skill is uploaded and on (Customize > Skills;\n"
-        "  build it with: python coach/scripts/build_mcpb.py, file dist/prompt-coach-chat-skill.zip).")
+        "  build it with: python coach/scripts/build_chat_skill.py, file dist/prompt-coach-chat-skill.zip).")
     return 0
 
 
@@ -371,9 +349,6 @@ def check(config_path, cdir, out=print):
     entry = data.get("mcpServers", {}).get(SERVER_NAME)
     out("Claude settings folder: %s" % cdir)
     out("Config file: %s (%s)" % (config_path, "found" if os.path.exists(config_path) else "missing"))
-    for settings in old_extensions(cdir):
-        out("Old desktop extension: %s (%s)" % (os.path.basename(settings)[:-5],
-                                                 "on" if read_json(settings).get("isEnabled", True) else "off"))
     if not entry:
         out("Prompt Coach: not connected. Run this script without options to connect it.")
         return 1
@@ -393,7 +368,6 @@ def main(argv=None):
     ap.add_argument("--no-reopen", action="store_true", help="with --wait: don't reopen Claude afterwards")
     ap.add_argument("--check", action="store_true", help="show the current setup and test-launch the helper")
     ap.add_argument("--remove", action="store_true", help="disconnect Prompt Coach from Claude desktop")
-    ap.add_argument("--keep-extension", action="store_true", help="don't switch off an old Prompt Coach extension")
     ap.add_argument("--config", help="use this config file instead of Claude's (for testing)")
     args = ap.parse_args(argv)
     cdir = os.path.dirname(os.path.abspath(args.config)) if args.config else claude_dir()
@@ -401,10 +375,10 @@ def main(argv=None):
     if args.check:
         return check(config_path, cdir)
     if args.wait:
-        return wait_and_apply(config_path, cdir, keep_extension=args.keep_extension, reopen_app=not args.no_reopen)
+        return wait_and_apply(config_path, cdir, reopen_app=not args.no_reopen)
     if args.remove:
         return remove(config_path)
-    return install(config_path, cdir, keep_extension=args.keep_extension)
+    return install(config_path, cdir)
 
 
 if __name__ == "__main__":

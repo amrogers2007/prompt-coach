@@ -47,8 +47,9 @@ helper that Claude calls each turn. Connect it from a clone of this repo:
    in Claude desktop's config while Claude is closed (backing the file up first), reopens Claude, and confirms from
    Claude's log that the helper started. It uses a regular Python and the code in your clone, so later updates
    need no reinstall.
-3. Upload the chat skill once: `python coach/scripts/build_mcpb.py` writes `dist/prompt-coach-chat-skill.zip`; add it
-   under *Customize > Skills*. It tells Claude to use the coach in every conversation.
+3. Upload the chat skill once: `python coach/scripts/build_chat_skill.py` writes
+   `dist/prompt-coach-chat-skill.zip`; add it under *Customize > Skills*. It tells Claude to use the coach in every
+   conversation.
 4. Start a new chat. Claude should open with an italic *Prompt Coach:* greeting. When it asks to use a Prompt Coach
    tool, pick **Always allow**.
 
@@ -58,11 +59,9 @@ must be outside Claude, because anything started from inside Claude closes with 
 
 `setup_desktop.py --check` shows what's connected and test-launches it; `--remove` disconnects it.
 
-Why a script and not the desktop extension: on Windows, Claude launched the extension with `python3`, which is
-usually the Microsoft Store's Python. That Python is sandboxed and can't see files Claude installed, so the helper
-failed on every start ("No such file or directory" in `%LOCALAPPDATA%\Claude\logs\mcp-server-Prompt Coach.log`).
-The script uses an absolute path to a regular Python instead, and switches the old extension off. The `.mcpb`
-bundles (`build_mcpb.py`) still work for people who prefer them: on Windows use `prompt-coach-windows.mcpb`.
+On Windows the script also picks a regular Python for the helper. The Microsoft Store's Python is sandboxed and
+can't see the helper's files, so it is never used. If the coach doesn't start, the log is
+`%LOCALAPPDATA%\Claude\logs\mcp-server-prompt-coach.log`.
 
 Your score is shared with the Code tab (same `~/.prompt-coach` folder), and a message that reaches both channels is
 only counted once. In Cowork you can also upload `dist/prompt-coach-plugin.zip` (*Customize > Plugins > Add >
@@ -234,9 +233,9 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 |---|---|
 | Claude Code (terminal, IDE, desktop Code tab) | Full: hooks, coaching, file detection, score. Tested. |
 | Claude desktop, Chat | Through the local helper (connected with `setup_desktop.py`) + skill: Claude calls the coach's tools each turn (greeting, coaching, offers and follow-ups, document nudges, score, why/mute/insights). Less reliable than hooks because Claude has to choose to call them, and it adds a small tool call per message. The helper is tested with an MCP client and test-launched by the setup script; the in-app behavior still needs a hand check. |
-| Claude desktop, Cowork | Same extension works there if the session runs on your computer. The plugin zip's hooks may also load, but Cowork runs in a sandbox whose home folder is reportedly not kept between conversations, so prefer the extension (it keeps your data on your computer). Not yet tested by hand. |
+| Claude desktop, Cowork | The same local helper works there if the session runs on your computer. The plugin zip's hooks may also load, but Cowork runs in a sandbox whose home folder is reportedly not kept between conversations, so prefer the helper (it keeps your data on your computer). Not yet tested by hand. |
 | claude.ai in a browser | Skills only; no local helper, so no tracking. |
-| ChatGPT, Copilot, Gemini | Not supported by this plugin. The browser extension in `../extension` covers those websites. |
+| ChatGPT, Copilot, Gemini | Not supported. Prompt Coach is a plugin for Claude. |
 
 ## Limits worth knowing
 
@@ -250,7 +249,7 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 ## Develop
 
 ```bash
-python -m unittest discover -s coach/tests -v     # 176 tests, standard library only (about 2 minutes)
+python -m unittest discover -s coach/tests -v     # 200+ tests, standard library only (about 2 minutes)
 python coach/scripts/coach.py library             # check the recommendation library
 python coach/scripts/coach.py eval                # detector accuracy on evals/detector_corpus.jsonl
 python coach/scripts/coach.py eval coach/evals/detector_holdout.jsonl
@@ -260,6 +259,8 @@ claude --plugin-dir ./coach                       # run it live
 PROMPT_COACH_HOME=/tmp/demo python coach/scripts/coach.py demo    # sample profile
 PROMPT_COACH_HOME=/tmp/demo python coach/scripts/coach.py score   # see the scoreboard
 python coach/scripts/build_zip.py                 # package for Claude desktop upload
+python coach/scripts/build_chat_skill.py          # the small skill file for Claude desktop chat
+python coach/scripts/coach.py dashboard --demo    # the dashboard, with made-up history
 ```
 
 Layout: `scripts/pcoach/signals.py` (what a prompt reveals), `scoring.py` (score + levels),

@@ -56,6 +56,6 @@ Prompt Coach already targets:
     students') thinking, on principle, not because he prompts it badly.
     No prompt tip converts this; it's a stance, not a skill gap.
 
-Worth naming explicitly in `IDEA.md` / `OPEN-QUESTIONS.md`: the "just a
+Worth naming explicitly in `history/IDEA.md` / `history/OPEN-QUESTIONS.md`: the "just a
 prompting-skill problem" framing may not hold for educators/skeptics whose
 objection is ethical or pedagogical rather than usability-based.

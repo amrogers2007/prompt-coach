@@ -22,11 +22,6 @@ class SetupDesktop(unittest.TestCase):
                          "mcpServers": {"other-tool": {"command": "node", "args": ["x.js"]}}}
         with open(self.config, "w", encoding="utf-8") as f:
             json.dump(self.existing, f)
-        ext = os.path.join(self.dir, "Claude Extensions Settings")
-        os.makedirs(ext)
-        self.ext_settings = os.path.join(ext, "local.mcpb.amanda-rogers.prompt-coach.json")
-        with open(self.ext_settings, "w", encoding="utf-8") as f:
-            json.dump({"isEnabled": True}, f)
         self.out = io.StringIO()
 
     def say(self, *a):
@@ -57,14 +52,6 @@ class SetupDesktop(unittest.TestCase):
         self.assertEqual(self.config_now(), before)
         self.assertEqual(len(glob.glob(self.config + ".bak-prompt-coach-*")), 1)
         self.assertIn("already connected", self.out.getvalue())
-
-    def test_switches_off_the_old_extension_unless_asked_not_to(self):
-        self.install(keep_extension=True)
-        with open(self.ext_settings, encoding="utf-8") as f:
-            self.assertTrue(json.load(f)["isEnabled"])
-        self.install()
-        with open(self.ext_settings, encoding="utf-8") as f:
-            self.assertFalse(json.load(f)["isEnabled"])
 
     def test_missing_config_is_created(self):
         os.remove(self.config)

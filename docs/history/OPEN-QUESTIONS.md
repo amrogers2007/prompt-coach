@@ -1,3 +1,9 @@
+> **History.** Early planning notes from before Prompt Coach became a Claude plugin. They describe a
+> browser extension that is no longer part of this project. Files and folders they mention
+> (`extension/`, `playground/`, `dashboard/`, `server/`, `tests/`) were removed and remain only in the
+> repository's history. For how the product works today, see [the coaching loop](../COACHING-LOOP.md)
+> and [the design notes](../COACH-DESIGN.md).
+
 # Open Questions
 
 Things we don't know yet. Answer them over time — mostly by talking to people

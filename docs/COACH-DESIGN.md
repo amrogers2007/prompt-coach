@@ -1,7 +1,7 @@
 # Coach: design notes
 
-The pivot: from a browser extension that rewrites prompts to a **coach embedded in the AI itself**. This
-document records why it is built the way it is, and what is still open.
+Prompt Coach is a **coach embedded in the AI itself**, delivered as a Claude plugin. This document records why it
+is built the way it is, and what is still open.
 
 ## The idea in one paragraph
 
@@ -20,7 +20,7 @@ how the user has done over time, and converts that into a level a manager can un
 | **Behavior-based, hard, reversible levels** | Requested: 4 levels, "a bit hard", can drop. Computed from a rolling window with a small buffer, so it is fair rather than jumpy, and vacation-proof (window counts prompts, not days). |
 | **Iteration is 30% of the score** | The research behind the project says the single biggest gap for novices is accepting the first draft. So a generated document is tracked as a "draft" and scored by how many revisions follow. |
 | **No prompt text stored, ever** | Enterprise trust. Signals are reduced to small numbers immediately; only those persist. |
-| **Python, standard library only** | Testable here, no install step, works on macOS/Linux/Windows. Cost: users need Python 3.9+ (checked by the installer and `doctor`). Node would allow reusing `extension/src/rules.js`, but Python wasn't a blocker and Node isn't installed on most non-coder machines either. |
+| **Python, standard library only** | Testable here, no install step, works on macOS/Linux/Windows. Cost: users need Python 3.9+ (checked by the installer and `doctor`). Node was the alternative, but it isn't installed on most non-coder machines either. |
 | **Hooks fail silent** | A coach must never break someone's AI session: every hook exits 0 and logs errors to `~/.prompt-coach/errors.log`. |
 
 ## How a turn flows
@@ -52,8 +52,8 @@ levels have activity gates as well as score gates). See `coach/README.md` for we
 
 Anthropic's docs say chat loads skills only (hooks, agents and local MCP servers in plugins are ignored) and
 Cowork runs in a Linux sandbox whose plugin data folder is reportedly not persistent between conversations. So hooks alone
-cannot cover "all of desktop Claude". The answer is a local MCP server (`pcoach/mcp_server.py`, packaged as a
-`.mcpb` desktop extension) that reuses the same engine as the hooks:
+cannot cover "all of desktop Claude". The answer is a local MCP server (`pcoach/mcp_server.py`), registered in Claude
+desktop's config by `coach/scripts/setup_desktop.py`, that reuses the same engine as the hooks:
 
 - `coach_start` / `coach_turn` / `coach_document` / `coach_score` / `coach_settings`, with server-level instructions plus a small
   skill telling Claude to call them each turn. Status notes (welcome, level-ups) are delivered as instructions for Claude to say,
@@ -61,13 +61,14 @@ cannot cover "all of desktop Claude". The answer is a local MCP server (`pcoach/
 - One shared profile in `~/.prompt-coach`, so the Code tab, chat and Cowork add up to one level. A message seen by both channels is
   deduplicated (first channel wins, 120 s window).
 - Cost of the design: reliability depends on Claude deciding to call the tools (hooks are guaranteed), and there is one extra tool call per message.
-- Runtime: Claude Desktop ships Node.js but not Python, so the helper uses the user's Python 3.9+. A Node port (or the MCPB `uv` runtime) would remove that requirement.
-- v0.3: the `.mcpb` never worked on the author's Windows PC. Claude launched it with `python3`, which resolved to the
-  Microsoft Store Python. Both that Python and Claude (an MSIX app) get private, virtualized copies of AppData, so the
-  helper's files, installed into Claude's copy, didn't exist for it. `coach/scripts/setup_desktop.py` now registers
-  the helper in `claude_desktop_config.json` with an absolute path to a regular Python and the repo's own
-  `coach_mcp.py`. It writes the config inside the MSIX package folder when there is one, and test-launches the helper
-  before touching anything. As a side effect, chat runs the latest code in the repo with no reinstall.
+- Runtime: Claude Desktop ships Node.js but not Python, so the helper uses the user's Python 3.9+. A Node port would remove that requirement.
+- v0.3: the helper first shipped as a packaged installer (`.mcpb`), which never started on the author's Windows PC.
+  Claude launched it with `python3`, which resolved to the Microsoft Store Python. Both that Python and Claude (an
+  MSIX app) get private, virtualized copies of AppData, so the helper's files, installed into Claude's copy, didn't
+  exist for it. `coach/scripts/setup_desktop.py` now registers the helper in `claude_desktop_config.json` with an
+  absolute path to a regular Python and the repo's own `coach_mcp.py`. It writes the config inside the MSIX package
+  folder when there is one, and test-launches the helper before touching anything. As a side effect, chat runs the
+  latest code in the repo with no reinstall. The packaged installer was removed in v0.4.1: one way to connect chat.
 - First real attempt, same day: the entry vanished. The running Claude keeps `claude_desktop_config.json` in memory
   and rewrites the whole file every few seconds, and "reopening" from the window only started a second instance
   that handed over to the first ("Not main instance" in main.log). So `setup_desktop.py --wait` runs from a terminal
@@ -106,7 +107,7 @@ saved next to the profile and opened in the default browser. Decisions:
 
 - **Personal first.** The user chose "me, checking my own progress" over a manager view, so the page leads with
   "what changed" and is honest about weak spots. A team view can reuse `dashboard.build()` later; it is blocked on
-  the k-anonymity design in `PRIVACY-DESIGN.md`, this page is not.
+  the k-anonymity design in `history/PRIVACY-DESIGN.md`, this page is not.
 - **Replayed, not stored.** The score-over-time line is recomputed day by day from the event log with the same
   `scoring` functions the coach uses, so it always agrees with `/score` and never needs a second store.
 - **Same data, plainer words.** Habit gaps come from the detector labels already logged (never message text).
@@ -126,12 +127,12 @@ saved next to the profile and opened in the default browser. Decisions:
 
 1. **Cowork/Desktop in practice.** Anthropic's docs say hooks/agents/skills load in Cowork. Untested by hand here.
    Need to confirm where hook scripts execute (host vs sandbox) and that Python is available there. If not, port the
-   handlers to a runtime that is guaranteed (or an MCP server bundled as `.mcpb`).
+   handlers to a runtime that is guaranteed.
 2. **Real-model validation.** Hook I/O was verified against the real Claude Code binary (hooks fire, JSON accepted,
    context injected). What is not yet measured is how reliably models follow the coaching instruction and how the
    questions *feel*. Suggested next step: `claude plugin eval` cases (the docs describe an eval harness) plus a week of dogfooding.
 3. **Verified levels.** Today the score is local and self-reported. A manager-grade credential needs a signed export
-   and a team backend, reusing the k-anonymity design in `PRIVACY-DESIGN.md`. The `export` command already emits an aggregate-only payload.
+   and a team backend, reusing the k-anonymity design in `history/PRIVACY-DESIGN.md`. The `export` command already emits an aggregate-only payload.
 4. **Better signals.** Reading the AI's reply (to see whether the user acted on a suggestion) and using a small LLM judge for
    prompt quality would beat keyword heuristics, at a cost in privacy and money. Kept out of v1 on purpose.
 5. **Onboarding.** A one-time "what do you do?" question would let lessons use the user's real work as examples (the `practice` skill
