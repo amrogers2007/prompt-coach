@@ -58,7 +58,7 @@ def build(state=None, events=None):
         "weakest": m["weakest"],
         "stats": m["stats"],
         "needs": scoring.next_level_needs(m, level),
-        "streak": {"current": state["streak"]["count"], "best": state["streak"]["best"]},
+        "streak": {"current": game.current_streak(state), "best": state["streak"].get("best", 0)},
         "xp": state["xp"],
         "achievements": sorted(state["achievements"], key=lambda k: state["achievements"][k]),
         "totals": state["totals"],
@@ -113,7 +113,7 @@ def render_text(r):
         lines.append("Best next step: **%s**." % COMPONENT_LABELS[r["weakest"]].lower())
     lines.append("")
     lines.append("## Progress")
-    lines.append("- Streak: **%d** working day%s (best %d)" % (
+    lines.append("- Streak: **%d** day%s in a row (best %d)" % (
         r["streak"]["current"], "" if r["streak"]["current"] == 1 else "s", r["streak"]["best"]))
     lines.append("- XP: **%d**" % r["xp"])
     lines.append("- Last 14 days: `%s`" % sparkline(r["daily"]))

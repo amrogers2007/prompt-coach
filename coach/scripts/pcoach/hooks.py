@@ -110,6 +110,20 @@ def delivery_mode(settings):
     return "chat" if entry.startswith("claude-desktop") else "system"
 
 
+def refresh_saved_pages():
+    """The dashboard and the summary are files on disk. Once the user has made
+    them, keep them current, so an open tab or a bookmark never shows an old
+    streak or score. Never creates them, and never lets a failure reach the session."""
+    try:
+        from . import dashboard, report
+        if os.path.exists(dashboard.default_path()):
+            dashboard.write(open_browser=False)
+        if os.path.exists(os.path.join(store.home(), "summary.md")):
+            report.write_shareables(report.build())
+    except Exception as exc:  # noqa: BLE001  (a convenience; the coaching itself already happened)
+        store.log_error("refresh", exc)
+
+
 def _output(system_lines=None, context=None, event="UserPromptSubmit", mode="system", where="end"):
     out = {}
     text = "Prompt Coach: " + " ".join(system_lines) if system_lines else ""
@@ -150,6 +164,7 @@ def handle_session(payload, delivery=None):
     if not state["settings"].get("enabled", True):
         return None
 
+    refresh_saved_pages()
     mode = delivery or delivery_mode(state["settings"])
     lines = []
     if not state.get("welcomed"):
@@ -159,10 +174,14 @@ def handle_session(payload, delivery=None):
         store.save_state(state)
     else:
         # Every session opens with the coach introducing itself, so it is always clear it is on.
-        streak = state["streak"]["count"]
+        streak = game.streak_status(state, ts)
         bits = ["%s (Level %d of 4)" % (game.level_name(level), level)]
-        if streak >= 2:
-            bits.append("%d-day streak" % streak)
+        if streak["count"] >= 1 and not streak["today"]:
+            # Today isn't counted yet: say what moves the number, so it doesn't look stuck.
+            bits.append("%d-day streak, and a well-set-up request today makes it %d"
+                        % (streak["count"], streak["count"] + 1))
+        elif streak["count"] >= 2:
+            bits.append("%d-day streak" % streak["count"])
         lines.append("Welcome back, I'm your AI coach (%s). I'll pop in with a question now and then "
                      "to help you get more out of AI." % ", ".join(bits))
 
@@ -223,6 +242,14 @@ def _already_handled(state, text, ts, source):
         recent.append([digest, ts, source])
     state["recent"] = recent[-20:]
     return seen_elsewhere
+
+
+def seen_by_other_channel(text, source):
+    """True if the other channel already handled this very message (read-only)."""
+    digest = hashlib.sha1((text or "").strip().encode("utf-8", "replace")).hexdigest()[:12]
+    ts = store.now()
+    return any(r[0] == digest and r[2] != source and ts - r[1] < 120
+               for r in store.load_state().get("recent", []))
 
 
 def _take_offer(state, session, text, ts):
@@ -410,6 +437,8 @@ def handle_prompt(payload, delivery=None, source="hook"):
         lines = lines[:2]
 
     store.save_state(state)
+    if streak_grew or level != old_level or new_achievements:
+        refresh_saved_pages()
     return _output(lines, context, "UserPromptSubmit", delivery or delivery_mode(state["settings"]))
 
 
@@ -428,7 +457,7 @@ def _is_scratch_text(path):
         return False
     full = os.path.normcase(os.path.abspath(path))
     parts = full.replace("\\", "/").split("/")
-    if "scratchpad" in parts:
+    if "scratchpad" in parts or ".claude" in parts:     # .claude: Claude's own memory and settings notes
         return True
     temps = {tempfile.gettempdir(), os.environ.get("TEMP", ""), os.environ.get("TMP", ""), "/tmp"}
     for t in temps:

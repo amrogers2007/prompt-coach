@@ -1,8 +1,8 @@
 """The game layer: XP, streaks, achievements, and the short toast messages.
 
 XP is lifetime flavor (it only goes up). The *level* comes from scoring.py and
-can go down. Streaks count working days with a good-habit moment, and skip
-weekends so a Friday-to-Monday gap doesn't break one.
+can go down. Streaks count days in a row with a good-habit moment; weekends off
+do not break one, a missed working day does.
 """
 
 import datetime
@@ -20,11 +20,11 @@ ACHIEVEMENTS = [
      lambda s: s["totals"]["rich_prompts"] >= 5),
     ("fact_checker", "Fact checker", "Asked the AI to check or source its work 3 times.",
      lambda s: s["totals"]["verifies"] >= 3),
-    ("streak_3", "3-day streak", "Three working days in a row of good AI habits.",
+    ("streak_3", "3-day streak", "Three days in a row of good AI habits.",
      lambda s: s["streak"]["best"] >= 3),
-    ("streak_7", "7-day streak", "Seven working days in a row of good AI habits.",
+    ("streak_7", "7-day streak", "Seven days in a row of good AI habits.",
      lambda s: s["streak"]["best"] >= 7),
-    ("streak_14", "14-day streak", "Fourteen working days in a row of good AI habits.",
+    ("streak_14", "14-day streak", "Fourteen days in a row of good AI habits.",
      lambda s: s["streak"]["best"] >= 14),
     ("coachable", "Coachable", "Took the coach up on 3 of its offers.",
      lambda s: s["totals"].get("offers_accepted", 0) >= 3),
@@ -53,31 +53,62 @@ def _to_date(day):
     return datetime.date.fromisoformat(day)
 
 
-def _workdays_between(a, b):
-    """Working days strictly after date a up to and including date b."""
-    n, d = 0, a
+def _missed_workdays(a, b):
+    """Working days strictly between date a and date b: the ones that went by
+    without a good-habit moment. (Counting b itself would let a Thursday streak
+    carry on over a missed Friday when the next use is on the weekend.)"""
+    n, d = 0, a + datetime.timedelta(days=1)
     while d < b:
-        d += datetime.timedelta(days=1)
         if d.weekday() < 5:
             n += 1
+        d += datetime.timedelta(days=1)
     return n
+
+
+def _last_day(streak):
+    """The saved last good-habit day as a date, or None if there is none (or it is unreadable)."""
+    try:
+        return _to_date(streak.get("last_day") or "")
+    except (TypeError, ValueError):
+        return None
 
 
 def touch_streak(state, ts):
     """Record a good-habit moment at time ts. Returns new streak count if it grew."""
     today = store.day_of(ts)
     streak = state["streak"]
-    last = streak.get("last_day") or ""
-    if last == today:
-        return None
-    if last:
-        gap = _workdays_between(_to_date(last), _to_date(today))
-        streak["count"] = streak["count"] + 1 if gap <= 1 else 1
+    last = _last_day(streak)
+    if last is not None and last >= _to_date(today):
+        return None                      # already counted today (or the clock went backwards)
+    if last is not None and _missed_workdays(last, _to_date(today)) == 0:
+        streak["count"] = streak.get("count", 0) + 1
     else:
         streak["count"] = 1
     streak["last_day"] = today
     streak["best"] = max(streak.get("best", 0), streak["count"])
     return streak["count"]
+
+
+def streak_status(state, now=None):
+    """The streak as it stands right now, for anything that shows it.
+
+    The saved count is only true as of the last good-habit day. It is still alive
+    today and through the next working day; after a missed working day it is 0,
+    even though nothing has been saved since. 'today' says whether today already
+    counts, so a note can say what would move the number."""
+    streak = state.get("streak") or {}
+    best = streak.get("best", 0)
+    last = _last_day(streak)
+    if last is None:
+        return {"count": 0, "best": best, "today": False, "alive": False}
+    today = _to_date(store.day_of(store.now() if now is None else now))
+    alive = _missed_workdays(last, today) == 0
+    return {"count": streak.get("count", 0) if alive else 0, "best": best,
+            "today": alive and last >= today, "alive": alive}
+
+
+def current_streak(state, now=None):
+    return streak_status(state, now)["count"]
 
 
 def xp_for_prompt(analysis):
@@ -135,6 +166,9 @@ def toast_lines(level_change, streak_grew, new_achievements, level):
         lines.append("Level slipped to %s. A few more context-rich requests and revisions will win it back." % level_name(level))
     if streak_grew and streak_grew in (3, 5, 7, 10, 14, 20, 30):
         lines.append("%d-day streak of good AI habits." % streak_grew)
+    elif streak_grew and streak_grew >= 2:
+        # Said once a day, the moment the number moves, so it never looks stuck.
+        lines.append("Streak: %d days in a row." % streak_grew)
     for title in new_achievements[:2]:
         if len(lines) >= 2:
             break

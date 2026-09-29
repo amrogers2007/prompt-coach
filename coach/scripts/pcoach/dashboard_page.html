@@ -933,7 +933,10 @@
       h("div", { class: "card-head" }, h("div", {}, h("h2", { id: "miles-t", text: "Streak and badges" }), h("p", { class: "card-sub", text: "All time. A good-habit day is one with a well-set-up request or a revised draft." }))));
     // streak + a four-week calendar
     var streak = h("div", {}, h("p", { class: "streak-num" }, String(cur.streak), h("small", { text: " day streak" })),
-      h("p", { class: "kpi-sub", text: "Working days in a row with a good-habit moment. Best: " + cur.best_streak + "." }));
+      h("p", { class: "kpi-sub", text: "Days in a row with a good-habit moment (weekends off don't break it). Best: " + cur.best_streak + "." }),
+      h("p", { class: "kpi-sub", text: cur.streak_today ? "Today is counted." :
+        cur.streak > 0 ? "Today isn't counted yet: one well-set-up request or revised draft makes it " + (cur.streak + 1) + "." :
+        "One well-set-up request or revised draft starts a new streak." }));
     var byDay = {}; rows.forEach(function (r) { byDay[r.day] = r; });
     var end = parseDay(TODAY), start = new Date(end); start.setDate(end.getDate() - 27 - (end.getDay() + 6) % 7);
     var cal = h("div", { class: "cal", role: "img", "aria-label": "The last four weeks: filled dots are good-habit days" });

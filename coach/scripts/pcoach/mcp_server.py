@@ -54,9 +54,10 @@ TOOLS = [
     },
     {
         "name": "coach_turn",
-        "description": "Call FIRST for every user message. Analyses the message locally, updates the user's "
-                       "AI-skills profile, and returns either a coaching instruction to follow in your reply or "
-                       "'nothing to do'. The text is not stored.",
+        "description": "Call FIRST for every user message, starting with the very first one. Analyses the message "
+                       "locally, updates the user's AI-skills profile, and returns either a coaching instruction to "
+                       "follow in your reply or 'nothing to do'. If coach_start was not called yet, the first call "
+                       "also returns the greeting note. The text is not stored.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -116,6 +117,7 @@ class Server:
         self.started = time.time()
         self.session_id = "mcp-%d" % int(self.started)
         self.last_call = self.started
+        self.greeted = None                     # the session that has had its greeting
         self.open_browser = open_browser        # tests turn this off
 
     # -- session id: chat gives us none, so roll one per burst of activity -------
@@ -130,13 +132,27 @@ class Server:
     def call_tool(self, name, args):
         sid = self.session()
         if name == "coach_start":
+            self.greeted = sid
             out = hooks.handle_session({"session_id": sid}, delivery="chat")
             return _context(out, "Prompt Coach is on. Nothing to say at the start of this conversation.")
         if name == "coach_turn":
+            # Claude sometimes skips coach_start. The first turn then opens the
+            # session itself, so the coach starts without the user asking for it.
+            greeting = None
             message = str(args.get("message") or "")[:1500]
+            if self.greeted != sid:
+                self.greeted = sid
+                # (Not when the plugin's hooks already handled this message: they greeted too.)
+                if not hooks.seen_by_other_channel(message, "mcp"):
+                    greeting = _context(hooks.handle_session({"session_id": sid}, delivery="chat"), None)
             out = hooks.handle_prompt({"session_id": sid, "prompt": message}, delivery="chat", source="mcp")
+            if greeting:
+                turn = _context(out, None)
+                return greeting + ("\n\n" + turn if turn else "\n\nNo coaching this turn. After the note, just "
+                                                              "answer the user normally.")
             return _context(out, "Nothing to do this turn. Just answer the user normally.")
         if name == "coach_document":
+            self.greeted = sid          # the conversation is under way; a late greeting would reset its draft
             out = hooks.handle_document({"session_id": sid, "kind": args.get("kind"), "name": args.get("name")})
             return _context(out, "Nothing to add for this file.")
         if name == "coach_score":

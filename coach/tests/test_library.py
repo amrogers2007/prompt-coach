@@ -298,7 +298,8 @@ class ConversationRegressions(CoachTestCase):
         long_text = "notes " * 400
         scratch = os.path.join(tempfile.mkdtemp(), "scratchpad", "commit-msg.txt")
         in_temp = os.path.join(tempfile.mkdtemp(), "plan.md")
-        for path in (scratch, in_temp):
+        memory = os.path.join(os.path.expanduser("~"), ".claude", "projects", "p", "memory", "note.md")
+        for path in (scratch, in_temp, memory):
             out = hooks.handle_tool({"session_id": SID, "tool_name": "Write",
                                      "tool_input": {"file_path": path, "content": long_text}})
             self.assertIsNone(out, path)

@@ -74,6 +74,7 @@ class InProcess(CoachTestCase):
         self.assertNotIn("coaching moment", third)                 # cooldown: never twice in a row
 
     def test_trivial_and_coding_messages_are_ignored(self):
+        self.server.handle(call("coach_start"))
         for msg in ("thanks", "fix the bug in content.js where it crashes"):
             self.assertIn("Nothing to do", text_of(self.server.handle(call("coach_turn", {"message": msg}))))
         self.assertEqual(store.load_state()["totals"]["prompts"], 0)

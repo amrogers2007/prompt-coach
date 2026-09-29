@@ -196,6 +196,7 @@ def build(events=None, state=None, now=None):
     prompts = [e for e in events if e.get("type") == "prompt"]
     gens = _gens(events, state.get("gens"))
     level = state.get("level", 1)
+    streak = game.streak_status(state, now)
 
     data = {
         "generated": int(now),
@@ -203,8 +204,9 @@ def build(events=None, state=None, now=None):
         "current": {
             "level": level,
             "level_name": scoring.LEVELS.get(level, "Beginner"),
-            "streak": state.get("streak", {}).get("count", 0),
-            "best_streak": state.get("streak", {}).get("best", 0),
+            "streak": streak["count"],
+            "best_streak": streak["best"],
+            "streak_today": streak["today"],
             "score": None,
         },
         "gates": {scoring.LEVELS[lvl]: g["score"] for lvl, g in sorted(scoring.GATES.items())},

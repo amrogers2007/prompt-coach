@@ -52,6 +52,17 @@ helper that Claude calls each turn. Connect it from a clone of this repo:
    conversation.
 4. Start a new chat. Claude should open with an italic *Prompt Coach:* greeting. When it asks to use a Prompt Coach
    tool, pick **Always allow**.
+5. If a new chat doesn't greet you until you ask for the coach, add one line to Claude's own instructions, which it
+   reads in every chat (*Settings > Profile*, the box for personal preferences):
+
+   ```
+   In every conversation, use my Prompt Coach tools without being asked: call coach_turn with my message
+   before you reply to each message I send, starting with the very first one, and follow what it returns.
+   ```
+
+   In chat nothing can force Claude to run a tool: a skill is only opened when Claude judges it relevant, and
+   this line is the one thing it always reads. The first `coach_turn` of a conversation carries the greeting, so
+   that single call is enough to start the coach.
 
 Why the waiting: a running Claude keeps its settings in memory and writes them back every few seconds, so a config
 edit made while it runs (even with Claude's own *Edit Config*) is erased before the next start. And the terminal
@@ -133,6 +144,10 @@ changed, and nothing on it is sent anywhere.
   example you can copy.
 - **Your habits** over time, **how much you use AI** (by week or day, never by hour), and your **streak and badges**.
 
+The page is a file (`~/.prompt-coach/dashboard.html`). Once you've made it, the coach keeps it current (at the
+start of each session and whenever your streak, level or badges change), so reloading an open tab or a bookmark
+shows today's numbers.
+
 Every chart has a table view, keyboard access and hover details; it works in light and dark mode and on a phone.
 `coach.py dashboard --demo` builds one from made-up history, for showing people.
 
@@ -184,8 +199,12 @@ Levels are deliberately hard and **can go down** if habits slip:
 A level is only lost when you fall about 6 points **below** its gate, so one off day doesn't flip it.
 The window counts prompts, not calendar days, so a vacation doesn't cost you a level.
 
-Streaks count working days (weekends don't break one) with at least one good-habit moment: a
-context-rich request or a revision.
+Streaks count days in a row with at least one good-habit moment: a context-rich request or a revision.
+Weekends off don't break one (and a weekend day you do use counts), but a missed working day does. The number
+moves once a day, on the first good-habit moment, and the coach says so when it happens ("Streak: 4 days in a
+row."). Until then the welcome note says what would move it ("2-day streak, and a well-set-up request today
+makes it 3"). Every place that shows the streak (welcome note, scoreboard, dashboard) shows it as it stands
+today, so a streak that has lapsed reads 0, not its old value. A day of only bare requests does not count.
 
 ## What `/prompt-coach:score` shows
 
@@ -209,7 +228,7 @@ Right feature      ████████████  100%
 Showing up         ████████████  100%
 
 Best next step: revising drafts.
-Streak: 6 working days (best 9) · Last 14 days: ▆▁▁▄██▄▆▁▁██▄▆
+Streak: 6 days in a row (best 9) · Last 14 days: ▆▁▁▄██▄▆▁▁██▄▆
 
 > AI Fluency: Advanced (Level 3 of 4), score 62/100, 6-day streak,
 > revises 44% of the documents it generates.
