@@ -10,6 +10,7 @@ User subcommands:
     library             check the recommendation library file and summarize it
     eval [corpus]       measure trigger-detector accuracy on the labeled prompt corpus
     insights [--json]   is the coaching working? acceptance, misfits, and habit change
+    dashboard [--demo]  your AI habits over time, as a page in your browser (--no-open, --out PATH)
     demo                write a sample profile (into PROMPT_COACH_HOME) for screenshots
 
 Hook subcommands ALWAYS exit 0 and stay quiet on any error: a coaching tool
@@ -210,6 +211,33 @@ def cmd_library(_args):
     return 0
 
 
+def cmd_dashboard(args):
+    """Your AI habits over time, as a page in your browser (made on this computer)."""
+    from pcoach import dashboard
+    out = args[args.index("--out") + 1] if "--out" in args and args.index("--out") + 1 < len(args) else None
+    open_it = "--no-open" not in args
+    if "--demo" in args:
+        import tempfile
+        from pcoach import demo
+        home = tempfile.mkdtemp(prefix="prompt-coach-demo-")
+        old = os.environ.get("PROMPT_COACH_HOME")
+        os.environ["PROMPT_COACH_HOME"] = home
+        try:
+            demo.seed_history()
+            data = dashboard.build()
+        finally:
+            if old is None:
+                os.environ.pop("PROMPT_COACH_HOME", None)
+            else:
+                os.environ["PROMPT_COACH_HOME"] = old
+        path = dashboard.write(out or os.path.join(home, "dashboard.html"), data=data, open_browser=open_it)
+        print("Sample dashboard with made-up data: %s" % path)
+        return 0
+    path = dashboard.write(out, open_browser=open_it)
+    print("Your dashboard: %s" % path)
+    return 0
+
+
 def cmd_insights(args):
     from pcoach import insights
     r = insights.build()
@@ -245,7 +273,7 @@ def main(argv):
         return run_hook(cmd)
     table = {"score": cmd_score, "settings": cmd_settings, "doctor": cmd_doctor, "demo": cmd_demo,
              "library": cmd_library, "eval": cmd_eval,
-             "insights": cmd_insights}
+             "insights": cmd_insights, "dashboard": cmd_dashboard}
     if cmd not in table:
         print(__doc__)
         return 1

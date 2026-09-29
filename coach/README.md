@@ -93,6 +93,7 @@ Commands (all optional):
 | `/prompt-coach:score` | Your scoreboard, what's between you and the next level, and a **shareable summary** + badge for your manager. |
 | `/prompt-coach:coach` | Ask for coaching on demand. |
 | `/prompt-coach:practice` | A 3-minute practice round. Never affects your score. |
+| `/prompt-coach:dashboard` | Your AI habits over time, as a page in your browser (see below). |
 | `/prompt-coach:settings` | Pause (`pause 2h`), `resume`, `off`, `intensity light\|normal\|frequent`, `export`, `reset`, `doctor`. |
 | The `coach` agent | Ask "how am I doing overall?" for a fuller check-up and a 3-step plan. |
 
@@ -116,6 +117,25 @@ python coach/scripts/coach.py library
 
 The coach picks up changes on the next message. The research table many entries came from is
 [`docs/BEST-PRACTICES-SOURCE.md`](../docs/BEST-PRACTICES-SOURCE.md).
+
+## Your dashboard
+
+`/prompt-coach:dashboard` (or `python coach/scripts/coach.py dashboard`, or asking in chat to see your trends) builds a
+page from your own history and opens it in your browser. It's for you, not for anyone else: it leads with what
+changed, and nothing on it is sent anywhere.
+
+- **Your score** as a ring, with the next level marked, and how far you've come since you started.
+- **What changed:** plain-language shifts between your earlier and recent messages ("'Audience not named' comes up
+  less: 31% → 13%"). Drag the handle on the timeline to compare any two stretches.
+- **This week:** a short recap with wins and one thing to try, with a **Copy recap** button.
+- **Score over time**, with the score each level needs. **Set a goal** (a level and a date) and the chart draws the
+  pace line; the goal card says whether you're on track and what the level still needs.
+- **Habit gaps the coach spotted:** tap one to see what it means, what the coach suggests, and a before/after
+  example you can copy.
+- **Your habits** over time, **how much you use AI** (by week or day, never by hour), and your **streak and badges**.
+
+Every chart has a table view, keyboard access and hover details; it works in light and dark mode and on a phone.
+`coach.py dashboard --demo` builds one from made-up history, for showing people.
 
 ## Is the coaching working?
 

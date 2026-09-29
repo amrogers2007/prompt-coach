@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your AI habits</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f2f2f5;
+    --surface: #fcfcfb;
+    --surface-2: #f4f4f1;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #7a7873;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.08);
+    --series: #2a78d6;
+    --series-soft: rgba(42, 120, 214, 0.16);
+    --early: #86b6ef;
+    --recent: #1c5cab;
+    --good: #006300;
+    --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 8px 24px rgba(11, 11, 11, 0.05);
+    --pop: 0 8px 28px rgba(11, 11, 11, 0.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-2: #232322;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #9b998f;
+      --grid: #2c2c2a;
+      --axis: #4a4a46;
+      --border: rgba(255, 255, 255, 0.10);
+      --series: #3987e5;
+      --series-soft: rgba(57, 135, 229, 0.22);
+      --early: #1c5cab;
+      --recent: #6da7ec;
+      --good: #0ca30c;
+      --shadow: none;
+      --pop: 0 8px 28px rgba(0, 0, 0, 0.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #232322;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #9b998f;
+    --grid: #2c2c2a;
+    --axis: #4a4a46;
+    --border: rgba(255, 255, 255, 0.10);
+    --series: #3987e5;
+    --series-soft: rgba(57, 135, 229, 0.22);
+    --early: #1c5cab;
+    --recent: #6da7ec;
+    --good: #0ca30c;
+    --shadow: none;
+    --pop: 0 8px 28px rgba(0, 0, 0, 0.55);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; }
+  header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px 24px; }
+  header h1 { font-size: 30px; line-height: 1.15; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .lede { color: var(--ink-2); margin: 0; }
+  .filters { display: flex; gap: 6px; }
+  .filters button {
+    font: inherit; font-size: 14px; color: var(--ink-2); background: transparent; border: 0;
+    border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  }
+  .filters button[aria-pressed="true"] { color: var(--ink); background: var(--surface); box-shadow: var(--shadow); font-weight: 600; }
+  button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--series); outline-offset: 2px;
+  }
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; margin-top: 20px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow);
+    padding: 20px 22px; grid-column: span 12; min-width: 0;
+  }
+  .span-4 { grid-column: span 4; }
+  .span-6 { grid-column: span 6; }
+  .span-8 { grid-column: span 8; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  .card h2 { font-size: 16px; margin: 0; letter-spacing: -0.005em; }
+  .eyebrow { font-size: 13px; font-weight: 600; color: var(--series); margin: 0 0 6px; letter-spacing: 0.01em; }
+  .card-sub { color: var(--ink-2); font-size: 14px; margin: 2px 0 0; }
+  .ghost {
+    font: inherit; font-size: 13px; color: var(--ink-2); background: transparent; white-space: nowrap;
+    border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; cursor: pointer;
+  }
+  .ghost:hover { color: var(--ink); border-color: var(--axis); }
+  .primary {
+    font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: var(--series); border: 0;
+    border-radius: 999px; padding: 8px 16px; cursor: pointer;
+  }
+  .link { font: inherit; font-size: 13px; color: var(--series); background: none; border: 0; padding: 0; cursor: pointer; }
+  /* hero */
+  .hero { display: flex; gap: 22px; align-items: center; }
+  .hero-text { min-width: 0; }
+  .hero-value { font-size: 44px; font-weight: 700; line-height: 1; margin: 0; letter-spacing: -0.02em; }
+  .hero-level { font-size: 15px; font-weight: 600; margin: 8px 0 0; }
+  .delta { font-size: 14px; margin: 6px 0 0; color: var(--ink-2); }
+  .delta.good { color: var(--good); font-weight: 600; }
+  .hint { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink);
+    background: var(--series-soft); border-radius: 999px; padding: 3px 10px; margin-top: 12px;
+  }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--series); }
+  .ring-num { font-size: 34px; font-weight: 700; fill: var(--ink); }
+  .ring-den { font-size: 12px; fill: var(--ink-2); }
+  /* kpis */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi { min-width: 0; }
+  .kpi-label { font-size: 13px; color: var(--ink-2); margin: 0; }
+  .kpi-value { font-size: 30px; font-weight: 700; margin: 2px 0 0; line-height: 1.15; letter-spacing: -0.01em; }
+  .kpi-sub { font-size: 13px; color: var(--ink-2); margin: 2px 0 0; }
+  .kpi svg { display: block; margin-top: 8px; }
+  /* what changed + divider */
+  ul.changes { list-style: none; padding: 0; margin: 4px 0 0; display: grid; gap: 10px; }
+  ul.changes li { display: flex; gap: 10px; align-items: baseline; }
+  ul.changes .icon { flex: none; width: 18px; text-align: center; font-weight: 700; color: var(--ink-2); }
+  ul.changes li.good .icon { color: var(--good); }
+  ul.changes .tag { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-left: 6px; white-space: nowrap; }
+  ul.changes li.good .tag { color: var(--good); }
+  .divider { margin: 4px 0 14px; }
+  .divider svg { display: block; overflow: visible; touch-action: none; cursor: col-resize; border-radius: 8px; }
+  .divider-labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); margin-top: 6px; gap: 12px; }
+  .divider-labels b { color: var(--ink); font-weight: 600; }
+  /* recap */
+  .recap p { margin: 0 0 8px; }
+  .recap .head { font-weight: 600; }
+  .recap ul { margin: 0 0 8px; padding-left: 20px; }
+  .recap li { margin: 2px 0; }
+  .recap .try { color: var(--ink-2); }
+  /* charts */
+  .chart { width: 100%; }
+  .chart svg { display: block; overflow: visible; }
+  .tick { font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+  .end-label { font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .goal-label { font-size: 12px; font-weight: 600; fill: var(--ink-2); }
+  .hit { cursor: crosshair; outline: none; }
+  .bar-hit { cursor: default; outline: none; }
+  .small-multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px 18px; }
+  .sm h3 { font-size: 14px; margin: 0; }
+  .sm p { font-size: 13px; color: var(--ink-2); margin: 0 0 4px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--ink-2); margin: 0 0 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  /* gaps */
+  .gap { border-top: 1px solid var(--grid); }
+  .gap:first-of-type { border-top: 0; }
+  .gap-row {
+    width: 100%; display: block; text-align: left; font: inherit; color: inherit; background: none; border: 0;
+    padding: 10px 0; cursor: pointer; border-radius: 8px;
+  }
+  .gap-row:hover { background: color-mix(in srgb, var(--grid) 40%, transparent); }
+  .gap-name { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin: 0 0 4px; }
+  .gap-name .chev { color: var(--muted); font-size: 12px; transition: transform 0.15s; }
+  .gap-row[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  .gap-detail { padding: 4px 0 16px; display: grid; gap: 12px; }
+  .gap-detail h4 { font-size: 13px; color: var(--ink-2); font-weight: 600; margin: 0 0 2px; }
+  .gap-detail p { margin: 0; }
+  .example { display: grid; gap: 8px; }
+  .ex { border-radius: 12px; padding: 10px 12px; background: var(--surface-2); }
+  .ex .lbl { font-size: 12px; font-weight: 600; color: var(--ink-2); margin: 0 0 2px; }
+  .ex.after { border: 1px solid var(--series-soft); }
+  .ex q { quotes: "“" "”"; }
+  .ex-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+  .db-axis { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  /* goal */
+  .goal-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-top: 8px; }
+  .goal-form label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
+  .goal-form select, .goal-form input {
+    font: inherit; font-size: 14px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 7px 10px;
+  }
+  .goal-line { font-size: 18px; font-weight: 600; margin: 0; }
+  .meter { height: 8px; border-radius: 999px; background: var(--series-soft); margin: 12px 0 6px; overflow: hidden; }
+  .meter > div { height: 100%; background: var(--series); border-radius: 999px; }
+  .meter-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .status { font-size: 14px; margin: 10px 0 0; }
+  .status b { font-weight: 600; }
+  ul.needs { margin: 8px 0 0; padding-left: 20px; color: var(--ink-2); font-size: 14px; }
+  .goal-actions { display: flex; gap: 14px; margin-top: 10px; }
+  /* milestones */
+  .miles { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; }
+  .miles > div { min-width: 0; }
+  .streak-num { font-size: 40px; font-weight: 700; line-height: 1; margin: 0; letter-spacing: -0.02em; }
+  .streak-num small { font-size: 15px; font-weight: 500; color: var(--ink-2); }
+  .cal { display: grid; grid-template-columns: repeat(7, 22px); gap: 6px; margin-top: 12px; }
+  .cal-day { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--grid); background: transparent; }
+  .cal-day.used { border-color: var(--series); }
+  .cal-day.good { border-color: var(--series); background: var(--series); }
+  .cal-day.future { border-color: transparent; }
+  .cal-legend { display: grid; gap: 4px; font-size: 12px; color: var(--ink-2); margin-top: 12px; }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .cal-legend .cal-day { width: 12px; height: 12px; border-width: 2px; }
+  .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .badge { display: flex; gap: 10px; align-items: center; min-width: 0; }
+  .badge svg { flex: none; }
+  .badge h3 { font-size: 14px; margin: 0; }
+  .badge p { font-size: 12px; color: var(--ink-2); margin: 2px 0 0; }
+  .badge.locked h3 { color: var(--ink-2); font-weight: 500; }
+  .badge-check { font-size: 15px; font-weight: 700; fill: var(--series); }
+  .badge-frac { font-size: 11px; font-weight: 600; fill: var(--ink-2); }
+  table.data { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  table.data th, table.data td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--grid); }
+  table.data th:first-child, table.data td:first-child { text-align: left; }
+  table.data th { color: var(--ink-2); font-weight: 600; }
+  .table-box { overflow-x: auto; }
+  .empty { text-align: center; padding: 48px 20px; color: var(--ink-2); }
+  .empty h2 { color: var(--ink); }
+  .note { font-size: 14px; color: var(--ink-2); margin: 0; }
+  footer { margin-top: 28px; font-size: 13px; color: var(--ink-2); }
+  #tip {
+    position: fixed; z-index: 10; pointer-events: none; max-width: 260px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: var(--pop); padding: 8px 10px; font-size: 13px;
+  }
+  #tip .t-title { color: var(--ink-2); margin-bottom: 2px; }
+  #tip .t-row { display: flex; align-items: center; gap: 6px; }
+  #tip .t-row strong { font-size: 14px; }
+  #tip .t-key { width: 12px; height: 2px; border-radius: 1px; flex: none; }
+  #tip .t-row span.lbl { color: var(--ink-2); }
+  @media (max-width: 860px) {
+    .span-4, .span-6, .span-8 { grid-column: span 12; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .miles { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .hero { gap: 16px; }
+    .hero-value { font-size: 36px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Your AI habits</h1>
+      <p class="lede" id="lede">How you use AI, and how it's changing.</p>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="Time range"></div>
+  </header>
+  <main class="grid" id="main"></main>
+  <footer id="foot">
+    Made on this computer from numbers the coach keeps. Your messages are never stored, and this page loads nothing
+    from the internet.
+  </footer>
+</div>
+<div id="tip" role="status" aria-live="polite" hidden></div>
+<script type="application/json" id="data">/*__DATA__*/null</script>
+<script>
+(function () {
+  "use strict";
+  var DATA = null;
+  try { DATA = JSON.parse(document.getElementById("data").textContent); } catch (e) { DATA = null; }
+  DATA = DATA || { rows: [], empty: true };
+  var NS = "http://www.w3.org/2000/svg";
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var LEVELS = ["Beginner", "Practitioner", "Advanced", "Expert"];
+  var SUM_KEYS = ["prompts", "new", "ctx_sum", "ctx_n", "prec_sum", "prec_n", "verify", "feat_yes", "feat_n",
+                  "coached", "taken", "declined", "misfit", "docs", "docs_done", "docs_revised"];
+  var PHRASES = {
+    context: ["You give the AI more context", "You're giving the AI less context", true],
+    precision: ["You say more often what a good answer looks like", "You say less often what a good answer looks like", true],
+    verification: ["You ask the AI to check its work more often", "You ask the AI to check its work less often", false],
+    iteration: ["You revise more of the documents AI makes for you", "You accept more first drafts as they are", false],
+    feature: ["You work from files more often instead of pasting", "You paste text more often instead of using files", false]
+  };
+  var state = { range: "all", split: null, openGap: null, goal: loadGoal(), tables: {} };
+  var TODAY = DATA.last_day || null;
+
+  // ---- storage (per-viewer conveniences only) ----------------------------------------------
+  function loadGoal() {
+    try {
+      var g = JSON.parse(localStorage.getItem("pc-goal") || "null");
+      if (g && g.level >= 2 && g.level <= 4 && /^\d{4}-\d{2}-\d{2}$/.test(g.date || "")) return g;
+    } catch (e) { /* storage may be unavailable */ }
+    return null;
+  }
+  function saveGoal(g) {
+    try { if (g) localStorage.setItem("pc-goal", JSON.stringify(g)); else localStorage.removeItem("pc-goal"); } catch (e) { /* ignore */ }
+  }
+
+  // ---- small helpers ---------------------------------------------------------------------------
+  function h(tag, props) {
+    var n = document.createElement(tag);
+    props = props || {};
+    Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v === null || v === undefined || v === false) return;
+      if (k === "class") n.className = v;
+      else if (k === "text") n.textContent = v;
+      else if (k.indexOf("on") === 0) n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v === true ? "" : v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c === null || c === undefined || c === false) continue;
+      if (Array.isArray(c)) c.forEach(function (x) { if (x) n.append(x); });
+      else n.append(c instanceof Node ? c : document.createTextNode(String(c)));
+    }
+    return n;
+  }
+  function sv(tag, attrs, parent) {
+    var n = document.createElementNS(NS, tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
+    });
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function svText(parent, attrs, text) { var t = sv("text", attrs, parent); t.textContent = text; return t; }
+  function parseDay(d) { var p = d.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function iso(x) {
+    return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
+  }
+  function addDays(d, n) { var x = parseDay(d); x.setDate(x.getDate() + n); return iso(x); }
+  function daysBetween(a, b) { return Math.round((parseDay(b) - parseDay(a)) / 86400000); }
+  function fmtDay(d) { var x = parseDay(d); return MON[x.getMonth()] + " " + x.getDate(); }
+  function fmtDayYear(d) { var x = parseDay(d); return MON[x.getMonth()] + " " + x.getDate() + ", " + x.getFullYear(); }
+  function fmtStamp(ts) { var x = new Date(ts * 1000); return MON[x.getMonth()] + " " + x.getDate() + ", " + x.getFullYear(); }
+  function weekOf(d) { var x = parseDay(d); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return iso(x); }
+  function round(v) { return v === null || v === undefined ? "–" : String(Math.round(v)); }
+  function pct(v) { return v === null || v === undefined ? "–" : Math.round(v) + "%"; }
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : (many || one + "s")); }
+  function niceMax(v) {
+    if (v <= 5) return 5;
+    var p = Math.pow(10, Math.floor(Math.log10(v))), f = v / p;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+  }
+  function copyText(text, btn) {
+    var done = function () { var old = btn.textContent; btn.textContent = "Copied"; setTimeout(function () { btn.textContent = old; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+    } else fallback();
+    function fallback() {
+      var ta = h("textarea", { style: "position:fixed;left:-9999px;top:0" });
+      ta.value = text; document.body.append(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = "Select and copy the text above"; }
+      ta.remove();
+    }
+  }
+
+  // ---- data shaping --------------------------------------------------------------------------------
+  function merge(rows, key, label) {
+    var b = { key: key, label: label, activeDays: 0, goodDays: 0, issues: {}, score: null, level: null,
+              first: rows.length ? rows[0].day : null, last: rows.length ? rows[rows.length - 1].day : null };
+    SUM_KEYS.forEach(function (k) { b[k] = 0; });
+    rows.forEach(function (r) {
+      SUM_KEYS.forEach(function (k) { b[k] += r[k] || 0; });
+      if (r.prompts > 0) b.activeDays++;
+      if (r.good_day) b.goodDays++;
+      Object.keys(r.issues || {}).forEach(function (t) { b.issues[t] = (b.issues[t] || 0) + r.issues[t]; });
+      if (r.score !== null && r.score !== undefined) { b.score = r.score; b.level = r.level; }
+    });
+    return b;
+  }
+  function bucketize(rows) {
+    var weekly = rows.length > 35, order = [], groups = {};
+    rows.forEach(function (r) {
+      var k = weekly ? weekOf(r.day) : r.day;
+      if (!groups[k]) { groups[k] = []; order.push(k); }
+      groups[k].push(r);
+    });
+    return { weekly: weekly, days: weekly ? 7 : 1, buckets: order.map(function (k) {
+      return merge(groups[k], k, weekly ? "Week of " + fmtDay(k) : fmtDay(k));
+    }) };
+  }
+  function habit(b, key) {
+    if (key === "context") return b.ctx_n ? 100 * b.ctx_sum / b.ctx_n : null;
+    if (key === "precision") return b.prec_n ? 100 * b.prec_sum / b.prec_n : null;
+    if (key === "verification") return b.new ? 100 * b.verify / b.new : null;
+    if (key === "iteration") return b.docs_done ? 100 * b.docs_revised / b.docs_done : null;
+    if (key === "feature") return b.feat_n ? 100 * b.feat_yes / b.feat_n : null;
+    return null;
+  }
+  function issueRate(b, t) { return b.prompts ? 100 * (b.issues[t] || 0) / b.prompts : null; }
+  function rowsInRange() { return state.range === "all" ? DATA.rows : DATA.rows.slice(-Number(state.range)); }
+  function defaultSplit(rows) {
+    // The day "recently" starts: half of the messages fall on each side.
+    var total = rows.reduce(function (a, r) { return a + r.prompts; }, 0);
+    if (total < 10) return null;
+    var acc = 0;
+    for (var i = 0; i < rows.length; i++) {
+      acc += rows[i].prompts;
+      if (acc >= total / 2) {
+        var rest = rows.slice(i + 1).reduce(function (a, r) { return a + r.prompts; }, 0);
+        return rest >= 3 && i + 1 < rows.length ? rows[i + 1].day : null;
+      }
+    }
+    return null;
+  }
+  function compare(rows, splitDay) {
+    var early = rows.filter(function (r) { return r.day < splitDay; }), recent = rows.filter(function (r) { return r.day >= splitDay; });
+    return { early: merge(early, "early", "Earlier"), recent: merge(recent, "recent", "Recently"), splitDay: splitDay };
+  }
+  function changes(cmp) {
+    var out = [];
+    DATA.habits.forEach(function (hb) {
+      var a = habit(cmp.early, hb.key), b = habit(cmp.recent, hb.key);
+      if (a === null || b === null || Math.abs(b - a) < 8) return;
+      var ph = PHRASES[hb.key], up = b > a;
+      out.push({ good: up, size: Math.abs(b - a),
+                 text: (up ? ph[0] : ph[1]) + ": " + (ph[2] ? round(a) + " → " + round(b) + " out of 100" : pct(a) + " → " + pct(b)) });
+    });
+    Object.keys(DATA.issue_names).forEach(function (t) {
+      var a = issueRate(cmp.early, t) || 0, b = issueRate(cmp.recent, t) || 0;
+      if (Math.max(a, b) < 10 || Math.abs(a - b) < 5) return;
+      var less = b < a;
+      out.push({ good: less, size: Math.abs(a - b),
+                 text: "“" + DATA.issue_names[t] + "” comes up " + (less ? "less" : "more") + ": " + pct(a) + " → " + pct(b) + " of your messages" });
+    });
+    out.sort(function (x, y) { return (y.good - x.good) || (y.size - x.size); });
+    return out.filter(function (c) { return c.good; }).slice(0, 3).concat(out.filter(function (c) { return !c.good; }).slice(0, 1));
+  }
+  function scoreOn(day) {           // the score as it stood at the end of a given day (or the nearest earlier one)
+    var s = null;
+    for (var i = 0; i < DATA.rows.length && DATA.rows[i].day <= day; i++) if (DATA.rows[i].score !== null) s = DATA.rows[i].score;
+    return s;
+  }
+
+  // ---- tooltip --------------------------------------------------------------------------------------
+  var tip = document.getElementById("tip");
+  function showTip(title, rows, x, y) {
+    tip.textContent = "";
+    if (title) tip.append(h("div", { class: "t-title", text: title }));
+    rows.forEach(function (r) {
+      var key = r.color ? h("span", { class: "t-key", style: "background:" + r.color }) : null;
+      tip.append(h("div", { class: "t-row" }, key, h("strong", { text: r.value }), h("span", { class: "lbl", text: r.label || "" })));
+    });
+    tip.hidden = false;
+    var w = tip.offsetWidth, ht = tip.offsetHeight, px = x + 14, py = y + 14;
+    if (px + w > window.innerWidth - 8) px = x - w - 14;
+    if (py + ht > window.innerHeight - 8) py = y - ht - 14;
+    tip.style.left = Math.max(8, px) + "px";
+    tip.style.top = Math.max(8, py) + "px";
+  }
+  function hideTip() { tip.hidden = true; }
+
+  // ---- charts -----------------------------------------------------------------------------------------
+  function ring(size, value, max, opts) {
+    opts = opts || {};
+    var r = (size - (opts.stroke || 10)) / 2, c = 2 * Math.PI * r, frac = Math.max(0, Math.min(1, (value || 0) / max));
+    var svg = sv("svg", { width: size, height: size, viewBox: "0 0 " + size + " " + size, role: "img", "aria-label": opts.aria || "" });
+    sv("circle", { cx: size / 2, cy: size / 2, r: r, fill: "none", stroke: "var(--series-soft)", "stroke-width": opts.stroke || 10 }, svg);
+    sv("circle", { cx: size / 2, cy: size / 2, r: r, fill: "none", stroke: "var(--series)", "stroke-width": opts.stroke || 10,
+                   "stroke-linecap": "round", "stroke-dasharray": (c * frac) + " " + c, transform: "rotate(-90 " + size / 2 + " " + size / 2 + ")" }, svg);
+    if (opts.marker !== undefined && opts.marker !== null) {           // e.g. the next level's score
+      var a = -Math.PI / 2 + 2 * Math.PI * Math.min(1, opts.marker / max);
+      sv("circle", { cx: size / 2 + r * Math.cos(a), cy: size / 2 + r * Math.sin(a), r: 4, fill: "var(--surface)", stroke: "var(--series)", "stroke-width": 2 }, svg);
+    }
+    return svg;
+  }
+
+  function xLabels(svg, n, x, yPos, labels, maxLabels) {
+    var step = Math.max(1, Math.ceil(n / maxLabels)), shown = [];
+    for (var i = 0; i < n; i += step) shown.push(i);
+    if (shown[shown.length - 1] !== n - 1) {
+      if (n - 1 - shown[shown.length - 1] < step / 2 && shown.length > 1) shown.pop();
+      shown.push(n - 1);
+    }
+    shown.forEach(function (i, k) {
+      var anchor = shown.length === 1 ? "middle" : k === 0 ? "start" : k === shown.length - 1 ? "end" : "middle";
+      svText(svg, { x: x(i), y: yPos, "text-anchor": anchor, class: "tick" }, labels[i]);
+    });
+  }
+
+  function lineChart(host, o) {
+    host.textContent = "";
+    var W = Math.max(220, host.clientWidth || 600), H = o.height || 240;
+    var narrow = W < 520;     // on a phone the level labels sit inside the plot instead of beside it
+    var m = { l: o.compact ? 30 : 40, r: o.thresholds && !narrow ? 118 : (o.compact ? 30 : 44), t: 14, b: 26 };
+    var svg = sv("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": o.aria }, host);
+    var pts = o.points, n = pts.length, iw = W - m.l - m.r, ih = H - m.t - m.b;
+    function x(i) { return m.l + (n === 1 ? iw / 2 : iw * i / (n - 1)); }
+    function y(v) { return m.t + ih - ih * v / o.yMax; }
+    (o.compact ? [0, 50, 100] : [0, 25, 50, 75, 100]).forEach(function (t) {
+      sv("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: "var(--grid)", "stroke-width": 1, "shape-rendering": "crispEdges" }, svg);
+      svText(svg, { x: m.l - 8, y: y(t) + 4, "text-anchor": "end", class: "tick" }, String(t));
+    });
+    (o.thresholds || []).forEach(function (th) {
+      sv("line", { x1: m.l, x2: W - m.r, y1: y(th.value), y2: y(th.value), stroke: "var(--axis)", "stroke-width": 1, "shape-rendering": "crispEdges" }, svg);
+      if (narrow) svText(svg, { x: W - m.r, y: y(th.value) - 4, "text-anchor": "end", class: "tick" }, th.label + " " + th.value);
+      else svText(svg, { x: W - m.r + 8, y: y(th.value) + 4, class: "tick" }, th.label + " " + th.value);
+    });
+    xLabels(svg, n, x, H - 6, pts.map(function (p) { return p.short || p.label; }), o.compact ? 2 : Math.max(2, Math.floor(iw / 80)));
+    var d = "", pen = false, lastI = -1;
+    pts.forEach(function (p, i) {
+      if (p.value === null || p.value === undefined) { pen = false; return; }
+      d += (pen ? "L" : "M") + x(i).toFixed(1) + "," + y(p.value).toFixed(1);
+      pen = true; lastI = i;
+    });
+    sv("path", { d: d, fill: "none", stroke: "var(--series)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    pts.forEach(function (p, i) {     // a point with no neighbours would otherwise be invisible
+      var v = p.value, prev = i > 0 ? pts[i - 1].value : null, next = i < n - 1 ? pts[i + 1].value : null;
+      if (v !== null && v !== undefined && (prev === null || prev === undefined) && (next === null || next === undefined) && i !== lastI)
+        sv("circle", { cx: x(i), cy: y(v), r: 3, fill: "var(--series)" }, svg);
+    });
+    if (o.goal && lastI >= 0) {       // the pace line to a goal: a projection, so it is dashed
+      var gi = o.goal.index, gv = o.goal.value, lv0 = pts[lastI].value;
+      sv("line", { x1: x(lastI), y1: y(lv0), x2: x(gi), y2: y(gv), stroke: "var(--series)", "stroke-width": 2, "stroke-dasharray": "5 5", "stroke-linecap": "round" }, svg);
+      sv("circle", { cx: x(gi), cy: y(gv), r: 5, fill: "var(--surface)", stroke: "var(--series)", "stroke-width": 2 }, svg);
+      svText(svg, { x: x(gi), y: y(gv) - 11, "text-anchor": "middle", class: "goal-label" }, o.goal.label);
+    }
+    if (lastI >= 0) {
+      var lv = pts[lastI].value;
+      sv("circle", { cx: x(lastI), cy: y(lv), r: 4, fill: "var(--series)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+      var nearRight = x(lastI) > W - m.r - 30;
+      svText(svg, { x: x(lastI) + (nearRight ? 8 : 0), y: y(lv) - 10, "text-anchor": nearRight ? "start" : "middle", class: "end-label" }, o.fmt(lv));
+    }
+    var cross = sv("line", { y1: m.t, y2: m.t + ih, stroke: "var(--axis)", "stroke-width": 1, visibility: "hidden" }, svg);
+    var dot = sv("circle", { r: 4.5, fill: "var(--series)", stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }, svg);
+    var hit = sv("rect", { x: m.l - 6, y: m.t, width: iw + 12, height: ih, fill: "transparent", tabindex: 0, class: "hit", role: "img",
+                           "aria-label": o.aria + ". Use the arrow keys to read each value." }, svg);
+    var cur = lastI >= 0 ? lastI : 0;
+    function show(i, cx, cy) {
+      cur = i;
+      var p = pts[i], has = p.value !== null && p.value !== undefined;
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+      if (has) { dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(p.value)); dot.setAttribute("visibility", "visible"); }
+      else dot.setAttribute("visibility", "hidden");
+      var r = svg.getBoundingClientRect();
+      showTip(p.label, [{ value: has ? o.fmt(p.value) : (p.future ? "goal path" : "no data"), label: o.valueLabel, color: "var(--series)" }].concat(p.extra || []),
+              cx !== undefined ? cx : r.left + x(i), cy !== undefined ? cy : r.top + (has ? y(p.value) : m.t));
+    }
+    function hide() { cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); hideTip(); }
+    hit.addEventListener("pointermove", function (e) {
+      var r = svg.getBoundingClientRect(), px = e.clientX - r.left;
+      show(n === 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round((px - m.l) / iw * (n - 1)))), e.clientX, e.clientY);
+    });
+    hit.addEventListener("pointerleave", hide);
+    hit.addEventListener("focus", function () { show(cur); });
+    hit.addEventListener("blur", hide);
+    hit.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") { show(Math.max(0, Math.min(n - 1, cur + (e.key === "ArrowLeft" ? -1 : 1)))); e.preventDefault(); }
+    });
+  }
+
+  function columnChart(host, o) {
+    host.textContent = "";
+    var W = Math.max(220, host.clientWidth || 600), H = o.height || 220;
+    var m = { l: 40, r: 16, t: 20, b: 26 };
+    var svg = sv("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": o.aria }, host);
+    var bars = o.bars, n = bars.length, iw = W - m.l - m.r, ih = H - m.t - m.b;
+    var maxV = niceMax(Math.max.apply(null, bars.map(function (b) { return b.value; }).concat([1])));
+    var band = iw / n, bw = Math.max(2, Math.min(24, band - 4));
+    function x(i) { return m.l + band * i + band / 2; }
+    function y(v) { return m.t + ih - ih * v / maxV; }
+    [0, maxV / 2, maxV].forEach(function (t) {
+      sv("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": 1, "shape-rendering": "crispEdges" }, svg);
+      svText(svg, { x: m.l - 8, y: y(t) + 4, "text-anchor": "end", class: "tick" }, String(Math.round(t)));
+    });
+    xLabels(svg, n, x, H - 6, bars.map(function (b) { return b.short || b.label; }), 6);
+    bars.forEach(function (b, i) {
+      var g = sv("g", { class: "bar-hit", tabindex: 0, role: "img", "aria-label": b.label + ": " + b.value + " " + o.valueLabel }, svg);
+      sv("rect", { x: m.l + band * i, y: m.t, width: band, height: ih, fill: "transparent" }, g);
+      var shape = null;
+      if (b.value > 0) {
+        var top = y(b.value), base = y(0), left = x(i) - bw / 2, r = Math.min(4, (base - top) / 2, bw / 2);
+        shape = sv("path", { d: "M" + left + "," + base + "V" + (top + r) + "Q" + left + "," + top + " " + (left + r) + "," + top +
+                             "H" + (left + bw - r) + "Q" + (left + bw) + "," + top + " " + (left + bw) + "," + (top + r) + "V" + base + "Z", fill: "var(--series)" }, g);
+      }
+      function on(e) {
+        if (shape) shape.setAttribute("fill-opacity", "0.75");
+        var r2 = svg.getBoundingClientRect();
+        showTip(b.label, [{ value: String(b.value), label: o.valueLabel, color: "var(--series)" }].concat(b.extra || []),
+                e && e.clientX !== undefined ? e.clientX : r2.left + x(i), e && e.clientY !== undefined ? e.clientY : r2.top + y(b.value));
+      }
+      function off() { if (shape) shape.removeAttribute("fill-opacity"); hideTip(); }
+      g.addEventListener("pointermove", on); g.addEventListener("pointerleave", off);
+      g.addEventListener("focus", function () { on(); }); g.addEventListener("blur", off);
+    });
+    var last = bars[n - 1];
+    if (last && last.value > 0) svText(svg, { x: x(n - 1), y: y(last.value) - 6, "text-anchor": "middle", class: "end-label" }, String(last.value));
+  }
+
+  function sparkline(values) {
+    var W = 140, H = 30, n = values.length, maxV = Math.max.apply(null, values.concat([1]));
+    var svg = sv("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, "aria-hidden": "true" });
+    if (n < 2) return svg;
+    function x(i) { return 2 + (W - 8) * i / (n - 1); }
+    function y(v) { return H - 3 - (H - 8) * v / maxV; }
+    var d = values.map(function (v, i) { return (i ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1); }).join("");
+    sv("path", { d: d, fill: "none", stroke: "var(--axis)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    sv("circle", { cx: x(n - 1), cy: y(values[n - 1]), r: 3.5, fill: "var(--series)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    return svg;
+  }
+
+  function dumbbellRow(row, r, maxV, twoSides) {
+    var W = Math.max(200, row.clientWidth || 600), H = 24, m = { l: 6, r: 48 };
+    var svg = sv("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, "aria-hidden": "true" }, row);
+    function x(v) { return m.l + (W - m.l - m.r) * Math.min(v || 0, maxV) / maxV; }
+    sv("line", { x1: m.l, x2: W - m.r, y1: 12, y2: 12, stroke: "var(--grid)", "stroke-width": 1 }, svg);
+    if (twoSides) {
+      sv("line", { x1: x(r.early), x2: x(r.recent), y1: 12, y2: 12, stroke: "var(--axis)", "stroke-width": 2, "stroke-linecap": "round" }, svg);
+      sv("circle", { cx: x(r.early), cy: 12, r: 5.5, fill: "var(--early)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    }
+    sv("circle", { cx: x(r.recent), cy: 12, r: 5.5, fill: "var(--recent)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    svText(svg, { x: Math.max(x(r.early), x(r.recent)) + 12, y: 16, class: "end-label" }, pct(r.recent));
+  }
+
+  function table(headers, rows) {
+    return h("table", { class: "data" },
+      h("thead", {}, h("tr", {}, headers.map(function (t) { return h("th", { scope: "col", text: t }); }))),
+      h("tbody", {}, rows.map(function (r) {
+        return h("tr", {}, r.map(function (c, i) { return i === 0 ? h("th", { scope: "row", text: c }) : h("td", { text: c }); }));
+      })));
+  }
+
+  // ---- cards ---------------------------------------------------------------------------------------------
+  function card(id, title, sub, drawChart, makeTable, cls) {
+    var chartBox = h("div", { class: "chart" }), tableBox = h("div", { class: "table-box" });
+    var btn = makeTable ? h("button", { class: "ghost", type: "button", "aria-pressed": state.tables[id] ? "true" : "false",
+                                        text: state.tables[id] ? "Show chart" : "Show table" }) : null;
+    var root = h("section", { class: "card " + (cls || ""), id: id, "aria-labelledby": id + "-t" },
+                 h("div", { class: "card-head" }, h("div", {}, h("h2", { id: id + "-t", text: title }), sub ? h("p", { class: "card-sub", text: sub }) : null), btn),
+                 chartBox, tableBox);
+    function apply() {
+      chartBox.hidden = !!state.tables[id]; tableBox.hidden = !state.tables[id];
+      if (btn) { btn.textContent = state.tables[id] ? "Show chart" : "Show table"; btn.setAttribute("aria-pressed", state.tables[id] ? "true" : "false"); }
+    }
+    if (btn) btn.addEventListener("click", function () { state.tables[id] = !state.tables[id]; apply(); if (!state.tables[id]) drawChart(chartBox); });
+    if (makeTable) tableBox.append(makeTable());
+    apply();
+    return { root: root, draw: function () { if (!state.tables[id]) drawChart(chartBox); } };
+  }
+
+  function heroCard(rows, first) {
+    var cur = DATA.current, score = cur.score, level = cur.level;
+    var nextName = level < 4 ? LEVELS[level] : null, gate = nextName ? DATA.gates[nextName] : null;
+    var r = ring(132, score, 100, { stroke: 11, marker: gate, aria: "AI Fluency score " + round(score) + " out of 100" });
+    svText(r, { x: 66, y: 72, "text-anchor": "middle", class: "ring-num" }, round(score));
+    svText(r, { x: 66, y: 90, "text-anchor": "middle", class: "ring-den" }, "of 100");
+    var text = h("div", { class: "hero-text" },
+      h("p", { class: "eyebrow", text: "AI Fluency score" }),
+      h("p", { class: "hero-level", text: cur.level_name + " · level " + level + " of 4" }));
+    if (first && first.score !== null && score !== null && first.first !== rows[rows.length - 1].day) {
+      var dlt = score - first.score;
+      text.append(h("p", { class: "delta" + (dlt > 0 ? " good" : ""),
+        text: (dlt > 0 ? "▲ " + dlt + " points" : dlt < 0 ? "▼ " + (-dlt) + " points" : "No change") + " since " + fmtDay(first.first) }));
+    }
+    if (nextName) text.append(h("p", { class: "hint", text: "Next: " + nextName + " at " + gate + " (the small dot on the ring)." }));
+    if (cur.streak > 1) text.append(h("span", { class: "pill" }, h("span", { class: "dot", "aria-hidden": "true" }), cur.streak + "-day streak"));
+    return h("section", { class: "card span-4", "aria-label": "Your score" }, h("div", { class: "hero" }, r, text));
+  }
+
+  function kpiCard(all, B, unit, rows) {
+    function kpi(label, value, sub, spark) {
+      return h("div", { class: "kpi" }, h("p", { class: "kpi-label", text: label }), h("p", { class: "kpi-value", text: value }),
+               sub ? h("p", { class: "kpi-sub", text: sub }) : null, spark || null);
+    }
+    var perBucket = B.map(function (b) { return b.prompts; });
+    var revised = all.docs_done ? 100 * all.docs_revised / all.docs_done : null;
+    return h("section", { class: "card span-8", "aria-label": "Totals for this period" },
+      h("p", { class: "eyebrow", text: "This period" }),
+      h("div", { class: "kpis" },
+        kpi("Messages to AI", all.prompts.toLocaleString(), "most in one " + unit + ": " + Math.max.apply(null, perBucket), sparkline(perBucket)),
+        kpi("Active days", String(all.activeDays), "of " + plural(rows.length, "day") + ", " + all.goodDays + " with a good-habit moment"),
+        kpi("Tips taken", String(all.taken), all.coached ? "of " + plural(all.coached, "tip") + " offered" : "no tips offered yet"),
+        kpi("Drafts revised", revised === null ? "–" : pct(revised), all.docs_done ? all.docs_revised + " of " + plural(all.docs_done, "AI-made document") : "no AI-made documents yet")));
+  }
+
+  function changesCard(rows, bk) {
+    var B = bk.buckets, body = h("div", {});
+    var root = h("section", { class: "card span-8", "aria-labelledby": "chg-t" },
+      h("div", { class: "card-head" }, h("div", {}, h("h2", { id: "chg-t", text: "What changed" }),
+        h("p", { class: "card-sub", text: state.split ? "Your earlier messages compared with your recent ones. Drag the handle to move the line."
+                                                     : "Keep going: after a week or two, this compares your early and recent habits." }))));
+    if (state.split && B.length > 1) {
+      // The divider: message counts per period as a strip, with a draggable split.
+      var strip = h("div", { class: "divider" }), labels = h("div", { class: "divider-labels" });
+      root.append(strip, labels);
+      var W = 0, n = B.length;
+      function draw() {
+        strip.textContent = "";
+        W = Math.max(220, strip.clientWidth || 600);
+        var H = 40, maxV = Math.max.apply(null, B.map(function (b) { return b.prompts; }).concat([1]));
+        var idx = B.findIndex(function (b) { return b.key >= state.split; }); if (idx < 1) idx = 1;
+        var svg = sv("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, tabindex: 0, role: "slider", "aria-valuemin": 1, "aria-valuemax": n - 1,
+                              "aria-valuenow": idx, "aria-valuetext": "Recently starts " + fmtDay(B[idx].key), "aria-label": "Where 'recently' starts" }, strip);
+        sv("rect", { x: 0, y: 0, width: W, height: H, rx: 8, fill: "var(--surface-2)" }, svg);
+        var bw = W / n;
+        B.forEach(function (b, i) {
+          var hh = Math.max(2, (H - 10) * b.prompts / maxV);
+          sv("rect", { x: i * bw + 1, y: H - 4 - hh, width: Math.max(1, bw - 2), height: hh, rx: 1, fill: i >= idx ? "var(--recent)" : "var(--early)" }, svg);
+        });
+        var sx = idx * bw;
+        sv("line", { x1: sx, x2: sx, y1: 0, y2: H, stroke: "var(--ink)", "stroke-width": 2 }, svg);
+        sv("circle", { cx: sx, cy: H / 2, r: 8, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 2 }, svg);
+        function setIdx(i) {
+          i = Math.max(1, Math.min(n - 1, i));
+          if (B[i].key === state.split) return;
+          state.split = B[i].key; draw(); refreshCompare();
+        }
+        svg.addEventListener("pointerdown", function (e) { svg.setPointerCapture(e.pointerId); move(e); });
+        svg.addEventListener("pointermove", function (e) { if (e.buttons) move(e); });
+        function move(e) { var r = svg.getBoundingClientRect(); setIdx(Math.round((e.clientX - r.left) / r.width * n)); }
+        svg.addEventListener("keydown", function (e) {
+          if (e.key === "ArrowLeft") { setIdx(idx - 1); e.preventDefault(); }
+          if (e.key === "ArrowRight") { setIdx(idx + 1); e.preventDefault(); }
+        });
+        var cmp = compare(rows, state.split);
+        labels.textContent = "";
+        labels.append(h("span", {}, h("b", { text: "Earlier" }), ": " + fmtDay(cmp.early.first) + "–" + fmtDay(cmp.early.last) + ", " + plural(cmp.early.prompts, "message")),
+                      h("span", {}, h("b", { text: "Recently" }), ": since " + fmtDay(cmp.recent.first) + ", " + plural(cmp.recent.prompts, "message")));
+      }
+      root.append(body);
+      return { root: root, draw: draw, body: body };
+    }
+    root.append(body);
+    return { root: root, draw: function () {}, body: body };
+  }
+  function fillChanges(body, rows) {
+    body.textContent = "";
+    if (!state.split) return;
+    var ch = changes(compare(rows, state.split));
+    if (!ch.length) { body.append(h("p", { class: "note", text: "No big shifts between these two stretches: your habits are steady." })); return; }
+    body.append(h("ul", { class: "changes" }, ch.map(function (c) {
+      return h("li", { class: c.good ? "good" : "" }, h("span", { class: "icon", "aria-hidden": "true", text: c.good ? "▲" : "•" }),
+               h("span", {}, c.text, h("span", { class: "tag", text: c.good ? "Improving" : "Worth a look" })));
+    })));
+  }
+
+  function recapCard() {
+    var rows = DATA.rows, n = rows.length;
+    var last7 = rows.slice(-7), prev7 = rows.slice(Math.max(0, n - 14), Math.max(0, n - 7));
+    var a = merge(last7, "w", "This week"), b = merge(prev7, "p", "Last week");
+    var lines = [], wins = [], tryLine = null;
+    var head = "Week of " + fmtDay(last7[0].day) + "–" + fmtDay(last7[last7.length - 1].day);
+    if (a.prompts === 0) {
+      lines.push("A quiet week: no messages to AI.");
+    } else {
+      lines.push(plural(a.prompts, "message") + " on " + plural(a.activeDays, "day") + (b.prompts ? " (the week before: " + b.prompts + ")" : "") + ".");
+      var s1 = rows[n - 1].score, s0 = n > 7 ? rows[n - 8].score : rows[0].score;
+      if (s1 !== null && s0 !== null && s1 !== s0) lines.push("Score " + s0 + " → " + s1 + " (" + (s1 > s0 ? "+" : "") + (s1 - s0) + ").");
+      DATA.habits.forEach(function (hb) {
+        var x = habit(b, hb.key), y = habit(a, hb.key);
+        if (x !== null && y !== null && y - x >= 8) wins.push({ size: y - x, text: PHRASES[hb.key][0].replace("You ", "") + " (" + (PHRASES[hb.key][2] ? round(x) + " → " + round(y) : pct(x) + " → " + pct(y)) + ")" });
+      });
+      Object.keys(DATA.issue_names).forEach(function (t) {
+        var x = issueRate(b, t) || 0, y = issueRate(a, t) || 0;
+        if (x >= 10 && x - y >= 5) wins.push({ size: x - y, text: "“" + DATA.issue_names[t] + "” came up less (" + pct(x) + " → " + pct(y) + ")" });
+      });
+      if (a.docs_done && a.docs_revised / a.docs_done >= 0.5) wins.push({ size: 1, text: "revised " + a.docs_revised + " of " + plural(a.docs_done, "AI-made draft") });
+      if (a.taken) wins.push({ size: 1, text: "took " + plural(a.taken, "coaching tip") });
+      wins.sort(function (p, q) { return q.size - p.size; });
+      wins = wins.slice(0, 3);
+      var top = Object.keys(a.issues).sort(function (p, q) { return a.issues[q] - a.issues[p]; })[0];
+      if (top && a.issues[top] >= 2 && DATA.gap_info[top]) {
+        tryLine = "Try next week: " + DATA.gap_info[top].title.toLowerCase() + ". Instead of “" + DATA.gap_info[top].before + "” try “" + DATA.gap_info[top].after + "”";
+      }
+    }
+    var text = ["My AI habits, " + head.toLowerCase()].concat(lines, wins.length ? ["Wins: " + wins.map(function (w) { return w.text; }).join("; ") + "."] : [], tryLine ? [tryLine] : []).join("\n");
+    var btn = h("button", { class: "ghost", type: "button", text: "Copy recap", onclick: function () { copyText(text, btn); } });
+    var root = h("section", { class: "card span-4 recap", "aria-labelledby": "recap-t" },
+      h("div", { class: "card-head" }, h("div", {}, h("h2", { id: "recap-t", text: "This week" }), h("p", { class: "card-sub", text: head })), btn));
+    lines.forEach(function (l) { root.append(h("p", { text: l })); });
+    if (wins.length) root.append(h("p", { class: "head", text: "Wins" }), h("ul", {}, wins.map(function (w) { return h("li", { text: w.text }); })));
+    if (tryLine) root.append(h("p", { class: "try", text: tryLine }));
+    if (!wins.length && a.prompts > 0) root.append(h("p", { class: "try", text: "Steady week. Wins show up here when a habit moves." }));
+    return root;
+  }
+
+  function scoreCard(bk, unit) {
+    var B = bk.buckets, cur = DATA.current;
+    var pts = B.map(function (b) { return { label: b.label, short: fmtDay(b.key), value: b.score, extra: b.level ? [{ value: LEVELS[b.level - 1], label: "level" }] : [] }; });
+    var goal = null, g = state.goal;
+    if (g && TODAY && g.date > TODAY && g.level > cur.level) {
+      var target = DATA.gates[LEVELS[g.level - 1]], future = Math.max(1, Math.ceil(daysBetween(TODAY, g.date) / bk.days));
+      for (var i = 1; i <= future; i++) {
+        var day = addDays(B[B.length - 1].key, i * bk.days);
+        pts.push({ label: (bk.weekly ? "Week of " : "") + fmtDay(day), short: fmtDay(day), value: null, future: true });
+      }
+      goal = { index: pts.length - 1, value: target, label: "Goal " + target };
+    }
+    var thresholds = Object.keys(DATA.gates).map(function (k) { return { label: k, value: DATA.gates[k] }; });
+    return card("score", "AI Fluency score over time", "Your score at the end of each " + unit + ", with the score each level needs." + (goal ? " The dashed line is the pace to your goal." : ""),
+      function (box) { lineChart(box, { points: pts, yMax: 100, thresholds: thresholds, height: 260, fmt: round, valueLabel: "score", goal: goal,
+                                        aria: "AI Fluency score by " + unit + ", now " + round(cur.score) }); },
+      function () { return table(["Period", "Score", "Level"], B.map(function (b) { return [b.label, round(b.score), b.level ? LEVELS[b.level - 1] : "–"]; })); });
+  }
+
+  function goalCard() {
+    var cur = DATA.current, root = h("section", { class: "card span-6", "aria-labelledby": "goal-t" });
+    var head = h("div", { class: "card-head" }, h("div", {}, h("h2", { id: "goal-t", text: "Your goal" })));
+    root.append(head);
+    if (cur.level >= 4) {
+      root.append(h("p", { class: "note", text: "You've reached Expert, the top level. Keep the habits going: the score can slip if they do." }));
+      return root;
+    }
+    var g = state.goal;
+    function form() {
+      var sel = h("select", {}, LEVELS.map(function (name, i) { return i + 1 > cur.level ? h("option", { value: i + 1, text: name + " (score " + DATA.gates[name] + ")" }) : null; }));
+      var date = h("input", { type: "date", value: g ? g.date : addDays(TODAY, 56), min: addDays(TODAY, 1) });
+      if (g) sel.value = String(g.level);
+      var save = h("button", { class: "primary", type: "button", text: "Save goal", onclick: function () {
+        if (!date.value || date.value <= TODAY) { date.focus(); return; }
+        state.goal = { level: Number(sel.value), date: date.value }; saveGoal(state.goal); render();
+      } });
+      return h("div", { class: "goal-form" }, h("label", {}, "Reach", sel), h("label", {}, "By", date), save,
+               g ? h("button", { class: "link", type: "button", text: "Cancel", onclick: render }) : null);
+    }
+    if (!g || g.level <= cur.level) {
+      if (g && g.level <= cur.level) { root.append(h("p", { class: "note", text: "You reached your goal of " + LEVELS[g.level - 1] + ". Time for the next one?" })); }
+      else root.append(h("p", { class: "note", text: "Pick a level and a date, and the score chart shows the pace you'd need." }));
+      root.append(form());
+      return root;
+    }
+    var name = LEVELS[g.level - 1], target = DATA.gates[name], score = cur.score || 0;
+    var daysLeft = daysBetween(TODAY, g.date), weeksLeft = Math.max(daysLeft, 1) / 7, need = Math.max(0, target - score);
+    var back = Math.min(28, DATA.rows.length - 1), then = back > 0 ? scoreOn(addDays(TODAY, -back)) : null;
+    var pace = then !== null && back >= 7 ? (score - then) / (back / 7) : null;
+    var perWeek = need / weeksLeft;
+    root.append(h("p", { class: "goal-line", text: "Reach " + name + " by " + fmtDayYear(g.date) }));
+    root.append(h("div", { class: "meter", role: "img", "aria-label": "Score " + score + " of " + target }, h("div", { style: "width:" + Math.min(100, 100 * score / target) + "%" })));
+    root.append(h("div", { class: "meter-labels" }, h("span", { text: "score " + score }), h("span", { text: "needs " + target })));
+    var status;
+    if (daysLeft <= 0) status = h("p", { class: "status" }, h("b", { text: "That date has passed." }), " Set a new one below.");
+    else if (need === 0) status = h("p", { class: "status" }, h("b", { text: "Score target met." }), " Keep it up until " + fmtDay(g.date) + "; the level also needs the steady use listed below.");
+    else {
+      var verdict = pace === null ? "Too early to tell your pace: check back after a week." : pace >= perWeek ? "On track." : pace > 0 ? "A bit behind." : "Behind pace.";
+      status = h("p", { class: "status" }, h("b", { text: verdict }), " " + need + " points to go in " + plural(Math.round(weeksLeft), "week") + ": about " + perWeek.toFixed(1) + " a week." +
+                 (pace !== null ? " Your recent pace: " + (pace >= 0 ? "+" : "") + pace.toFixed(1) + " a week." : ""));
+    }
+    root.append(status);
+    var needs = g.level === cur.level + 1 ? DATA.needs : ["Reach " + LEVELS[cur.level] + " first; the steps to it are:"].concat(DATA.needs);
+    if (needs.length) root.append(h("ul", { class: "needs" }, needs.map(function (t) { return h("li", { text: t }); })));
+    root.append(h("div", { class: "goal-actions" },
+      h("button", { class: "link", type: "button", text: "Change goal", onclick: function () { root.append(form()); } }),
+      h("button", { class: "link", type: "button", text: "Remove goal", onclick: function () { state.goal = null; saveGoal(null); render(); } })));
+    return root;
+  }
+
+  function gapsCard(rows, hasSplit) {
+    var body = h("div", {});
+    var root = h("section", { class: "card", "aria-labelledby": "gaps-t" },
+      h("div", { class: "card-head" }, h("div", {}, h("h2", { id: "gaps-t", text: "Habit gaps the coach spotted" }),
+        h("p", { class: "card-sub", text: (hasSplit ? "Share of your messages where each came up, earlier vs. recently. " : "Share of your messages where each came up. ") + "Lower is better. Tap one to see the fix." }))),
+      body);
+    return { root: root, body: body };
+  }
+  function fillGaps(body, rows) {
+    body.textContent = "";
+    var all = merge(rows, "all", "All"), cmp = state.split ? compare(rows, state.split) : null;
+    var keys = Object.keys(DATA.issue_names).filter(function (t) { return all.issues[t]; }).sort(function (a, b) { return all.issues[b] - all.issues[a]; }).slice(0, 6);
+    if (!keys.length) { body.append(h("p", { class: "note", text: "No habit gaps spotted in this period. Nice." })); return; }
+    var gaps = keys.map(function (t) {
+      return { key: t, name: DATA.issue_names[t], total: all.issues[t], early: cmp ? issueRate(cmp.early, t) : null, recent: cmp ? issueRate(cmp.recent, t) : issueRate(all, t) };
+    });
+    var maxV = Math.min(100, niceMax(Math.max.apply(null, gaps.map(function (r) { return Math.max(r.early || 0, r.recent || 0); }).concat([20]))));
+    if (cmp) body.append(h("div", { class: "legend" },
+      h("span", {}, h("i", { class: "swatch", style: "background:var(--early)" }), "Earlier"),
+      h("span", {}, h("i", { class: "swatch", style: "background:var(--recent)" }), "Recently (since " + fmtDay(cmp.recent.first) + ")")));
+    gaps.forEach(function (r) {
+      var info = DATA.gap_info[r.key] || {}, open = state.openGap === r.key;
+      var btn = h("button", { class: "gap-row", type: "button", "aria-expanded": open ? "true" : "false",
+        onclick: function () { state.openGap = open ? null : r.key; fillGaps(body, rows); } },
+        h("div", { class: "gap-name" }, h("span", { text: r.name + " · " + plural(r.total, "time") }), h("span", { class: "chev", "aria-hidden": "true", text: "▶" })));
+      var wrap = h("div", { class: "gap" }, btn);
+      body.append(wrap);
+      dumbbellRow(btn, r, maxV, !!cmp);
+      btn.addEventListener("pointermove", function (e) {
+        showTip(r.name, (cmp ? [{ value: pct(r.early), label: "earlier", color: "var(--early)" }] : []).concat([{ value: pct(r.recent), label: cmp ? "recently" : "of messages", color: "var(--recent)" }]), e.clientX, e.clientY);
+      });
+      btn.addEventListener("pointerleave", hideTip);
+      if (open) {
+        var after = info.after || "";
+        var copyBtn = h("button", { class: "ghost", type: "button", text: "Copy the better version", onclick: function () { copyText(after, copyBtn); } });
+        wrap.append(h("div", { class: "gap-detail" },
+          h("div", {}, h("h4", { text: "What it means" }), h("p", { text: info.when || "" })),
+          h("div", {}, h("h4", { text: "What the coach suggests" }), h("p", { text: info.recommend || "" })),
+          h("div", { class: "example" }, h("h4", { text: "Try it" }),
+            h("div", { class: "ex" }, h("p", { class: "lbl", text: "Instead of" }), h("q", { text: info.before || "" })),
+            h("div", { class: "ex after" }, h("p", { class: "lbl", text: "Try" }), h("q", { text: after }),
+              h("div", { class: "ex-foot" }, h("span", { class: "note", text: info.title || "" }), copyBtn)))));
+      }
+    });
+    body.append(h("div", { class: "db-axis" }, h("span", { text: "0% of messages" }), h("span", { text: maxV + "%" })));
+  }
+
+  function habitsCard(bk, unit) {
+    var B = bk.buckets;
+    return card("habits", "Your habits", "Each on a 0–100 scale. Gaps mean no data that " + unit + ".",
+      function (box) {
+        box.textContent = "";
+        var grid = h("div", { class: "small-multiples" });
+        box.append(grid);
+        DATA.habits.forEach(function (hb) {
+          var vals = B.map(function (b) { return habit(b, hb.key); }), known = vals.filter(function (v) { return v !== null; });
+          var summary = known.length ? (known.length > 1 ? round(known[0]) + " → " + round(known[known.length - 1]) : "Now " + round(known[0])) : "No data yet";
+          var host = h("div", { class: "chart" });
+          grid.append(h("div", { class: "sm" }, h("h3", { text: hb.name }), h("p", { text: summary, title: hb.help }), host));
+          lineChart(host, { points: B.map(function (b, i) { return { label: b.label, short: fmtDay(b.key), value: vals[i] }; }), yMax: 100, height: 120, compact: true,
+                            fmt: round, valueLabel: hb.name.toLowerCase(), aria: hb.name + " by " + unit + ": " + summary });
+        });
+      },
+      function () {
+        return table(["Period"].concat(DATA.habits.map(function (hb) { return hb.name; })),
+          B.map(function (b) { return [b.label].concat(DATA.habits.map(function (hb) { return round(habit(b, hb.key)); })); }));
+      });
+  }
+
+  function usageCard(bk, unit) {
+    var B = bk.buckets;
+    return card("usage", "How much you use AI", "Messages you sent each " + unit + ".",
+      function (box) {
+        columnChart(box, { height: 200, valueLabel: "messages", aria: "Messages per " + unit,
+          bars: B.map(function (b) { return { label: b.label, short: fmtDay(b.key), value: b.prompts,
+                                              extra: [{ value: String(b.activeDays), label: b.activeDays === 1 ? "active day" : "active days" }, { value: String(b.coached), label: "tips offered" }] }; }) });
+      },
+      function () { return table(["Period", "Messages", "Active days", "Tips offered", "Tips taken"], B.map(function (b) { return [b.label, String(b.prompts), String(b.activeDays), String(b.coached), String(b.taken)]; })); },
+      "span-6");
+  }
+
+  function milestonesCard() {
+    var cur = DATA.current, rows = DATA.rows;
+    var root = h("section", { class: "card", "aria-labelledby": "miles-t" },
+      h("div", { class: "card-head" }, h("div", {}, h("h2", { id: "miles-t", text: "Streak and badges" }), h("p", { class: "card-sub", text: "All time. A good-habit day is one with a well-set-up request or a revised draft." }))));
+    // streak + a four-week calendar
+    var streak = h("div", {}, h("p", { class: "streak-num" }, String(cur.streak), h("small", { text: " day streak" })),
+      h("p", { class: "kpi-sub", text: "Working days in a row with a good-habit moment. Best: " + cur.best_streak + "." }));
+    var byDay = {}; rows.forEach(function (r) { byDay[r.day] = r; });
+    var end = parseDay(TODAY), start = new Date(end); start.setDate(end.getDate() - 27 - (end.getDay() + 6) % 7);
+    var cal = h("div", { class: "cal", role: "img", "aria-label": "The last four weeks: filled dots are good-habit days" });
+    for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      var key = iso(d), r = byDay[key], cls = "cal-day" + (r && r.good_day ? " good" : r && r.prompts ? " used" : "");
+      var el = h("div", { class: cls, title: fmtDay(key) + ": " + (r && r.good_day ? "good-habit day" : r && r.prompts ? plural(r.prompts, "message") : "no AI use") });
+      cal.append(el);
+    }
+    streak.append(cal, h("div", { class: "cal-legend" },
+      h("span", {}, h("i", { class: "cal-day good" }), "good-habit day"), h("span", {}, h("i", { class: "cal-day used" }), "used AI"), h("span", {}, h("i", { class: "cal-day" }), "no use")));
+    // badges
+    var earned = DATA.achievements.filter(function (a) { return a.done; }).sort(function (a, b) { return (b.earned || 0) - (a.earned || 0); });
+    var locked = DATA.achievements.filter(function (a) { return !a.done; }).sort(function (a, b) { return b.have / b.need - a.have / a.need; });
+    var grid = h("div", { class: "badges" });
+    earned.concat(locked).forEach(function (a, i) {
+      var r = ring(44, a.done ? 1 : a.have, a.done ? 1 : a.need, { stroke: 5, aria: a.title + (a.done ? " earned" : " " + a.have + " of " + a.need) });
+      if (a.done) svText(r, { x: 22, y: 27.5, "text-anchor": "middle", class: "badge-check" }, "✓");
+      else svText(r, { x: 22, y: 26, "text-anchor": "middle", class: "badge-frac" }, a.have + "/" + a.need);
+      var sub = a.done ? (a.earned ? "Earned " + fmtStamp(a.earned) : "Earned") : (i === earned.length ? "Next up · " : "") + a.desc;
+      grid.append(h("div", { class: "badge" + (a.done ? "" : " locked"), title: a.desc }, r, h("div", {}, h("h3", { text: a.title }), h("p", { text: sub }))));
+    });
+    root.append(h("div", { class: "miles" }, streak, h("div", {}, h("p", { class: "eyebrow", text: earned.length + " of " + DATA.achievements.length + " badges" }), grid)));
+    return root;
+  }
+
+  // ---- page --------------------------------------------------------------------------------------------------
+  function filters() {
+    var box = document.getElementById("filters");
+    box.textContent = "";
+    var opts = [["all", "All time"]];
+    if (DATA.rows.length > 90) opts.push(["90", "90 days"]);
+    if (DATA.rows.length > 30) opts.push(["30", "30 days"]);
+    if (opts.length < 2) { box.hidden = true; return; }
+    opts.forEach(function (o) {
+      box.append(h("button", { type: "button", "aria-pressed": state.range === o[0] ? "true" : "false", text: o[1],
+                               onclick: function () { state.range = o[0]; state.split = null; filters(); render(); } }));
+    });
+  }
+
+  var drawers = [], refreshCompare = function () {};
+  function render() {
+    var main = document.getElementById("main");
+    main.textContent = ""; drawers = []; hideTip();
+    if (DATA.empty || !DATA.rows.length) {
+      main.append(h("section", { class: "card empty" }, h("h2", { text: "Nothing to show yet" }),
+        h("p", { text: "Use Claude with Prompt Coach on for a few days, then open this page again to see your habits and how they change." })));
+      return;
+    }
+    var rows = rowsInRange(), bk = bucketize(rows), B = bk.buckets, all = merge(rows, "all", "All"), unit = bk.weekly ? "week" : "day";
+    if (!state.split || state.split <= rows[0].day || state.split > rows[rows.length - 1].day) state.split = defaultSplit(rows);
+    document.getElementById("lede").textContent = fmtDay(rows[0].day) + " to " + fmtDay(rows[rows.length - 1].day) + ", by " + unit + ". Updated " + DATA.generated_label + ".";
+
+    var first = B.find(function (b) { return b.score !== null; });
+    main.append(heroCard(rows, first), kpiCard(all, B, unit, rows));
+    if (all.prompts < 10) main.append(h("section", { class: "card" }, h("p", { class: "note", text: "Early days: with " + plural(all.prompts, "message") + " so far, trends get meaningful after a week or two of use." })));
+
+    var chg = changesCard(rows, bk);
+    main.append(chg.root, recapCard());
+    var sc = scoreCard(bk, unit); main.append(sc.root); drawers.push(sc.draw);
+    var usage = usageCard(bk, unit);
+    main.append(goalCard(), usage.root); drawers.push(usage.draw);
+    var gaps = gapsCard(rows, !!state.split);
+    main.append(gaps.root);
+    var hb = habitsCard(bk, unit); main.append(hb.root); drawers.push(hb.draw);
+    main.append(milestonesCard());
+
+    refreshCompare = function () { fillChanges(chg.body, rows); fillGaps(gaps.body, rows); };
+    drawers.push(chg.draw);
+    refreshCompare();
+    drawers.forEach(function (fn) { fn(); });
+  }
+
+  var timer = null, lastW = window.innerWidth;
+  window.addEventListener("resize", function () {
+    if (window.innerWidth === lastW) return;
+    lastW = window.innerWidth; clearTimeout(timer);
+    timer = setTimeout(function () { drawers.forEach(function (fn) { fn(); }); refreshCompare(); }, 150);
+  });
+  filters();
+  render();
+})();
+</script>
+</body>
+</html>

@@ -98,6 +98,30 @@ public repo) shaped v0.3:
   when it first appears, so a before/after change is biased. Simulated pilots confirm the analysis finds a real effect
   (-11 pts) and shows none when behavior doesn't change (-2 pts).
 
+## The personal dashboard (v0.4)
+
+`coach.py dashboard` (also `/prompt-coach:dashboard` and, in chat, "show me my trends") renders
+`pcoach/dashboard_page.html` with the user's data baked in as JSON: one self-contained file, no network requests,
+saved next to the profile and opened in the default browser. Decisions:
+
+- **Personal first.** The user chose "me, checking my own progress" over a manager view, so the page leads with
+  "what changed" and is honest about weak spots. A team view can reuse `dashboard.build()` later; it is blocked on
+  the k-anonymity design in `PRIVACY-DESIGN.md`, this page is not.
+- **Replayed, not stored.** The score-over-time line is recomputed day by day from the event log with the same
+  `scoring` functions the coach uses, so it always agrees with `/score` and never needs a second store.
+- **Same data, plainer words.** Habit gaps come from the detector labels already logged (never message text).
+  Each gets a name, the library entry's *when* and *recommend*, and a before/after example (`GAP_EXAMPLES`); a
+  test checks the "better" version of each example no longer trips its own detector, which found three detector
+  gaps ("so staff stop…", "here's last month's…", listed priorities).
+- **Interactions:** a draggable divider that drives the earlier/recent comparison (also arrow keys), a goal
+  (level + date, kept in the browser's local storage, drawn as a dashed pace line with an on-track verdict and the
+  level's remaining gates), tap-to-expand fixes with copy, a copyable weekly recap, and badges with progress rings
+  plus a four-week good-habit calendar. The user asked for the game layer here; it stays off the public docs page.
+- **Not surveillance.** Counts are by week or day, never by hour; there are no session logs, no comparisons to
+  other people, and a test fails if the data ever carries hours, session ids or timestamps.
+- **Charts** follow the dataviz method: one accent hue, thin marks, hairline grid, direct end-labels only, table
+  view and keyboard access for every chart, validated light/dark palette.
+
 ## Open questions / next steps
 
 1. **Cowork/Desktop in practice.** Anthropic's docs say hooks/agents/skills load in Cowork. Untested by hand here.

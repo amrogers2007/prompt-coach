@@ -327,6 +327,9 @@ AUDIENCE_ANY = re.compile(
     r"\b(recent grads|non-?technical|beginners?|experts?|audience|out[- ]of[- ]office|auto-?reply)\b", re.I)
 PURPOSE_ANY = re.compile(
     r"\bso (that )?(they|he|she|we|i|people|attendees|readers|everyone|it|the \w+) |"
+    # "so staff stop parking there", "so the team can plan": a purpose clause with any subject
+    r"\bso (that )?[a-z']+ (can|could|will|won'?t|stop|stops|know|knows|don'?t|doesn'?t|have|has|get|gets|"
+    r"understand|understands|see|sees|feel|feels|remember|remembers|start|starts)\b|"
     r"\b(to (persuade|convince|explain|teach|announce|apply|justify|negotiate|thank|apologi[sz]e|invite|"
     r"welcome|remind|recruit|celebrate|inform|update)|goal|purpose|because|in order to)\b|"
     r"\b(thank[- ]you|toast|apology|agreement|contract|press release|announcement|reminder|out[- ]of[- ]office|auto-?reply|condolence|invitation|cover letter|resignation|congratulat\w*|welcome|"
@@ -367,7 +370,9 @@ STYLE_REF = re.compile(
     r"\b(in the style of|same (style|format|tone|layout) as|like (our|my|the) (last|previous|usual|other)|"
     r"match(es|ing)? (our|my|the) (style|format|tone|template|brand|voice)|house style|brand voice|"
     r"our usual (style|format|tone)|like the one (in|from) (my|our) (last|previous|other)|the way (we|i) (usually|normally|always))\b", re.I)
-EXAMPLE_GIVEN = re.compile(r"\b(example|sample|here(?:'s| is) (one|what)|below|attached|like this:)", re.I)
+EXAMPLE_GIVEN = re.compile(
+    r"\b(example|sample|for instance|e\.g\.|here(?:'s| is| are) (one|what|last|the|my|our|this|a|an|two|three|some)\b|"
+    r"below|attached|like this:)", re.I)
 TASK_VERBS = ("write", "summarize", "summarise", "analyze", "analyse", "compare", "draft", "create",
               "research", "review", "translate", "plan", "calculate", "list", "outline", "edit", "rewrite",
               "find", "design", "recommend", "explain", "prepare", "build", "check", "organize", "schedule")

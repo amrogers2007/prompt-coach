@@ -19,7 +19,7 @@ import json
 import sys
 import time
 
-from . import __version__, controls, hooks, insights, report, scoring, store
+from . import __version__, controls, dashboard, hooks, insights, report, scoring, store
 
 SUPPORTED_PROTOCOLS = ("2025-06-18", "2025-03-26", "2024-11-05")
 IDLE_SESSION_SECONDS = 30 * 60
@@ -33,7 +33,9 @@ INSTRUCTIONS = (
     "\"Prompt Coach:\"). If it says nothing needs to be done, just answer.\n"
     "3. Whenever you create a document, deck, PDF, spreadsheet or similar file for the user, call coach_document "
     "with its kind and name, and follow what it returns. Call it again when you deliver a revised version.\n"
-    "4. If the user asks about their score, level, streak or progress, call coach_score and show the result.\n"
+    "4. If the user asks about their score, level, streak or progress, call coach_score and show the result. If "
+    "they want to see their dashboard, trends, or how their AI use has changed over time, call coach_score with "
+    "format dashboard: it opens a page in their browser.\n"
     "5. If the user asks to pause, resume, turn off, or change how often the coach speaks, call coach_settings. "
     "Also use it when they ask why the coach said something (action why), want a tip to stop (why, then mute with "
     "its id), or ask whether the coaching is working (insights; summarize it in two or three plain sentences).\n"
@@ -84,7 +86,8 @@ TOOLS = [
                        "(Markdown; present it as-is).",
         "inputSchema": {
             "type": "object",
-            "properties": {"format": {"type": "string", "enum": ["markdown", "json"], "default": "markdown"}},
+            "properties": {"format": {"type": "string", "enum": ["markdown", "json", "dashboard"], "default": "markdown",
+                                      "description": "dashboard opens the user's habits-over-time page in their browser."}},
             "additionalProperties": False,
         },
     },
@@ -109,10 +112,11 @@ TOOLS = [
 
 
 class Server:
-    def __init__(self):
+    def __init__(self, open_browser=True):
         self.started = time.time()
         self.session_id = "mcp-%d" % int(self.started)
         self.last_call = self.started
+        self.open_browser = open_browser        # tests turn this off
 
     # -- session id: chat gives us none, so roll one per burst of activity -------
     def session(self):
@@ -136,6 +140,11 @@ class Server:
             out = hooks.handle_document({"session_id": sid, "kind": args.get("kind"), "name": args.get("name")})
             return _context(out, "Nothing to add for this file.")
         if name == "coach_score":
+            if args.get("format") == "dashboard":
+                path = dashboard.write(open_browser=self.open_browser)
+                return ("The user's dashboard is open in their browser (saved at %s). It shows their AI Fluency score "
+                        "over time, how much they use AI, their habits, and which habit gaps are fading. Tell them in "
+                        "one or two sentences, and mention it was made on their computer." % path)
             r = report.build()
             report.write_shareables(r)
             return report.export_json(r) if args.get("format") == "json" else report.render_text(r)

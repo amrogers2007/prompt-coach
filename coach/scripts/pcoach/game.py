@@ -33,6 +33,21 @@ ACHIEVEMENTS = [
 ]
 _TITLES = {a[0]: a[1] for a in ACHIEVEMENTS}
 
+# How close the user is to each badge, for the dashboard: id -> (have, need).
+# Keep in step with the tests in ACHIEVEMENTS above (test_dashboard checks they agree).
+ACHIEVEMENT_PROGRESS = {
+    "first_steps": lambda s: (s["totals"]["prompts"], 1),
+    "second_draft": lambda s: (s["totals"]["revisions"], 1),
+    "draft_habit": lambda s: (s["totals"]["revisions"], 5),
+    "context_setter": lambda s: (s["totals"]["rich_prompts"], 5),
+    "fact_checker": lambda s: (s["totals"]["verifies"], 3),
+    "streak_3": lambda s: (s["streak"]["best"], 3),
+    "streak_7": lambda s: (s["streak"]["best"], 7),
+    "streak_14": lambda s: (s["streak"]["best"], 14),
+    "coachable": lambda s: (s["totals"].get("offers_accepted", 0), 3),
+    "clean_hands": lambda s: (s["totals"]["prompts"] if s["totals"]["sensitive"] == 0 else 0, 50),
+}
+
 
 def _to_date(day):
     return datetime.date.fromisoformat(day)
