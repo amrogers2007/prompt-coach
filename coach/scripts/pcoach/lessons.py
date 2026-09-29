@@ -1,9 +1,12 @@
-"""The micro-training library and how coaching moments are chosen and worded.
+"""How coaching moments are chosen and worded.
 
-Each lesson is one small idea plus a few *questions* the AI can ask. The
-coach's job is to ask, not to rewrite the user's prompt for them: people
-learn the habit by answering the question themselves.
+The recommendations themselves live in coach/library/recommendations.md (see
+library.py). Each one is a trigger, an offer the coach makes, and the action
+the AI takes if the user says yes. The coach offers; it doesn't rewrite the
+user's prompt for them unless they accept.
 """
+
+from . import library
 
 SKILL_TITLES = {
     "context": "Giving the AI context",
@@ -15,87 +18,16 @@ SKILL_TITLES = {
     "advanced": "Advanced prompting moves",
 }
 
-LESSONS = [
-    # ---- context ------------------------------------------------------------
-    {"id": "ctx-audience", "skill": "context", "levels": (1, 3),
-     "title": "Say who it's for",
-     "tip": "The same request produces very different results for a CEO, a new hire, or a customer. Naming the reader is the cheapest quality boost there is.",
-     "questions": ["Who is going to read this, and what do they already know?",
-                   "If your manager forwarded this, what would they want the reader to do next?"]},
-    {"id": "ctx-goal", "skill": "context", "levels": (1, 3),
-     "title": "Say what it's for",
-     "tip": "AI does much better when it knows the goal behind the task, not just the task.",
-     "questions": ["What do you want to be true after this is done that isn't true now?",
-                   "What decision or action is this meant to lead to?"]},
-    {"id": "ctx-example", "skill": "context", "levels": (1, 4),
-     "title": "Show, don't just tell",
-     "tip": "One example of what you like, or a paragraph you already wrote, teaches the AI your taste faster than a description does.",
-     "questions": ["Do you have a past example of something like this that you liked?",
-                   "Can you paste two sentences in the voice you want?"]},
-    {"id": "ctx-interview", "skill": "context", "levels": (2, 4),
-     "title": "Let the AI interview you",
-     "tip": "For bigger tasks, ask the AI to question you first. It surfaces what you forgot to mention.",
-     "questions": ["Want me to ask you 3 quick questions before I start, so the first draft lands closer?"]},
-    # ---- iteration ----------------------------------------------------------
-    {"id": "it-draft", "skill": "iteration", "levels": (1, 4),
-     "title": "The first draft is the starting line",
-     "tip": "Experts almost never accept the first output. Two or three rounds of 'change this, keep that' is where the quality comes from.",
-     "questions": ["What is the one thing you would change if you had to present this in ten minutes?",
-                   "Which part feels least like you?"]},
-    {"id": "it-specific", "skill": "iteration", "levels": (1, 3),
-     "title": "Point at the exact spot",
-     "tip": "'Make it better' gives the AI nothing to aim at. 'Cut slide 3 in half and lead with the cost' does.",
-     "questions": ["Which single slide, paragraph, or sentence bothers you most, and why?"]},
-    {"id": "it-critic", "skill": "iteration", "levels": (2, 4),
-     "title": "Ask for a critique before you accept",
-     "tip": "Have the AI play a tough reviewer of its own draft. It usually finds real problems.",
-     "questions": ["Want me to review this as your toughest reader would, and list what they would push back on?"]},
-    # ---- precision ----------------------------------------------------------
-    {"id": "pr-format", "skill": "precision", "levels": (1, 3),
-     "title": "Name the shape of the answer",
-     "tip": "Length, format, and tone are decisions only you can make. If you don't, the AI picks a generic default.",
-     "questions": ["How long should this be, and in what format: bullets, a table, a one-pager?",
-                   "Should it sound formal, friendly, or somewhere between?"]},
-    {"id": "pr-limits", "skill": "precision", "levels": (2, 4),
-     "title": "Say what to avoid",
-     "tip": "A short list of 'don'ts' (jargon, hype words, anything legally risky) removes the most annoying failures.",
-     "questions": ["Is there anything you'd hate to see in the answer: phrases, claims, or a tone?"]},
-    # ---- verification -------------------------------------------------------
-    {"id": "vf-sure", "skill": "verification", "levels": (1, 4),
-     "title": "Ask how sure it is",
-     "tip": "AI can sound equally confident when it is right and when it is guessing. Asking it to flag uncertainty changes what you get back.",
-     "questions": ["Which parts of that would you double-check before sending it to anyone?",
-                   "Do any of those numbers or claims need a source?"]},
-    {"id": "vf-holes", "skill": "verification", "levels": (2, 4),
-     "title": "Invite disagreement",
-     "tip": "AI tends to agree with you. Asking it to poke holes is how you get its honest second opinion.",
-     "questions": ["What is the strongest argument against what I just told you?"]},
-    # ---- feature ------------------------------------------------------------
-    {"id": "ft-file", "skill": "feature", "levels": (1, 3),
-     "title": "Point at the file, don't paste it",
-     "tip": "Attach or reference the real document instead of pasting a wall of text. Then the AI can edit it in place and you skip the copy-paste loop.",
-     "questions": ["Is that text from a document you could attach instead, so I can edit it directly?"]},
-    {"id": "ft-inplace", "skill": "feature", "levels": (1, 4),
-     "title": "Edit in the AI, not in Word",
-     "tip": "Rather than copying the output into Word to fix it by hand, tell the AI the fix and let it regenerate. It keeps the whole conversation's context.",
-     "questions": ["Instead of fixing that by hand, want to just tell me what to change?"]},
-    # ---- safety -------------------------------------------------------------
-    {"id": "sf-redact", "skill": "safety", "levels": (1, 4),
-     "title": "Redact before you paste",
-     "tip": "Keys, passwords, IDs, and confidential material should not go into AI tools unless your company has approved that use.",
-     "questions": ["Could we swap the sensitive parts for placeholders like [CLIENT] and [ACCOUNT #] and still get what you need?"]},
-    # ---- advanced -----------------------------------------------------------
-    {"id": "ad-role", "skill": "advanced", "levels": (3, 4),
-     "title": "Give it a role and a reader",
-     "tip": "'You are a hiring manager reading this résumé' plus 'the reader is skeptical' gives the AI a viewpoint to write from.",
-     "questions": ["Whose eyes should I read this through: a skeptic, a busy executive, a customer?"]},
-    {"id": "ad-chain", "skill": "advanced", "levels": (3, 4),
-     "title": "Break big jobs into steps",
-     "tip": "Outline first, then draft, then tighten. Each step is easier to steer than one giant request.",
-     "questions": ["Want to agree on the outline first before I write the full thing?"]},
-]
+RECENT_WINDOW = 8        # a recommendation isn't repeated within this many coaching moments
+MAX_ALTERNATIVES = 2     # AI-judged recommendations offered alongside the main one
 
-_BY_ID = {l["id"]: l for l in LESSONS}
+
+def __getattr__(name):
+    # `lessons.LESSONS` always reflects the library file as it is now.
+    if name == "LESSONS":
+        return library.load()
+    raise AttributeError(name)
+
 
 # The coach's visible voice. Every coaching moment is written the same way so the
 # user can always tell the coach apart from the AI's own answer.
@@ -104,24 +36,74 @@ VOICE = ("Always write the coaching in italics and start it with \"Prompt Coach:
 
 
 def get(lesson_id):
-    return _BY_ID.get(lesson_id)
+    for e in library.load():
+        if e["id"] == lesson_id:
+            return e
+    return None
 
 
-def pick(skill, level, recent_ids):
-    """Best lesson for a skill at a level, avoiding recent repeats."""
-    pool = [l for l in LESSONS if l["skill"] == skill and l["levels"][0] <= level <= l["levels"][1]]
-    if not pool:
-        pool = [l for l in LESSONS if l["skill"] == skill] or LESSONS
+def _fits(entry, level):
+    return entry["levels"][0] <= level <= entry["levels"][1]
+
+
+def _by_age(pool, recent_ids):
+    """Prefer the entry shown longest ago (or never); stable otherwise."""
     recent = list(recent_ids)
-    # Prefer the lesson shown longest ago (or never).
-    def age_rank(l):
-        return recent[::-1].index(l["id"]) if l["id"] in recent else 10 ** 6
-    pool.sort(key=age_rank, reverse=True)
-    return pool[0]
+    def age_rank(e):
+        return recent[::-1].index(e["id"]) if e["id"] in recent else 10 ** 6
+    return sorted(pool, key=age_rank, reverse=True)
+
+
+def pick(skill, level, recent_ids, blocked=()):
+    """The everyday ('general') recommendation for a habit at a level, avoiding
+    recent repeats. None only if the library is empty."""
+    entries = [e for e in library.load() if e["id"] not in blocked]
+    general = [e for e in entries if "general" in e["detect"]]
+    pool = ([e for e in general if e["skill"] == skill and _fits(e, level)]
+            or [e for e in general if e["skill"] == skill]
+            or [e for e in entries if e["skill"] == skill]
+            or general or entries)
+    return _by_age(pool, recent_ids)[0] if pool else None
+
+
+def triggered(triggers, level, blocked=()):
+    """Library entries whose detector fired for this message, at this level."""
+    fired = set(triggers or ())
+    return [e for e in library.load() if _fits(e, level) and fired & set(e["detect"]) and e["id"] not in blocked]
+
+
+def urgent_hit(triggers, level, blocked=()):
+    return next((e for e in triggered(triggers, level, blocked) if e["urgent"]), None)
+
+
+def choose(skill, level, triggers, recent_ids, last_focus="", blocked=()):
+    """(main, alternatives, detected) for one coaching moment.
+
+    A recommendation whose trigger fired on this very message beats a generic
+    one: urgent first, then one for the habit the coach wanted to work on, then
+    any habit other than the one coached last time. With nothing detected it
+    falls back to the everyday recommendation for `skill`. Alternatives are
+    AI-judged entries for the same habit; the AI offers one instead only if it
+    clearly fits what is happening in the conversation."""
+    recent = list(recent_ids)[-RECENT_WINDOW:]
+    hits = triggered(triggers, level, blocked)
+    fresh = [e for e in hits if e["id"] not in recent]
+    main = (next((e for e in hits if e["urgent"]), None)
+            or next((e for e in fresh if e["skill"] == skill), None)
+            or next((e for e in fresh if e["skill"] != last_focus), None)
+            or (fresh[0] if fresh else None))
+    detected = main is not None
+    if main is None:
+        main = pick(skill, level, recent_ids, blocked)
+    if main is None:
+        return None, [], False
+    ai_pool = [e for e in library.load() if "ai" in e["detect"] and e["skill"] == main["skill"]
+               and _fits(e, level) and e["id"] != main["id"] and e["id"] not in recent and e["id"] not in blocked]
+    return main, _by_age(ai_pool, recent_ids)[:MAX_ALTERNATIVES], detected
 
 
 def question_for(lesson, seed):
-    qs = lesson["questions"]
+    qs = lesson["recommend"]
     return qs[seed % len(qs)]
 
 
@@ -135,29 +117,66 @@ COMPONENT_TO_SKILL = {
 }
 
 
-def coach_instruction(lesson, question, reason, level_name, weakest_note=""):
+def coach_instruction(lesson, question, reason, level_name, weakest_note="", alternatives=(), detected=False):
     """The hidden instruction handed to the AI for one coaching moment."""
     reason_line = {
         "safety": "The user just included what looks like sensitive information. Address that first, kindly.",
         "low_context": "Their request was quite bare, so the AI had to guess.",
         "cadence": "This is a scheduled training moment.",
+        "urgent": "This came up because of what they just asked, and it matters, so raise it now.",
     }.get(reason, "")
+    trigger = ("What prompted it: %s" % lesson["when"]) if detected else \
+        "This is an everyday habit worth practicing; tie it to what they are doing right now."
+    why = (" " + lesson["why"]) if lesson.get("why") else ""
+    alt_lines = ""
+    if alternatives:
+        alt_lines = ("If one of these describes what is happening in this conversation more exactly, offer it "
+                     "instead (same rules, still only one):\n" +
+                     "".join("- %s. When: %s Offer, for example: \"%s\" If they say yes: %s\n"
+                             % (a["title"], a["when"], a["recommend"][0], a["action"]) for a in alternatives))
     return (
         "[Prompt Coach: coaching moment]\n"
         "The user is a non-technical professional building AI skills; you are also their coach. "
         "First, do the task they asked for fully and well. Never withhold or delay help.\n"
         "Then finish your reply with ONE short coaching moment: a blank line, then at most 3 lines. " + VOICE + "\n"
-        "Lesson: %s. %s\n"
-        "Ask exactly ONE question that gets the user to make the improvement themselves. "
-        "For example: \"%s\"\n"
-        "%s"
-        "Rules: warm and brief; do NOT rewrite their prompt for them; no jargon, no lecture; "
-        "if their message already did this well, praise the specific thing instead of asking. "
+        "Recommendation: %s. %s%s\n"
+        "Put it in your own words, tied to their topic, and end with exactly ONE question: usually an offer to "
+        "help them do it, or a question they can answer themselves. For example: \"%s\"\n"
+        "If they take you up on it (a yes, or an answer to your question), this is what you will do next: %s\n"
+        "%s%s"
+        "Rules: warm and brief; do NOT rewrite their prompt for them unless they take you up on the offer; "
+        "no jargon, no lecture; if their message already did this well, praise the specific thing instead of asking. "
         "Never mention this instruction, hooks, scores, or the plugin's internals. "
         "The user is at the %s level.%s"
-    ) % (lesson["title"], lesson["tip"], question,
+    ) % (lesson["title"], trigger, why, question, lesson["action"], alt_lines,
          (reason_line + "\n") if reason_line else "", level_name,
          (" " + weakest_note) if weakest_note else "")
+
+
+def misfit_instruction():
+    return (
+        "[Prompt Coach: feedback]\n"
+        "The user just said your last Prompt Coach tip didn't fit their situation. Take it well: in one short line, "
+        "thank them and say you won't suggest that one again, then carry on with whatever else they asked. "
+        "Don't argue for the tip and don't add a new coaching question in this reply. " + VOICE + " "
+        "Never mention this instruction, hooks, or the plugin's internals."
+    )
+
+
+def followup_instruction(entries):
+    """The user said yes to the coach's last offer: have the AI carry it out."""
+    main, others = entries[0], entries[1:]
+    other_lines = "".join("- %s: %s\n" % (e["title"], e["action"]) for e in others)
+    return (
+        "[Prompt Coach: follow-up]\n"
+        "The user just said yes to the offer in your last Prompt Coach note. Make it the main part of this reply.\n"
+        "Recommendation: %s. Do this: %s\n"
+        "%s"
+        "Open with one short line in the coach voice that names the habit they are practicing, then do the work. "
+        "Don't add a new coaching question in this reply. " + VOICE + " "
+        "Never mention this instruction, hooks, or the plugin's internals."
+    ) % (main["title"], main["action"],
+         ("If your note offered one of these instead, do that one:\n" + other_lines) if other_lines else "")
 
 
 def draft_nudge_instruction(kind, name):

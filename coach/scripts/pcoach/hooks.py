@@ -12,6 +12,7 @@ Output contract (Claude Code hooks):
 
 import hashlib
 import os
+import random
 import re
 
 from . import cadence, game, lessons, scoring, signals, store
@@ -19,6 +20,31 @@ from . import cadence, game, lessons, scoring, signals, store
 GEN_REFINE_CREDIT_MAX = 2       # a doc is "fully iterated" after this many revisions
 PENDING_STALE_SECONDS = 60 * 60  # an un-revised draft is "accepted" after an hour
 NUDGE_COOLDOWN_SECONDS = 90
+OFFER_TTL_SECONDS = 30 * 60      # a coaching offer can be accepted within this long
+OFFER_ACCEPTED_XP = 5
+DECLINES_BEFORE_MUTE = 2                 # two "no thanks" to the same tip mutes it...
+DECLINE_MUTE_SECONDS = 14 * 86400        # ...for two weeks
+MISFIT_MUTE_SECONDS = 30 * 86400         # "that doesn't apply" mutes it for a month
+
+_rng = random.Random()
+
+
+def _in_holdout(state, lesson, reason, detected, matched):
+    """Randomized holdout for pilots (settings: experiment <percent>).
+
+    Randomization is per user *and issue*: the first time an issue (trigger) is
+    spotted it is assigned for good to 'coach' or 'holdout'. Holding back single
+    moments instead would contaminate the comparison, because a user coached on
+    an issue once is no longer an untreated control for it. Safety and other
+    urgent tips are never withheld."""
+    share = float(state["settings"].get("holdout", 0) or 0)
+    if share <= 0 or not detected or not matched or lesson.get("urgent") or reason in ("safety", "urgent"):
+        return False
+    arms = state["coach"].setdefault("arms", {})
+    issue = matched[0]
+    if issue not in arms:
+        arms[issue] = "holdout" if _rng.random() < share else "coach"
+    return arms[issue] == "holdout"
 
 
 # --- helpers -------------------------------------------------------------------------
@@ -110,6 +136,8 @@ def handle_session(payload, delivery=None):
     session = _session(state, sid, ts)
     session["prompts"] = 0
     session["pending_gen"] = None
+    session["urgent_shown"] = []
+    session.pop("offer", None)
     store.prune_events()
 
     events = store.read_events(tail_bytes=store.RECENT_BYTES)
@@ -196,23 +224,76 @@ def _already_handled(state, text, ts, source):
     return seen_elsewhere
 
 
+def _take_offer(state, session, text, ts):
+    """The coach's last offer is only answerable by the very next message. A yes
+    returns the follow-up instruction (the AI carries out the recommendation);
+    anything else just lets the offer lapse."""
+    offer = session.pop("offer", None)
+    if not offer or ts - offer.get("ts", 0) > OFFER_TTL_SECONDS:
+        return None
+    coach = state["coach"]
+    lesson_id = offer["ids"][0]
+    if signals.is_misfit(text):
+        # The tip didn't fit: a false positive. Never repeat it for a month, and say so.
+        entry = lessons.get(lesson_id)
+        if not (entry and entry["urgent"]):      # safety tips are recorded but never silenced
+            coach["muted"][lesson_id] = ts + MISFIT_MUTE_SECONDS
+        store.append_event({"type": "offer_misfit", "lesson": lesson_id, "ts": ts})
+        return lessons.misfit_instruction()
+    if signals.is_decline(text):
+        declines = coach["declines"].get(lesson_id, 0) + 1
+        coach["declines"][lesson_id] = declines
+        if declines >= DECLINES_BEFORE_MUTE:
+            coach["muted"][lesson_id] = ts + DECLINE_MUTE_SECONDS
+            coach["declines"][lesson_id] = 0
+        store.append_event({"type": "offer_declined", "lesson": lesson_id, "ts": ts})
+        return None
+    if not signals.is_acceptance(text):
+        return None
+    entries = [e for e in (lessons.get(i) for i in offer["ids"]) if e]
+    if not entries:
+        return None
+    state["totals"]["offers_accepted"] += 1
+    state["xp"] += OFFER_ACCEPTED_XP
+    store.append_event({"type": "offer_accepted", "lesson": entries[0]["id"], "skill": entries[0]["skill"], "ts": ts})
+    return lessons.followup_instruction(entries)
+
+
 def handle_prompt(payload, delivery=None, source="hook"):
     text = payload.get("prompt") or ""
     ts = store.now()
     sid = payload.get("session_id") or "unknown"
 
-    if signals.is_trivial(text) or signals.is_coding_prompt(text):
+    if signals.is_coding_prompt(text):
+        return None
+    trivial = signals.is_trivial(text)
+    answer = signals.is_acceptance(text) or signals.is_decline(text) or signals.is_misfit(text)
+    if trivial and not answer:
         return None
 
     state = store.load_state()
     if not state["settings"].get("enabled", True):
         return None
+
+    if trivial or (answer and len(signals.words(text)) <= 6):
+        # A bare "yes" / "no thanks" / "that doesn't apply": an answer to the coach, not work to score.
+        session = state["sessions"].get(sid)
+        if not session or not session.get("offer"):
+            return None
+        followup = _take_offer(state, session, text, ts)
+        lines = game.toast_lines(0, None, game.check_achievements(state, ts), state["level"]) if followup else []
+        store.save_state(state)
+        if not followup:
+            return None
+        return _output(lines, followup, "UserPromptSubmit", delivery or delivery_mode(state["settings"]))
+
     if _already_handled(state, text, ts, source):
         store.save_state(state)
         return None
 
     session = _session(state, sid, ts)
     session["coached_this_turn"] = False
+    followup = _take_offer(state, session, text, ts)
     _expire_pending(state, session, ts)
 
     pending_gid = session.get("pending_gen")
@@ -243,7 +324,7 @@ def handle_prompt(payload, delivery=None, source="hook"):
              "kind": analysis["kind"], "words": analysis["words"],
              "context": analysis["context"], "precision": analysis["precision"],
              "verify": analysis["verify"], "feature": analysis["feature"],
-             "sensitive": analysis["sensitive"]}
+             "sensitive": analysis["sensitive"], "triggers": analysis["triggers"]}
     store.append_event(event)
 
     totals = state["totals"]
@@ -270,25 +351,57 @@ def handle_prompt(payload, delivery=None, source="hook"):
 
     # -- coaching decision -----------------------------------------------------------------
     coach = state["coach"]
-    should, reason = cadence.decide(state, analysis, level, ts)
-    context = None
+    # An urgent tip is said once per conversation; repeating it every other message is nagging.
+    said_once = set(session.get("urgent_shown", []))
+    urgent = lessons.urgent_hit(analysis["triggers"], level, blocked=said_once)
+    if followup:
+        should, reason = False, "followup"   # they're acting on the last offer; don't stack a new one
+    else:
+        should, reason = cadence.decide(state, analysis, level, ts, urgent=urgent is not None)
+    context = followup
+    lesson = None
     if should:
-        skill = choose_skill(reason, analysis, metrics, level, coach["last_focus"])
+        skill = urgent["skill"] if reason == "urgent" else \
+            choose_skill(reason, analysis, metrics, level, coach["last_focus"])
         recent_ids = [l["id"] for l in coach["lessons"]]
-        lesson = lessons.pick(skill, level, recent_ids)
+        muted = {i for i, until in coach["muted"].items() if until > ts} | said_once
+        lesson, alternatives, detected = lessons.choose(skill, level, analysis["triggers"], recent_ids,
+                                                        coach["last_focus"], blocked=muted)
+    if (lesson is not None and not detected and reason != "safety" and analysis["kind"] != "new"
+            and not analysis.get("vague_refine")):
+        lesson = None   # generic tips only go with new requests, never mid-edit
+    matched = sorted(set(lesson["detect"]) & set(analysis["triggers"])) if lesson else []
+    held_out = lesson is not None and _in_holdout(state, lesson, reason, detected, matched)
+    if held_out:
+        # Pilot experiment: a random share of detected moments get no coaching, so the
+        # coached ones can be compared against them. Timed exactly like a real moment.
+        coach["prompts_since"] = 0
+        coach["last_ts"] = ts
+        coach["lessons"].append({"id": lesson["id"], "ts": ts})
+        store.append_event({"type": "coach_holdout", "ts": ts, "lesson": lesson["id"],
+                            "skill": lesson["skill"], "triggers": matched})
+        lesson, should = None, False
+    if lesson is not None:
         question = lessons.question_for(lesson, totals["coached"])
         note = lessons.personal_note(lesson["skill"], metrics, state["gens"])
-        context = lessons.coach_instruction(lesson, question, reason, game.level_name(level), note)
+        context = lessons.coach_instruction(lesson, question, reason, game.level_name(level), note,
+                                            alternatives, detected)
         coach["prompts_since"] = 0
         coach["last_ts"] = ts
         coach["last_focus"] = lesson["skill"]
         coach["lessons"].append({"id": lesson["id"], "ts": ts})
         totals["coached"] += 1
         session["coached_this_turn"] = True
+        session["offer"] = {"ids": [lesson["id"]] + [a["id"] for a in alternatives], "ts": ts}
+        coach["last_moment"] = {"id": lesson["id"], "ts": ts, "triggers": matched, "reason": reason}
+        if lesson["urgent"]:
+            session.setdefault("urgent_shown", []).append(lesson["id"])
         store.append_event({"type": "coach", "ts": ts, "reason": reason, "lesson": lesson["id"],
-                            "skill": lesson["skill"]})
+                            "skill": lesson["skill"], "detected": detected, "triggers": matched})
     else:
-        coach["prompts_since"] += 1
+        should = False
+        if not held_out:
+            coach["prompts_since"] += 1
 
     lines = game.toast_lines(level - old_level, streak_grew, new_achievements, level)
     if analysis["sensitive"] and should:
@@ -380,6 +493,7 @@ def document_flow(sid, path, kind):
                 and ts - session.get("last_nudge_ts", 0) > NUDGE_COOLDOWN_SECONDS):
             context = lessons.revision_nudge_instruction(pending["kind"])
             session["last_nudge_ts"] = ts
+            session.pop("offer", None)   # this question replaces the coach's offer in the reply
             store.append_event({"type": "nudge", "gen": pending["id"], "ts": ts, "second_pass": True})
         store.save_state(state)
         return _output(None, context, "PostToolUse")
@@ -408,6 +522,7 @@ def document_flow(sid, path, kind):
         name = os.path.basename(path) or kind
         context = lessons.draft_nudge_instruction(kind, name)
         session["last_nudge_ts"] = ts
+        session.pop("offer", None)       # this question replaces the coach's offer in the reply
         state["coach"]["prompts_since"] = 0
         state["coach"]["last_ts"] = ts
         state["totals"]["coached"] += 1

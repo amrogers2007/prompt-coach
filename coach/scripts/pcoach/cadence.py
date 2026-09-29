@@ -4,6 +4,7 @@ Rules, in priority order:
   1. Never if disabled or paused.
   2. Sensitive data always gets a nudge, even right after another one.
   3. Never on two consecutive prompts (that's nagging).
+  3b. A trigger the library marks `urgent` gets a moment right away (after rule 3).
   4. Not before the user has sent a couple of prompts (let them settle in).
   5. A bare, context-free request from a newer user gets coached promptly.
   6. Otherwise on a schedule that stretches as the level rises.
@@ -27,7 +28,7 @@ def is_paused(settings, now_ts):
     return settings.get("paused_until", 0) > now_ts
 
 
-def decide(state, analysis, level, now_ts):
+def decide(state, analysis, level, now_ts, urgent=False):
     """Return (should_coach, reason). `prompts_since` counts scored prompts
     since the last coaching moment, *not* including the current one."""
     settings = state["settings"]
@@ -43,11 +44,18 @@ def decide(state, analysis, level, now_ts):
 
     if since < 1:
         return False, "cooldown"
+    if urgent:
+        return True, "urgent"
     if total < MIN_PROMPTS_BEFORE_COACHING:
         return False, "warmup"
 
     if analysis["kind"] == "new" and analysis["context"] < LOW_CONTEXT and level <= 2:
         return True, "low_context"
+
+    # A small follow-up edit ("shorten the second paragraph") with nothing specific spotted
+    # is a bad moment for a generic tip; the schedule waits for the next new request.
+    if analysis["kind"] != "new" and not analysis.get("triggers") and not analysis.get("vague_refine"):
+        return False, "mid_task"
 
     if since >= interval(level, settings.get("intensity", "normal")) - 1:
         return True, "cadence"

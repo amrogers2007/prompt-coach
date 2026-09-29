@@ -31,7 +31,11 @@ UserPromptSubmit ──► signals.analyze_prompt (context, precision, verify, f
                      ├─ was a draft pending? refine => revision credit; anything else => draft accepted
                      ├─ store event (numbers only), XP, streak, achievements
                      ├─ scoring.compute_metrics + resolve_level (may level up or down)
-                     ├─ cadence.decide ── choose_skill ── lessons.pick ── coach_instruction ──► AI context
+                     ├─ was the coach's last offer answered? yes => follow-up action; "doesn't fit" => mute tip
+                     ├─ signals.detect_triggers ── named teachable moments (no_audience, calculations...)
+                     ├─ cadence.decide (urgent triggers skip the schedule) ── choose_skill ── lessons.choose
+                     │     (triggered recommendation > everyday habit; muted/recent skipped; pilot holdout)
+                     │     ── coach_instruction (offer + follow-up action + AI-judged alternatives) ──► AI context
                      └─ toast (systemMessage) for level-ups, streaks, achievements
 PostToolUse (Write/Edit/Bash) ─► document generated? new "draft" + first-draft nudge ──► AI context
                                   (a revised version of a pending draft => "second pass" nudge)
@@ -58,6 +62,36 @@ cannot cover "all of desktop Claude". The answer is a local MCP server (`pcoach/
   deduplicated (first channel wins, 120 s window).
 - Cost of the design: reliability depends on Claude deciding to call the tools (hooks are guaranteed), and there is one extra tool call per message.
 - Runtime: Claude Desktop ships Node.js but not Python, so the helper uses the user's Python 3.9+. A Node port (or the MCPB `uv` runtime) would remove that requirement.
+- v0.3: the `.mcpb` never worked on the author's Windows PC. Claude launched it with `python3`, which resolved to the
+  Microsoft Store Python. Both that Python and Claude (an MSIX app) get private, virtualized copies of AppData, so the
+  helper's files, installed into Claude's copy, didn't exist for it. `coach/scripts/setup_desktop.py` now registers
+  the helper in `claude_desktop_config.json` with an absolute path to a regular Python and the repo's own
+  `coach_mcp.py`. It writes the config inside the MSIX package folder when there is one, and test-launches the helper
+  before touching anything. As a side effect, chat runs the latest code in the repo with no reinstall.
+
+## Recommendation library and the evidence loop (v0.3)
+
+A collaborator's proposal (trigger, recommendation, agent action) and the project's business case (kept outside the
+public repo) shaped v0.3:
+
+- **One editable library.** `coach/library/recommendations.md` holds all 76 recommendations (the collaborator's 60 plus the 16
+  original lessons). Each has *when / recommend / action*, a habit, a level range and a detector. Adding one is a
+  Markdown edit; `coach.py library` validates the file. Source research: `BEST-PRACTICES-SOURCE.md`.
+- **Recognition to action.** The coach offers; a "yes" on the next message injects that recommendation's action, so
+  the user does the better behavior immediately (the business case's recognition, relevance, action, reinforcement).
+- **Precision first.** The case's first "must be true" is high-precision detection. Detectors are regexes measured
+  against labeled prompts (`coach/evals/`). Two blind sets, each scored once before tuning: 93% precision / 88% recall,
+  then 80% / 80%. The drop is the honest lesson: keyword rules generalize only as far as their vocabulary. After
+  fixing the gaps, all sets score 98%, but that is in-sample. The next credible number needs real anonymized prompts,
+  or an LLM-judge detector for the fuzzy triggers (no audience, no purpose) with regexes kept for the crisp ones. Specific triggers supersede generic ones (a PTO-policy question
+  is about the internal source, not facts in general).
+- **Don't optimize for nudges.** Tips the user declines twice are muted for two weeks; "that doesn't apply" mutes one
+  for a month and counts as a false positive. `settings why` explains any tip.
+- **Measure behavior, with a control group.** `insights` reports acceptance, misfits and whether each issue came up
+  less after coaching. Pilot mode randomizes per user and issue (not per moment, which would contaminate the
+  control), and `insights.pool()` combines participants. Only "after" rates are compared: an issue's first moment is
+  when it first appears, so a before/after change is biased. Simulated pilots confirm the analysis finds a real effect
+  (-11 pts) and shows none when behavior doesn't change (-2 pts).
 
 ## Open questions / next steps
 
@@ -73,5 +107,8 @@ cannot cover "all of desktop Claude". The answer is a local MCP server (`pcoach/
    prompt quality would beat keyword heuristics, at a cost in privacy and money. Kept out of v1 on purpose.
 5. **Onboarding.** A one-time "what do you do?" question would let lessons use the user's real work as examples (the `practice` skill
    already does this ad hoc).
-6. **Coaching content.** 16 lessons today. Needs review by someone who trains people for a living.
+6. **Coaching content.** 76 recommendations in the library. Needs review by someone who trains people for a living,
+   and a fresh blind prompt set (ideally real, anonymized prompts from a pilot) to re-measure detector precision.
+8. **A real pilot.** The measurement is built; the evidence isn't. Next: a few colleagues with `experiment 20` for
+   three to four weeks, then pool their `insights --json`.
 7. **Team features.** Leaderboards are tempting and risky (they reward gaming the heuristics); prefer team-level trends.

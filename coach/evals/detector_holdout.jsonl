@@ -1,0 +1,60 @@
+{"prompt": "write a blog post about remote work", "expect": ["no_audience", "no_purpose", "no_format"]}
+{"prompt": "create a flyer for the bake sale", "expect": ["no_audience", "no_format"]}
+{"prompt": "draft a message to my landlord about the broken heater, polite but firm, 4 sentences", "expect": []}
+{"prompt": "prepare an agenda for tomorrow's staff meeting", "expect": ["no_format", "no_purpose"]}
+{"prompt": "write a speech", "expect": ["no_audience", "no_purpose", "no_format"]}
+{"prompt": "can you help me with my budget", "expect": ["vague_goal"]}
+{"prompt": "deal with these customer complaints", "expect": ["vague_goal"]}
+{"prompt": "work on the marketing plan", "expect": ["vague_goal"]}
+{"prompt": "help", "expect": []}
+{"prompt": "Our CRO wants the MQL to SQL funnel broken down by ICP", "expect": ["jargon"]}
+{"prompt": "the SLA says the RTO is 4 hours, is that normal?", "expect": ["jargon"]}
+{"prompt": "make the tagline catchier", "expect": []}
+{"prompt": "I want a clean, modern layout for the report", "expect": ["subjective"]}
+{"prompt": "keep it concise", "expect": ["subjective"]}
+{"prompt": "format it like our usual monthly report", "expect": ["style_no_example", "repeated_task"]}
+{"prompt": "first summarize the survey results, then list the top complaints, and finally recommend three fixes", "expect": ["multi_task"]}
+{"prompt": "who won the 2022 World Cup", "expect": ["factual_question"]}
+{"prompt": "how much does a Tesla Model 3 cost", "expect": ["factual_question"]}
+{"prompt": "what are the symptoms of burnout", "expect": ["consequential", "factual_question"]}
+{"prompt": "what should I name my new product?", "expect": []}
+{"prompt": "how do I ask my boss for a raise", "expect": []}
+{"prompt": "what's our remote work policy", "expect": ["internal_policy"]}
+{"prompt": "does HR benefits cover dental for part-time staff", "expect": ["internal_policy"]}
+{"prompt": "what's the latest version of Windows", "expect": ["current_info"]}
+{"prompt": "summarize the news about the Fed this week", "expect": ["current_info"]}
+{"prompt": "split a $340 dinner bill between 6 people with 20% tip", "expect": []}
+{"prompt": "calculate our margin if costs are $12 and price is $19", "expect": ["calculations"]}
+{"prompt": "what's the break-even point for 500 units at $30 with fixed costs of $9,000", "expect": ["calculations"]}
+{"prompt": "draft a resignation letter", "expect": ["no_audience", "no_format"]}
+{"prompt": "should I sign this lease? the landlord wants a 2 year contract", "expect": ["consequential"]}
+{"prompt": "write a PIP for an employee who keeps missing deadlines", "expect": ["jargon"]}
+{"prompt": "prepare my tax return notes for the accountant", "expect": ["consequential"]}
+{"prompt": "password: Winter2026! can you remember that", "expect": ["sensitive", "remember_pref"]}
+{"prompt": "card 4111 1111 1111 1111 expires 09/28, book the hotel", "expect": ["sensitive"]}
+{"prompt": "this is internal use only, rewrite it for the customer", "expect": ["sensitive"]}
+{"prompt": "too wordy and too corporate", "expect": ["tone_feedback"]}
+{"prompt": "not my voice at all", "expect": ["tone_feedback"]}
+{"prompt": "think of a theme for the holiday party", "expect": ["single_option"]}
+{"prompt": "give me 5 headline options", "expect": []}
+{"prompt": "write a white paper on AI in logistics", "expect": ["long_document"]}
+{"prompt": "write a 2,000 word article on sleep hygiene", "expect": ["long_document"]}
+{"prompt": "export these orders to JSON", "expect": ["structured_output"]}
+{"prompt": "you left out the second speaker again", "expect": ["missed_requirement"]}
+{"prompt": "as I said, no exclamation marks", "expect": ["missed_requirement"]}
+{"prompt": "I cleaned up the formatting manually, can you match it next time", "expect": ["manual_edits"]}
+{"prompt": "cancel my 3pm meeting and email everyone", "expect": ["external_action"]}
+{"prompt": "submit the expense report", "expect": ["external_action"]}
+{"prompt": "wipe all the test data from the spreadsheet", "expect": ["irreversible"]}
+{"prompt": "in future, please use metric units", "expect": ["remember_pref"]}
+{"prompt": "every friday I have to send the same numbers to finance", "expect": ["repeated_task"]}
+{"prompt": "I'm out on vacation for two weeks, what should my backup know about the Acme account", "expect": ["handoff"]}
+{"prompt": "I need a fast, error-free, and exhaustive audit by tomorrow", "expect": ["competing_goals", "subjective"]}
+{"prompt": "Rewrite this paragraph for a board audience in under 80 words, keep the numbers, cut the jargon", "expect": []}
+{"prompt": "I'm a nurse manager preparing a staffing proposal for hospital leadership. The goal is to justify two extra night-shift nurses. Give me a one-page outline with 3 arguments and the data I'd need.", "expect": []}
+{"prompt": "Compare these two vendor quotes in a table and tell me which risks you see", "expect": []}
+{"prompt": "what's a good way to start a difficult conversation with a coworker", "expect": []}
+{"prompt": "tell me a joke", "expect": []}
+{"prompt": "explain what an index fund is in plain English", "expect": []}
+{"prompt": "is it true that we only use 10% of our brains?", "expect": ["factual_question"]}
+{"prompt": "check my math: 15% of 2,400 is 360", "expect": []}

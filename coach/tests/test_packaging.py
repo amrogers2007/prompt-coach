@@ -21,7 +21,8 @@ class Packaging(unittest.TestCase):
         cls.old_out = build_mcpb.OUT_DIR
         build_mcpb.OUT_DIR = cls.out
         build_mcpb.main()
-        cls.mcpb = os.path.join(cls.out, "prompt-coach.mcpb")
+        cls.mcpb = os.path.join(cls.out, "prompt-coach-windows.mcpb")
+        cls.mcpb_unix = os.path.join(cls.out, "prompt-coach-mac-linux.mcpb")
         cls.skill = os.path.join(cls.out, "prompt-coach-chat-skill.zip")
 
     @classmethod
@@ -35,7 +36,12 @@ class Packaging(unittest.TestCase):
         self.assertEqual(m["author"]["name"], "Amanda Rogers")
         self.assertEqual(m["server"]["type"], "python")
         self.assertIn("${__dirname}", m["server"]["mcp_config"]["args"][0])
-        self.assertEqual(m["server"]["mcp_config"]["platform_overrides"]["win32"]["command"], "python")
+        self.assertEqual(m["server"]["mcp_config"]["command"], "python")       # never python3 on Windows (Store alias)
+        self.assertEqual(m["compatibility"]["platforms"], ["win32"])
+        unix = json.loads(zipfile.ZipFile(self.mcpb_unix).read("manifest.json"))
+        self.assertEqual(unix["server"]["mcp_config"]["command"], "python3")
+        self.assertEqual(unix["compatibility"]["platforms"], ["darwin", "linux"])
+        self.assertNotIn("platform_overrides", m["server"]["mcp_config"])       # ignored by Claude Desktop
         self.assertEqual([t["name"] for t in m["tools"]], [t["name"] for t in mcp_server.TOOLS])
         self.assertIn(">=3.9", m["compatibility"]["runtimes"]["python"])
         names = zipfile.ZipFile(self.mcpb).namelist()
@@ -58,13 +64,19 @@ class Packaging(unittest.TestCase):
                 {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
                 {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
                 {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
-                 "params": {"name": "coach_start", "arguments": {}}}))
+                 "params": {"name": "coach_start", "arguments": {}}},
+                {"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+                 "params": {"name": "coach_turn", "arguments": {"message": "explain how compound interest works"}}},
+                {"jsonrpc": "2.0", "id": 5, "method": "tools/call",
+                 "params": {"name": "coach_turn", "arguments": {"message": "write an email about the office move"}}}))
             p = subprocess.run([sys.executable, server], input=data, capture_output=True, text=True, env=env,
                                timeout=60, cwd=unpacked)
             self.assertEqual(p.returncode, 0, p.stderr)
             replies = [json.loads(l) for l in p.stdout.splitlines()]
             self.assertEqual(len(replies[1]["result"]["tools"]), 5)
             self.assertIn("I'm your AI coach", replies[2]["result"]["content"][0]["text"])
+            # The recommendation library must travel with the bundle, or coaching silently stops.
+            self.assertIn("Recommendation: Say who it's for", replies[4]["result"]["content"][0]["text"])
 
     def test_chat_skill_is_valid_and_carries_the_instructions(self):
         text = zipfile.ZipFile(self.skill).read("prompt-coach/SKILL.md").decode("utf-8")

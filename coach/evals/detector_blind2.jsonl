@@ -1,0 +1,50 @@
+{"prompt": "write a newsletter", "expect": ["no_audience", "no_purpose", "no_format"]}
+{"prompt": "draft a press release about our new CFO", "expect": ["no_audience", "no_format"]}
+{"prompt": "prepare a presentation about customer churn", "expect": ["no_audience", "no_purpose", "no_format"]}
+{"prompt": "compose an out of office message", "expect": ["no_format"]}
+{"prompt": "write a welcome message for new volunteers, 3 sentences, warm, so they feel at home", "expect": []}
+{"prompt": "help me sort out my calendar", "expect": ["vague_goal"]}
+{"prompt": "improve this", "expect": ["vague_goal"]}
+{"prompt": "handle the vendor issue", "expect": ["vague_goal"]}
+{"prompt": "Can you tighten this paragraph to 60 words", "expect": []}
+{"prompt": "the GM wants the P&L and the EBITDA bridge by Friday", "expect": ["jargon"]}
+{"prompt": "make it sound more professional", "expect": ["subjective"]}
+{"prompt": "a detailed but short summary please", "expect": ["competing_goals", "subjective"]}
+{"prompt": "write the intro like the one in my last report", "expect": ["style_no_example"]}
+{"prompt": "outline the project, then estimate costs, then draft a timeline, then write the kickoff email", "expect": ["multi_task"]}
+{"prompt": "what year did Apple release the first iPhone", "expect": ["factual_question"]}
+{"prompt": "how many vacation days do most US companies give", "expect": ["factual_question"]}
+{"prompt": "which is better for me, a Roth or traditional IRA?", "expect": ["consequential"]}
+{"prompt": "what is our parental leave policy", "expect": ["internal_policy"]}
+{"prompt": "what's the latest on the merger news", "expect": ["current_info"]}
+{"prompt": "what is the current minimum wage in Texas", "expect": ["current_info"]}
+{"prompt": "what's 18% of $2,350", "expect": ["calculations"]}
+{"prompt": "convert 45 miles to kilometers and 12 pounds to kg", "expect": ["calculations"]}
+{"prompt": "draft a severance agreement for a laid off employee", "expect": ["consequential", "no_format"]}
+{"prompt": "my doctor prescribed 50mg of sertraline, what are the side effects", "expect": ["consequential", "factual_question"]}
+{"prompt": "my password is Tr0ub4dor&3, why won't the site accept it", "expect": ["sensitive"]}
+{"prompt": "this is proprietary, summarize it for the sales team", "expect": ["sensitive"]}
+{"prompt": "sounds too casual now", "expect": ["tone_feedback"]}
+{"prompt": "it's a bit cheesy", "expect": []}
+{"prompt": "suggest a title for my keynote", "expect": ["single_option"]}
+{"prompt": "come up with a slogan", "expect": ["single_option"]}
+{"prompt": "draft a 5,000 word research report on hybrid work", "expect": ["long_document"]}
+{"prompt": "write a playbook for onboarding sales reps", "expect": ["long_document"]}
+{"prompt": "give me the list as json", "expect": ["structured_output"]}
+{"prompt": "you ignored my note about the deadline", "expect": ["missed_requirement"]}
+{"prompt": "I rewrote the ending myself", "expect": ["manual_edits"]}
+{"prompt": "now send the invite to everyone on the list", "expect": ["external_action"]}
+{"prompt": "publish the post", "expect": ["external_action"]}
+{"prompt": "erase everything in the old folder, it can't be undone but that's fine", "expect": ["irreversible"]}
+{"prompt": "please remember my company is called Brightline", "expect": ["remember_pref"]}
+{"prompt": "each quarter I build the same board deck from scratch", "expect": ["repeated_task"]}
+{"prompt": "I'm handing off the Johnson project to Priya tomorrow", "expect": ["handoff"]}
+{"prompt": "Our church is hosting a food drive. Write a 150-word bulletin announcement for members asking them to bring canned goods by Sunday.", "expect": []}
+{"prompt": "I manage a 6-person support team. Draft talking points for tomorrow's standup about the new ticket priorities. Bullets, under 100 words.", "expect": []}
+{"prompt": "Here are my rough notes from the client call below. Turn them into a follow-up email to the client, friendly, 5 sentences.", "expect": []}
+{"prompt": "what's a polite way to decline a meeting", "expect": []}
+{"prompt": "summarize the attached PDF in plain English", "expect": []}
+{"prompt": "give me 3 options for the subject line", "expect": []}
+{"prompt": "what are your thoughts on this plan?", "expect": []}
+{"prompt": "rank these five candidates on the criteria in the table", "expect": []}
+{"prompt": "OK now do the same for the Denver office", "expect": []}

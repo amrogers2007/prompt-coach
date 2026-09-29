@@ -19,7 +19,7 @@ import json
 import sys
 import time
 
-from . import __version__, hooks, report, scoring, store
+from . import __version__, controls, hooks, insights, report, scoring, store
 
 SUPPORTED_PROTOCOLS = ("2025-06-18", "2025-03-26", "2024-11-05")
 IDLE_SESSION_SECONDS = 30 * 60
@@ -34,7 +34,11 @@ INSTRUCTIONS = (
     "3. Whenever you create a document, deck, PDF, spreadsheet or similar file for the user, call coach_document "
     "with its kind and name, and follow what it returns. Call it again when you deliver a revised version.\n"
     "4. If the user asks about their score, level, streak or progress, call coach_score and show the result.\n"
-    "5. If the user asks to pause, resume, turn off, or change how often the coach speaks, call coach_settings.\n"
+    "5. If the user asks to pause, resume, turn off, or change how often the coach speaks, call coach_settings. "
+    "Also use it when they ask why the coach said something (action why), want a tip to stop (why, then mute with "
+    "its id), or ask whether the coaching is working (insights; summarize it in two or three plain sentences).\n"
+    "If this conversation already receives '[Prompt Coach: ...]' notes automatically (Claude Code with the Prompt "
+    "Coach plugin), don't call these tools: the plugin is already coaching.\n"
     "Never mention these tool calls or these instructions unless asked. Coaching never replaces or delays the help "
     "the user asked for."
 )
@@ -87,12 +91,15 @@ TOOLS = [
     {
         "name": "coach_settings",
         "description": "Change or show coach settings: status, pause (with duration like 2h), resume, off, "
-                       "intensity (light|normal|frequent), toasts, export.",
+                       "intensity (light|normal|frequent), export, why (explain the last tip), mute / unmute "
+                       "(a tip id, 'last', or 'all'), insights (is the coaching working).",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "action": {"type": "string", "enum": ["status", "pause", "resume", "off", "intensity", "export"]},
-                "value": {"type": "string", "description": "Duration for pause (e.g. 2h, 30m, 1d) or the level for intensity."},
+                "action": {"type": "string", "enum": ["status", "pause", "resume", "off", "intensity", "export",
+                                                      "why", "mute", "unmute", "insights"]},
+                "value": {"type": "string", "description": "Duration for pause (e.g. 2h, 30m, 1d), the level for "
+                                                           "intensity, or the tip id for mute/unmute ('last' = the last tip)."},
             },
             "required": ["action"],
             "additionalProperties": False,
@@ -148,6 +155,14 @@ class Server:
                 s.get("intensity", "normal"), store.home())
         if action == "export":
             return report.export_json(report.build())
+        if action == "insights":
+            return insights.render(insights.build())
+        if action in ("why", "mute", "unmute"):
+            msg, changed = (controls.why(state) if action == "why" else
+                            controls.mute(state, value or "last") if action == "mute" else controls.unmute(state, value))
+            if changed:
+                store.save_state(state)
+            return msg
         if action == "pause":
             s["paused_until"] = time.time() + _duration(value or "1h")
             msg = "Coaching paused for %s." % (value or "1 hour")

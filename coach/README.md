@@ -34,12 +34,27 @@ Or run the guided installer, which also checks your setup: `sh install/install.s
 (macOS/Linux/Git Bash) or `powershell -ExecutionPolicy Bypass -File install\install.ps1` (Windows).
 
 **Claude desktop app, Chat and Cowork:** chat can't run hooks, so there the coach is a small local
-helper that Claude calls each turn.
-1. `python coach/scripts/build_mcpb.py` builds `dist/prompt-coach.mcpb` and `dist/prompt-coach-chat-skill.zip`.
-2. Double-click `prompt-coach.mcpb` (or Settings > Extensions > Advanced > Install Extension) and choose **Install**.
-   In each tool's permission prompt pick **Always allow** so it doesn't ask every message.
-3. Upload `prompt-coach-chat-skill.zip` under *Customize > Skills*: it tells Claude to use the coach in every conversation.
-4. Start a new chat. Claude should open with an italic *Prompt Coach:* greeting.
+helper that Claude calls each turn. Connect it with one command from a clone of this repo:
+
+```bash
+python coach/scripts/setup_desktop.py
+```
+
+1. The script registers the helper in Claude desktop's config (backing the file up first), using a regular Python and
+   the code in your clone, so later updates need no reinstall. It test-launches the helper before changing anything.
+2. Quit Claude completely (system tray icon > **Quit**) and open it again.
+3. Upload the chat skill once: `python coach/scripts/build_mcpb.py` writes `dist/prompt-coach-chat-skill.zip`; add it
+   under *Customize > Skills*. It tells Claude to use the coach in every conversation.
+4. Start a new chat. Claude should open with an italic *Prompt Coach:* greeting. When it asks to use a Prompt Coach
+   tool, pick **Always allow**.
+
+`setup_desktop.py --check` shows what's connected and test-launches it; `--remove` disconnects it.
+
+Why a script and not the desktop extension: on Windows, Claude launched the extension with `python3`, which is
+usually the Microsoft Store's Python. That Python is sandboxed and can't see files Claude installed, so the helper
+failed on every start ("No such file or directory" in `%LOCALAPPDATA%\Claude\logs\mcp-server-Prompt Coach.log`).
+The script uses an absolute path to a regular Python instead, and switches the old extension off. The `.mcpb`
+bundles (`build_mcpb.py`) still work for people who prefer them: on Windows use `prompt-coach-windows.mcpb`.
 
 Your score is shared with the Code tab (same `~/.prompt-coach` folder), and a message that reaches both channels is
 only counted once. In Cowork you can also upload `dist/prompt-coach-plugin.zip` (*Customize > Plugins > Add >
@@ -55,8 +70,10 @@ Then just work as usual. The coach starts on its own.
 | Moment | What happens |
 |---|---|
 | Session start | One-line welcome ("Beginner, 3-day streak"). |
-| Every few prompts | Your AI ends a reply with **one** short coaching question, always in italics and starting with "Prompt Coach:". Beginners hear from it about every 2 prompts, experts about every 8. |
+| Every few prompts | Your AI ends a reply with **one** short coaching recommendation, always in italics and starting with "Prompt Coach:". It's picked for what you just did (no audience named, a factual question with no source, a calculation...) and usually ends with an offer. Beginners hear from it about every 2 prompts, experts about every 8. |
+| You say "yes" to an offer | The AI carries out the recommendation for you (for example, asks the three questions that pin down your audience) and names the habit you're practicing. |
 | A bare request | A prompt with no context from a newer user gets coached right away. |
+| Something consequential | Legal, medical, HR, or irreversible actions get a recommendation straight away instead of waiting their turn. |
 | A file is generated | The AI treats it as a first draft and asks how to improve it. After you revise it, it asks whether it's closer. |
 | Sensitive data pasted | A gentle heads-up (keys, SSNs, cards, passwords, "confidential"). |
 | Something good happens | A small toast: level-up, streak, achievement. |
@@ -70,6 +87,47 @@ Commands (all optional):
 | `/prompt-coach:practice` | A 3-minute practice round. Never affects your score. |
 | `/prompt-coach:settings` | Pause (`pause 2h`), `resume`, `off`, `intensity light\|normal\|frequent`, `export`, `reset`, `doctor`. |
 | The `coach` agent | Ask "how am I doing overall?" for a fuller check-up and a 3-step plan. |
+
+## The recommendation library
+
+Everything the coach can recommend lives in one Markdown file,
+[`library/recommendations.md`](library/recommendations.md), so it can keep growing as you find new best
+practices. Each entry has three parts:
+
+1. **when**: what the user is doing that triggers it ("asks for content without saying who it's for").
+2. **recommend**: what the coach says ("Knowing who will use this will improve the tone. Who is the primary audience?").
+3. **action**: what the AI does if the user says yes ("Ask who the audience is, what they already know...").
+
+Some triggers are spotted automatically from the message (`detect: no_audience`), some are left to the AI's
+judgment (`detect: ai`), and some are everyday habits that can come up any time (`detect: general`). To add
+one, copy an entry, edit it, and check the file:
+
+```bash
+python coach/scripts/coach.py library
+```
+
+The coach picks up changes on the next message. The research table many entries came from is
+[`docs/BEST-PRACTICES-SOURCE.md`](../docs/BEST-PRACTICES-SOURCE.md).
+
+## Is the coaching working?
+
+The coach measures itself the way the project's business case says a buyer would, and never by how many tips it
+shows:
+
+- **Detection accuracy.** `coach.py eval` scores every trigger against 220 labeled prompts
+  ([`evals/`](evals/)). Honest out-of-sample results, each scored once before any tuning on it: first blind set
+  **93% precision, 88% recall**; second blind set **80% / 80%** (it exposed vocabulary gaps such as "minimum wage" or
+  "18% of $2,350"). After fixing those gaps all three sets score 98% / 98%, but expect real-world precision nearer the
+  blind numbers until detectors are checked against real (anonymized) pilot prompts. Tests fail if precision on any set
+  drops below 92%.
+- **Leading measures.** `coach.py insights` (or `/prompt-coach:settings insights`): teachable moments spotted, tips
+  shown, taken, declined, and "didn't fit" (a live false-positive rate), for each recommendation.
+- **Did it stick?** For each issue, how often it came up after it was first coached.
+- **Pilot mode.** `settings experiment 20` holds back coaching on a random 20% of *issues*, so each person has coached
+  and uncoached issues to compare. (An issue stays in its group for good; holding back single moments would
+  contaminate the comparison.) Safety and other urgent tips are never held back. Pool several people's
+  `insights --json` with `insights.pool()` for a team result. In a simulated pilot of 6 people, coached issues came back
+  7% of the time against 18% for held-back ones when people learned, and there was no real difference when they didn't.
 
 ## How your level works
 
@@ -136,7 +194,8 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 ## Privacy
 
 - **Local only.** Everything lives in `~/.prompt-coach` (override with `PROMPT_COACH_HOME`). Nothing is sent anywhere by this plugin.
-- **No prompt text is ever stored.** Only small numbers ("context score 0.7"), counts, the *kind* of document generated ("deck"), and a hash used to recognize the same file.
+- **No prompt text is ever stored.** Only small numbers ("context score 0.7"), counts, the names of the issues spotted ("no_audience"), which tips were shown and whether you took them, the *kind* of document generated ("deck"), and a hash used to recognize the same file.
+- **You can always ask why.** `/prompt-coach:settings why` explains the last tip and what spotted it; `mute` stops a tip for good. Saying "that doesn't apply" to a tip does the same for a month.
 - The shareable summary and `export` contain aggregate numbers only.
 - `settings reset --yes` deletes everything.
 - Honest limit: the score is measured on your own device, so today it's self-reported, not tamper-proof. A verified team version is future work (see `docs/COACH-DESIGN.md`).
@@ -146,7 +205,7 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 | Surface | Status |
 |---|---|
 | Claude Code (terminal, IDE, desktop Code tab) | Full: hooks, coaching, file detection, score. Tested. |
-| Claude desktop, Chat | Through the desktop extension + skill: Claude calls the coach's tools each turn (greeting, coaching, document nudges, score). Less reliable than hooks because Claude has to choose to call them, and it adds a small tool call per message. The helper is tested with an MCP client; the in-app behavior is not yet tested by hand. |
+| Claude desktop, Chat | Through the local helper (connected with `setup_desktop.py`) + skill: Claude calls the coach's tools each turn (greeting, coaching, offers and follow-ups, document nudges, score, why/mute/insights). Less reliable than hooks because Claude has to choose to call them, and it adds a small tool call per message. The helper is tested with an MCP client and test-launched by the setup script; the in-app behavior still needs a hand check. |
 | Claude desktop, Cowork | Same extension works there if the session runs on your computer. The plugin zip's hooks may also load, but Cowork runs in a sandbox whose home folder is reportedly not kept between conversations, so prefer the extension (it keeps your data on your computer). Not yet tested by hand. |
 | claude.ai in a browser | Skills only; no local helper, so no tracking. |
 | ChatGPT, Copilot, Gemini | Not supported by this plugin. The browser extension in `../extension` covers those websites. |
@@ -156,13 +215,18 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 - Coding prompts (code fences, source files, stack traces, dev jargon) are deliberately ignored: this coach is for everyday work, and rules built for prose would judge them unfairly.
 - Scoring is heuristic (keyword and structure signals), tuned to be fair on average, not perfect on any one prompt.
 - The coach can only see what hooks can: it can't read the AI's reply to judge it, so "did you accept the draft?" is inferred from your next prompt.
+- 33 of the 76 recommendations can't be spotted from your message alone (a failed tool step, sources that disagree); they are offered to the AI as alternatives and used only when it judges they fit.
 - The coaching question is delivered *by the AI following an instruction*, so it can occasionally skip or word it differently.
 - Document detection covers Office files and PDFs (and larger Markdown/HTML written directly). Files made by unusual tools may be missed.
 
 ## Develop
 
 ```bash
-python -m unittest discover -s coach/tests -v     # 108 tests, standard library only
+python -m unittest discover -s coach/tests -v     # 176 tests, standard library only (about 2 minutes)
+python coach/scripts/coach.py library             # check the recommendation library
+python coach/scripts/coach.py eval                # detector accuracy on evals/detector_corpus.jsonl
+python coach/scripts/coach.py eval coach/evals/detector_holdout.jsonl
+python coach/scripts/coach.py insights            # is the coaching working (your own data)
 claude plugin validate ./coach                    # manifest + skills check
 claude --plugin-dir ./coach                       # run it live
 PROMPT_COACH_HOME=/tmp/demo python coach/scripts/coach.py demo    # sample profile
@@ -171,5 +235,7 @@ python coach/scripts/build_zip.py                 # package for Claude desktop u
 ```
 
 Layout: `scripts/pcoach/signals.py` (what a prompt reveals), `scoring.py` (score + levels),
-`cadence.py` (when to speak), `lessons.py` (micro-training + instructions), `game.py` (XP/streaks/achievements),
-`hooks.py` (the three hook handlers), `report.py` (scoreboard, badge, export), `store.py` (local storage).
+`cadence.py` (when to speak), `library.py` (reads `library/recommendations.md`), `lessons.py` (picks a
+recommendation and words the instruction), `game.py` (XP/streaks/achievements), `hooks.py` (the three hook
+handlers), `report.py` (scoreboard, badge, export), `insights.py` (is it working), `evaluate.py` (detector accuracy),
+`store.py` (local storage).

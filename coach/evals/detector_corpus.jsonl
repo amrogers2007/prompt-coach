@@ -1,0 +1,110 @@
+{"prompt": "help me with my presentation", "expect": ["vague_goal"]}
+{"prompt": "can you help with the client situation", "expect": ["vague_goal"]}
+{"prompt": "I need help handling a difficult coworker", "expect": ["vague_goal"]}
+{"prompt": "improve our onboarding", "expect": ["vague_goal"]}
+{"prompt": "look into why sales dropped", "expect": ["vague_goal"]}
+{"prompt": "write an email about the office move", "expect": ["no_audience", "no_purpose", "no_format"]}
+{"prompt": "draft a memo on the new parking rules", "expect": ["no_audience", "no_purpose", "no_format"]}
+{"prompt": "write a linkedin post about our product launch", "expect": ["no_audience", "no_purpose", "no_format"]}
+{"prompt": "write me a poem about the sea", "expect": ["no_audience", "no_purpose", "no_format"]}
+{"prompt": "create a presentation on Q3 results for the leadership team, 8 slides, so they can decide on the budget", "expect": []}
+{"prompt": "Write a short welcome email for new hires on my team. They are recent grads, so keep it warm and under 150 words. The goal is to make them feel expected on day one.", "expect": []}
+{"prompt": "draft an announcement for our customers about the price change, 3 short paragraphs, friendly tone, because we want to keep them from churning", "expect": []}
+{"prompt": "Draft the SOW for the PMO using the RACI from the QBR", "expect": ["jargon"]}
+{"prompt": "update the OKRs with the NPS and CSAT numbers", "expect": ["jargon"]}
+{"prompt": "summarize the CEO's email for the HR team in 5 bullets", "expect": []}
+{"prompt": "What is the ROI of our KPI dashboard project? Here are the numbers below.", "expect": []}
+{"prompt": "Can you write a brief, professional bio for my website", "expect": ["no_audience", "no_purpose", "subjective"]}
+{"prompt": "make the proposal more compelling and polished", "expect": ["subjective"]}
+{"prompt": "write a 100-word professional bio for the conference program so attendees know my background", "expect": []}
+{"prompt": "write it in the same style as our last newsletter", "expect": ["style_no_example"]}
+{"prompt": "match our brand voice for this product description", "expect": ["style_no_example"]}
+{"prompt": "match our brand voice, here is an example: 'We build tools people love.'", "expect": []}
+{"prompt": "summarize this article, then compare it with the other one, and draft a response", "expect": ["multi_task"]}
+{"prompt": "research our top 3 competitors, compare their pricing, recommend a price for us, and write a one-page summary for my boss", "expect": ["multi_task"]}
+{"prompt": "summarize the attached report in 5 bullets for my manager", "expect": []}
+{"prompt": "What percentage of US adults use AI at work?", "expect": ["factual_question"]}
+{"prompt": "how many people live in Ohio?", "expect": ["factual_question"]}
+{"prompt": "When was the Americans with Disabilities Act passed?", "expect": ["factual_question"]}
+{"prompt": "What does the attached report say about churn? Cite the page.", "expect": []}
+{"prompt": "what do you think of this title for my talk?", "expect": []}
+{"prompt": "what is our PTO policy for new hires", "expect": ["internal_policy"]}
+{"prompt": "how does our expense policy handle client dinners", "expect": ["internal_policy"]}
+{"prompt": "explain the company travel policy for international trips", "expect": ["internal_policy"]}
+{"prompt": "summarize our PTO policy from the attached handbook.pdf", "expect": []}
+{"prompt": "what are the latest interest rate changes", "expect": ["current_info"]}
+{"prompt": "what's the current exchange rate between the euro and the dollar", "expect": ["current_info"]}
+{"prompt": "give me today's top news in healthcare", "expect": ["current_info"]}
+{"prompt": "I'm currently a project manager and want to become a product manager", "expect": []}
+{"prompt": "calculate the total if we sell 1200 units at $45 with a 15% discount", "expect": ["calculations"]}
+{"prompt": "what's the average of 34, 56, 78 and 91", "expect": ["calculations"]}
+{"prompt": "our revenue went from $2.1M to $2.6M, what's the growth rate as a percentage", "expect": ["calculations"]}
+{"prompt": "what's our budget for Q4 2026", "expect": ["factual_question"]}
+{"prompt": "write 3 tips for staying focused", "expect": []}
+{"prompt": "Help me write a termination letter for an employee", "expect": ["consequential", "no_purpose", "no_format"]}
+{"prompt": "is this contract clause enforceable in California", "expect": ["consequential"]}
+{"prompt": "what dosage of ibuprofen is safe for my kid", "expect": ["consequential", "factual_question"]}
+{"prompt": "prepare talking points for a performance review with an underperforming employee", "expect": ["consequential"]}
+{"prompt": "we had a data breach, draft a notice to customers", "expect": ["consequential", "no_format"]}
+{"prompt": "My SSN is 123-45-6789, fill in this form", "expect": ["sensitive"]}
+{"prompt": "here is our API key sk-abcdefghijklmnopqrstuvwxyz123456 can you check why it fails", "expect": ["sensitive"]}
+{"prompt": "summarize this confidential board memo for my notes", "expect": ["sensitive"]}
+{"prompt": "this is too formal, doesn't sound like me", "expect": ["tone_feedback"]}
+{"prompt": "it sounds robotic, can you loosen it up", "expect": ["tone_feedback"]}
+{"prompt": "way too salesy", "expect": ["tone_feedback"]}
+{"prompt": "make it more formal", "expect": []}
+{"prompt": "give me a name for my bakery", "expect": ["single_option"]}
+{"prompt": "suggest a subject line for this email", "expect": ["single_option"]}
+{"prompt": "come up with a tagline for our spring campaign", "expect": ["single_option"]}
+{"prompt": "give me 10 name ideas for my bakery with a short reason for each", "expect": []}
+{"prompt": "write a 20 page business plan for a coffee shop", "expect": ["long_document"]}
+{"prompt": "draft a grant application for our after-school program", "expect": ["long_document"]}
+{"prompt": "write an employee handbook for a 30-person startup", "expect": ["long_document"]}
+{"prompt": "write a business plan for a coffee shop, start with an outline for me to approve", "expect": []}
+{"prompt": "turn this list into a CSV I can import into our CRM", "expect": ["structured_output"]}
+{"prompt": "put these contacts in a spreadsheet", "expect": ["structured_output"]}
+{"prompt": "make a spreadsheet with columns for name, email, and start date", "expect": []}
+{"prompt": "you forgot the pricing section again", "expect": ["missed_requirement"]}
+{"prompt": "I already said it needs to be under 200 words", "expect": ["missed_requirement"]}
+{"prompt": "still missing the Q2 numbers", "expect": ["missed_requirement"]}
+{"prompt": "I fixed it myself in Word", "expect": ["manual_edits"]}
+{"prompt": "I've edited the intro by hand, now do the rest", "expect": ["manual_edits"]}
+{"prompt": "I always have to change the greeting, it's too stiff", "expect": ["manual_edits", "tone_feedback"]}
+{"prompt": "send it to the whole team", "expect": ["external_action"]}
+{"prompt": "please post this on our company LinkedIn page", "expect": ["external_action"]}
+{"prompt": "go ahead and email the client", "expect": ["external_action"]}
+{"prompt": "write an email I can send to the whole team", "expect": ["no_purpose", "no_format"]}
+{"prompt": "delete all the old drafts permanently", "expect": ["external_action", "irreversible"]}
+{"prompt": "overwrite the master file with this version, we don't have a backup", "expect": ["irreversible"]}
+{"prompt": "remove everything older than 2024 from the shared drive", "expect": ["external_action", "irreversible"]}
+{"prompt": "from now on always use British spelling", "expect": ["remember_pref"]}
+{"prompt": "remember that I prefer bullet points over paragraphs", "expect": ["remember_pref"]}
+{"prompt": "going forward, sign my emails as Sam", "expect": ["remember_pref"]}
+{"prompt": "every monday I write a status update for my boss, here are this week's notes", "expect": ["repeated_task"]}
+{"prompt": "same as last week, turn these notes into the weekly report", "expect": ["repeated_task"]}
+{"prompt": "I do this every month: reconcile the vendor list against invoices", "expect": ["repeated_task"]}
+{"prompt": "I'm going on leave next week, help me hand this off to my colleague", "expect": ["handoff", "vague_goal"]}
+{"prompt": "write a handover note for whoever is covering for me", "expect": ["handoff", "no_format"]}
+{"prompt": "Jordan is taking over my accounts, what should I tell them", "expect": ["handoff"]}
+{"prompt": "write a quick, comprehensive and creative plan that's also cheap", "expect": ["competing_goals", "subjective"]}
+{"prompt": "I need a short but comprehensive overview of GDPR", "expect": ["competing_goals", "subjective"]}
+{"prompt": "I'm preparing a board update for our investors. The goal is to persuade them to approve a hiring plan because growth is stalling. Keep it to 5 bullets in a formal tone, and cite sources.", "expect": []}
+{"prompt": "Rewrite the attached cover letter for a senior analyst role at a bank. The hiring manager is a former consultant, so lead with results. One page, confident but not arrogant.", "expect": []}
+{"prompt": "thanks, that's great", "expect": []}
+{"prompt": "shorten the second paragraph", "expect": []}
+{"prompt": "can you make slide 3 punchier", "expect": ["subjective"]}
+{"prompt": "explain how compound interest works like I'm 12", "expect": []}
+{"prompt": "brainstorm ways to celebrate our team's anniversary on a small budget", "expect": []}
+{"prompt": "translate this paragraph into Spanish for our customers in Mexico", "expect": []}
+{"prompt": "turn my meeting notes below into action items with owners and due dates", "expect": []}
+{"prompt": "I have a job interview tomorrow for a marketing role, can you quiz me with likely questions", "expect": []}
+{"prompt": "plan a 3-day offsite agenda for 12 people in Denver, mix of strategy and team building", "expect": []}
+{"prompt": "compare Asana and Trello for a 10-person marketing team", "expect": []}
+{"prompt": "make this email sound friendlier", "expect": []}
+{"prompt": "what should I cook for dinner tonight with chicken and rice", "expect": []}
+{"prompt": "write a thank you note to my mentor for her advice on my promotion", "expect": ["no_format"]}
+{"prompt": "help me write a toast for my sister's wedding, she's a nurse and loves hiking, about 2 minutes", "expect": []}
+{"prompt": "summarize the key points of this thread for someone who missed the meeting", "expect": []}
+{"prompt": "review my resume and tell me what a recruiter would push back on", "expect": []}
+{"prompt": "fix the grammar in this paragraph", "expect": []}
+{"prompt": "can you check whether these numbers add up: 120 + 340 + 95 = 555", "expect": []}

@@ -126,6 +126,22 @@ class InProcess(CoachTestCase):
         self.assertIn("light", text_of(self.server.handle(call("coach_settings", {"action": "intensity", "value": "light"}))))
         self.assertIn("on", text_of(self.server.handle(call("coach_settings", {"action": "status"}))))
 
+    def test_chat_can_explain_mute_and_measure_tips(self):
+        say = lambda msg: self.server.handle(call("coach_turn", {"message": msg}))
+        self.assertIn("No coaching tip", text_of(self.server.handle(call("coach_settings", {"action": "why"}))))
+        say(RICH)
+        self.advance(60)
+        self.assertIn("coaching moment", text_of(say("write an email about the office move")))
+        why = text_of(self.server.handle(call("coach_settings", {"action": "why"})))
+        self.assertIn("Last tip: Say who it's for", why)
+        muted = text_of(self.server.handle(call("coach_settings", {"action": "mute", "value": "last"})))
+        self.assertIn("won't see", muted)
+        self.assertIn("define-audience", store.load_state()["coach"]["muted"])
+        self.server.handle(call("coach_settings", {"action": "unmute", "value": "all"}))
+        self.assertEqual(store.load_state()["coach"]["muted"], {})
+        self.assertIn("Is the coaching working?",
+                      text_of(self.server.handle(call("coach_settings", {"action": "insights"}))))
+
     def test_bad_settings_do_not_crash(self):
         r = self.server.handle(call("coach_settings", {"action": "intensity", "value": "extreme"}))
         self.assertIn("Nothing to do", text_of(r))                # error swallowed, logged, chat unaffected

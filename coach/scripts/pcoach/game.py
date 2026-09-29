@@ -26,6 +26,8 @@ ACHIEVEMENTS = [
      lambda s: s["streak"]["best"] >= 7),
     ("streak_14", "14-day streak", "Fourteen working days in a row of good AI habits.",
      lambda s: s["streak"]["best"] >= 14),
+    ("coachable", "Coachable", "Took the coach up on 3 of its offers.",
+     lambda s: s["totals"].get("offers_accepted", 0) >= 3),
     ("clean_hands", "Clean hands", "50 prompts with no sensitive data flagged.",
      lambda s: s["totals"]["prompts"] >= 50 and s["totals"]["sensitive"] == 0),
 ]

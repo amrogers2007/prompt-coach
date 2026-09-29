@@ -40,18 +40,21 @@ def default_state():
     return {
         "version": VERSION,
         "created": t,
-        "settings": {"enabled": True, "intensity": "normal", "paused_until": 0, "toasts": "auto"},
+        "settings": {"enabled": True, "intensity": "normal", "paused_until": 0, "toasts": "auto",
+                     "holdout": 0},
         "xp": 0,
         "level": 1,
         "streak": {"count": 0, "best": 0, "last_day": ""},
         "achievements": {},
         "toasts": [],
-        "coach": {"prompts_since": 0, "last_ts": 0, "lessons": [], "last_focus": ""},
+        "coach": {"prompts_since": 0, "last_ts": 0, "lessons": [], "last_focus": "",
+                  "declines": {}, "muted": {}, "last_moment": {}},
         "gens": [],
         "sessions": {},
         "recent": [],
         "totals": {"prompts": 0, "coached": 0, "revisions": 0, "first_drafts_accepted": 0,
-                   "rich_prompts": 0, "verifies": 0, "sensitive": 0, "docs": 0},
+                   "rich_prompts": 0, "verifies": 0, "sensitive": 0, "docs": 0,
+                   "offers_accepted": 0},
     }
 
 

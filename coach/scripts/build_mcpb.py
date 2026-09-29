@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build the Claude desktop pieces for chat and Cowork:
 
-    dist/prompt-coach.mcpb            the desktop extension (the local coach helper)
+    dist/prompt-coach-windows.mcpb    the desktop extension for Windows (the local coach helper)
+    dist/prompt-coach-mac-linux.mcpb  the same for macOS / Linux
     dist/prompt-coach-chat-skill.zip  a skill that tells Claude when to use it
 
 A .mcpb is just a zip with a manifest.json and the server files. Claude Desktop
@@ -24,7 +25,18 @@ PLUGIN_ROOT = os.path.dirname(HERE)
 OUT_DIR = os.path.join(os.path.dirname(PLUGIN_ROOT), "dist")
 
 
-def manifest():
+# Claude Desktop launches the server with the manifest's top-level command and, in the
+# version tested here, ignored a platform_overrides entry, so each OS gets its own build.
+# Windows must use `python`: `python3` there is usually the Microsoft Store alias, which
+# runs in a sandbox that cannot read the extension's folder under %APPDATA%.
+BUILDS = {
+    "windows": {"file": "prompt-coach-windows.mcpb", "command": "python", "platforms": ["win32"]},
+    "mac-linux": {"file": "prompt-coach-mac-linux.mcpb", "command": "python3", "platforms": ["darwin", "linux"]},
+}
+
+
+def manifest(build="windows"):
+    spec = BUILDS[build]
     return {
         "manifest_version": "0.3",
         "name": "prompt-coach",
@@ -46,13 +58,12 @@ def manifest():
             "type": "python",
             "entry_point": "server/coach_mcp.py",
             "mcp_config": {
-                "command": "python3",
+                "command": spec["command"],
                 "args": ["${__dirname}/server/coach_mcp.py"],
-                "platform_overrides": {"win32": {"command": "python", "args": ["${__dirname}/server/coach_mcp.py"]}},
             },
         },
         "tools": [{"name": t["name"], "description": t["description"]} for t in TOOLS],
-        "compatibility": {"platforms": ["darwin", "win32", "linux"], "runtimes": {"python": ">=3.9"}},
+        "compatibility": {"platforms": spec["platforms"], "runtimes": {"python": ">=3.9"}},
     }
 
 
@@ -64,10 +75,12 @@ def chat_skill_md():
         '(coach_start, coach_turn, coach_document, coach_score, coach_settings) as described, and deliver its '
         'coaching in italics starting with Prompt Coach:."\n'
         "---\n\n"
-        "This user has the Prompt Coach desktop extension installed. Use its tools in every conversation.\n\n"
+        "This user has the Prompt Coach helper connected to Claude on their computer. Use its tools in every "
+        "conversation.\n\n"
         + INSTRUCTIONS.replace("\n", "\n\n", 0) +
         "\n\nIf the Prompt Coach tools are not available in this conversation, ignore this skill completely and tell "
-        "the user only if they ask why coaching is missing (the extension may need to be enabled in Settings > Extensions).\n"
+        "the user only if they ask why coaching is missing (the helper may not be connected: see the Prompt Coach "
+        "README, 'Claude desktop, Chat').\n"
     )
 
 
@@ -88,12 +101,15 @@ def _add_tree(z, src_dir, arc_prefix):
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    mcpb = os.path.join(OUT_DIR, "prompt-coach.mcpb")
-    with zipfile.ZipFile(mcpb, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("manifest.json", json.dumps(manifest(), indent=2))
-        z.write(os.path.join(HERE, "coach_mcp.py"), "server/coach_mcp.py")
-        n = _add_tree(z, os.path.join(HERE, "pcoach"), "server/pcoach")
-    print("Wrote %s (manifest + server + %d module files)" % (mcpb, n))
+    for build, spec in BUILDS.items():
+        mcpb = os.path.join(OUT_DIR, spec["file"])
+        with zipfile.ZipFile(mcpb, "w", zipfile.ZIP_DEFLATED) as z:
+            z.writestr("manifest.json", json.dumps(manifest(build), indent=2))
+            z.write(os.path.join(HERE, "coach_mcp.py"), "server/coach_mcp.py")
+            n = _add_tree(z, os.path.join(HERE, "pcoach"), "server/pcoach")
+            # library.default_path() is two folders up from server/pcoach, i.e. the bundle root.
+            z.write(os.path.join(PLUGIN_ROOT, "library", "recommendations.md"), "library/recommendations.md")
+        print("Wrote %s (manifest + server + %d module files + recommendation library)" % (mcpb, n))
 
     skill = os.path.join(OUT_DIR, "prompt-coach-chat-skill.zip")
     with zipfile.ZipFile(skill, "w", zipfile.ZIP_DEFLATED) as z:
