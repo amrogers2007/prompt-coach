@@ -590,8 +590,12 @@ def is_decline(text):
 # how many tips were taken, not just how many got a literal yes.
 ANSWER_LEAD = re.compile(
     r"^\s*(it'?s|its|this is|that'?s|they'?re|they are|the (readers?|audience|goal|point|purpose) (is|are)|"
-    r"for |to (the|my|our|a|an) |mostly|mainly|so (that )?|because|i want|i'?d like|i need|"
+    r"mostly|mainly|because|i want|i'?d like|i need|"
     r"my (goal|boss|team|manager|aim)|probably|i think|about \d|around \d|roughly|\d)", re.I)
+# "so now do I have to reinstall?" is a question, not an answer, however it starts.
+IS_QUESTION = re.compile(
+    r"\?\s*$|^\s*(so |ok |okay |and |but |now )?(do|does|did|can|could|should|would|will|is|are|was|were|"
+    r"what|why|how|when|where|which|who|whom)\b", re.I)
 ASKS_FOR_WORK = re.compile(r"\bhelp me\b|\bi need (a|an|you to)\b", re.I)
 
 
@@ -637,7 +641,7 @@ def answers_tip(text, skill):
     request = is_request(t)
     if supplies(skill, t):
         return "rephrase" if request else "reply"
-    if request:
+    if request or IS_QUESTION.search(t):
         return None
     return "reply" if (w <= 25 and ANSWER_LEAD.match(t)) else None
 

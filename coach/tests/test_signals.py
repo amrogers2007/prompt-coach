@@ -162,6 +162,16 @@ class AnswersTip(unittest.TestCase):
     def test_a_request_without_the_advice_or_an_unrelated_edit_is_neither(self):
         for text in (BARE, "shorten paragraph 2", "", "thanks", "write a memo about the new pricing"):
             self.assertIsNone(signals.answers_tip(text, "context"), text)
+
+    def test_a_question_is_never_an_answer(self):
+        # Found in the wild: "so now do i have to reinstall" was cheered as taking the tip.
+        for text in ("so now do i have to reinstall", "so what do you think?", "is that right?",
+                     "to be clear, which one did you mean", "ok can you do that again"):
+            self.assertIsNone(signals.answers_tip(text, "context"), text)
+            self.assertIsNone(signals.answers_tip(text, "precision"), text)
+        # ...but a purpose or reader in a statement still counts, however it starts
+        self.assertEqual(signals.answers_tip("so that staff stop parking in the visitor spots", "context"), "reply")
+        self.assertEqual(signals.answers_tip("to the board, before Thursday's vote", "context"), "reply")
         self.assertIsNone(signals.answers_tip("shorten paragraph 2", "verification"))
 
     def test_context_bits_name_what_was_given(self):
