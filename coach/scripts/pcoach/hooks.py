@@ -365,7 +365,7 @@ def handle_prompt(payload, delivery=None, source="hook"):
     ts = store.now()
     sid = payload.get("session_id") or "unknown"
 
-    if signals.is_coding_prompt(text):
+    if signals.is_coding_prompt(text) or signals.is_machine_turn(text):
         return None
     trivial = signals.is_trivial(text)
     answer = signals.is_acceptance(text) or signals.is_decline(text) or signals.is_misfit(text)

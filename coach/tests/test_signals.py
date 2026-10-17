@@ -179,6 +179,15 @@ class AnswersTip(unittest.TestCase):
         self.assertEqual(signals.context_bits("write a memo for the sales team"), ["who it's for"])
         self.assertEqual(signals.context_bits(BARE), [])
 
+    def test_a_machine_made_turn_is_not_the_users_words(self):
+        # Found in the wild: a background-task notice was scored as a prompt and cheered.
+        notice = ("<system-reminder>\n[SYSTEM NOTIFICATION - NOT USER INPUT]\nThis is an automated background-task "
+                  "event.\n<task-notification>\n<task-id>b8dggwugf</task-id>\n</task-notification>\n</system-reminder>")
+        self.assertTrue(signals.is_machine_turn(notice))
+        self.assertTrue(signals.is_machine_turn("<task-notification><status>completed</status></task-notification>"))
+        self.assertFalse(signals.is_machine_turn(RICH))
+        self.assertFalse(signals.is_machine_turn("the notification email should go to the whole team"))
+
     def test_a_yes_or_no_is_handled_elsewhere(self):
         # answers_tip is only consulted after the yes/no/doesn't-apply checks, so it needn't recognise them.
         self.assertTrue(signals.is_acceptance("yes please"))

@@ -245,6 +245,16 @@ CODE_WEAK = re.compile(
     r"segfault|linter|dependency|dependencies|lint)\b", re.I)
 
 
+# Claude Code hands some machine-made turns to the prompt hook as if the user typed them:
+# a background task finishing, a system reminder. They are not the user's words.
+MACHINE_TURN = re.compile(
+    r"^\s*<(system-reminder|task-notification|ci-monitor-event)\b|\[SYSTEM NOTIFICATION|<task-notification>", re.I)
+
+
+def is_machine_turn(text):
+    return bool(MACHINE_TURN.search(text or ""))
+
+
 def is_coding_prompt(text):
     """Coding work isn't this coach's audience (everyday non-technical tasks), so
     such prompts are left out of scoring and coaching rather than being judged

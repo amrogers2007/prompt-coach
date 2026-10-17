@@ -260,6 +260,16 @@ class SessionFlow(CoachTestCase):
         self.assertIsNone(hooks.handle_session({"session_id": SID}))
 
 
+class MachineTurns(CoachTestCase):
+    def test_a_background_task_notice_is_neither_scored_nor_cheered(self):
+        hooks.handle_prompt(prompt(RICH))
+        before = store.load_state()["totals"]["prompts"]
+        notice = ("<system-reminder>\n[SYSTEM NOTIFICATION - NOT USER INPUT]\n<task-notification>\n"
+                  "<summary>Background command finished (exit code 0)</summary>\n</task-notification>\n</system-reminder>")
+        self.assertIsNone(hooks.handle_prompt(prompt(notice)))
+        self.assertEqual(store.load_state()["totals"]["prompts"], before)
+
+
 class Cheers(CoachTestCase):
     """A small recognition the first time each good habit shows up in a day."""
 
