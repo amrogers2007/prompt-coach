@@ -124,9 +124,39 @@ def xp_for_prompt(analysis):
 
 
 def is_good_habit(analysis):
+    """A moment that keeps the streak alive: a request with real context, a revision of a
+    draft, or asking the AI to check its work. (Taking a coaching tip counts too; the
+    hooks handle that one, since it isn't visible in the prompt alone.)"""
     if analysis["kind"] == "refine":
         return True
+    if analysis.get("verify"):
+        return True
     return analysis["kind"] == "new" and analysis["context"] >= 0.6
+
+
+# --- cheers: a small recognition the first time each good habit shows up in a day -----------
+
+CHEER_EMOJI = ("\U0001f389", "\U0001f64c")     # party popper, raised hands: they take turns
+CHEER_TEXT = {
+    "context": "Nice, you gave the AI real context before asking.",
+    "revise": "Nice, you treated the first draft as a draft and asked for a change.",
+    "verify": "Nice, you asked the AI to check its work.",
+    "tip": "Nice, you took the tip.",
+}
+
+
+def cheer(state, habit, ts, detail=None):
+    """One cheer per habit per day, the first time it shows up. Returns (emoji, text), or
+    None when this habit was already cheered today."""
+    today = store.day_of(ts)
+    c = state.setdefault("cheers", {"day": today, "habits": [], "count": 0})
+    if c.get("day") != today:
+        c["day"], c["habits"] = today, []
+    if habit in c["habits"]:
+        return None
+    c["habits"].append(habit)
+    c["count"] = c.get("count", 0) + 1
+    return CHEER_EMOJI[(c["count"] - 1) % len(CHEER_EMOJI)], (detail or CHEER_TEXT[habit])
 
 
 def check_achievements(state, ts):

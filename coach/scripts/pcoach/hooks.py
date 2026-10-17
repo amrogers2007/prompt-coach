@@ -125,18 +125,22 @@ def refresh_saved_pages():
 
 
 def _output(system_lines=None, context=None, event="UserPromptSubmit", mode="system", where="end"):
+    """system_lines: short status sentences, each a plain string (said with the coach's light
+    bulb) or an (emoji, text) pair such as a cheer. They become one line for the user."""
     out = {}
-    text = "Prompt Coach: " + " ".join(system_lines) if system_lines else ""
+    pairs = [l if isinstance(l, tuple) else (lessons.COACH_EMOJI, l) for l in (system_lines or [])]
+    text = " ".join(t for _, t in pairs)
+    emoji = next((e for e, _ in pairs if e != lessons.COACH_EMOJI), lessons.COACH_EMOJI)   # a cheer sets the mood
     if text and mode == "chat":
         place = ("at the very start of your FIRST reply in this conversation, whatever the user asks (put the note "
                  "first, then answer their request normally)"
                  if where == "start" else "at the very end of your reply, after everything else")
         note = ("[Prompt Coach: status note]\nInclude this exact one-line note %s, on its own line and in italics. "
-                "It is a friendly status message for the user, not part of your answer, so do not comment on it:\n*%s*"
-                % (place, text))
+                "It is a friendly status message for the user, not part of your answer, so do not comment on it:\n"
+                "*%s **Prompt Coach:** %s*" % (place, emoji, text))
         context = (context + "\n\n" + note) if context else note
     elif text:
-        out["systemMessage"] = text
+        out["systemMessage"] = "%s Prompt Coach: %s" % (emoji, text)
     if context:
         out["hookSpecificOutput"] = {"hookEventName": event, "additionalContext": context}
     return out or None
@@ -152,12 +156,14 @@ def handle_session(payload, delivery=None):
     session["prompts"] = 0
     session["pending_gen"] = None
     session["urgent_shown"] = []
-    session.pop("offer", None)
+    stale = session.pop("offer", None)
+    if stale:
+        _offer_passed_over(stale["ids"][0], ts)     # a new conversation began without a reply to the last tip
     store.prune_events()
 
     events = store.read_events(tail_bytes=store.RECENT_BYTES)
     m = scoring.compute_metrics(events, state["gens"])
-    level = scoring.resolve_level(m, state["level"])
+    level = scoring.settle_level(state, m, ts)
     state["level"] = level
     store.save_state(state)
 
@@ -167,13 +173,15 @@ def handle_session(payload, delivery=None):
     refresh_saved_pages()
     mode = delivery or delivery_mode(state["settings"])
     lines = []
+    today = store.day_of(ts)
     if not state.get("welcomed"):
         lines.append("I'm your AI coach. Just work as usual; every so often I'll ask a question to help you "
                      "get more out of AI. Type /prompt-coach:score any time to see your level.")
         state["welcomed"] = True
-        store.save_state(state)
-    else:
-        # Every session opens with the coach introducing itself, so it is always clear it is on.
+    elif state.get("welcome_day") != today:
+        # The first conversation of the day opens with the coach introducing itself. Later
+        # conversations the same day stay quiet until there is something to say: a second
+        # "welcome back" an hour later reads like the coach thinks it's a new day.
         streak = game.streak_status(state, ts)
         bits = ["%s (Level %d of 4)" % (game.level_name(level), level)]
         if streak["count"] >= 1 and not streak["today"]:
@@ -182,8 +190,13 @@ def handle_session(payload, delivery=None):
                         % (streak["count"], streak["count"] + 1))
         elif streak["count"] >= 2:
             bits.append("%d-day streak" % streak["count"])
+        if state.get("below_since"):
+            bits.append("score a little under the %s line, a few well-set-up requests keep it" % game.level_name(level))
         lines.append("Welcome back, I'm your AI coach (%s). I'll pop in with a question now and then "
                      "to help you get more out of AI." % ", ".join(bits))
+    if lines:
+        state["welcome_day"] = today
+        store.save_state(state)
 
     context = (
         "Prompt Coach is active for this user, a non-technical professional learning to use AI well. "
@@ -252,22 +265,47 @@ def seen_by_other_channel(text, source):
                for r in store.load_state().get("recent", []))
 
 
+def _offer_passed_over(lesson_id, ts):
+    """The tip got no yes, no no, and no answer. Recorded so the dashboard can say how
+    many tips are passed over, not only how many are taken."""
+    store.append_event({"type": "offer_ignored", "lesson": lesson_id, "ts": ts})
+
+
+def _offer_taken(state, entries, ts, kind, instruction, how=None):
+    state["totals"]["offers_accepted"] += 1
+    state["xp"] += OFFER_ACCEPTED_XP
+    event = {"type": kind, "lesson": entries[0]["id"], "skill": entries[0]["skill"], "ts": ts}
+    if how:
+        event["how"] = how
+    store.append_event(event)
+    return instruction
+
+
 def _take_offer(state, session, text, ts):
-    """The coach's last offer is only answerable by the very next message. A yes
-    returns the follow-up instruction (the AI carries out the recommendation);
-    anything else just lets the offer lapse."""
+    """The coach's last offer is only answerable by the very next message.
+
+    Returns (instruction, taken): the follow-up instruction for the AI, if there is one
+    to carry out, and the lesson entry when the tip was taken, else None. A tip is taken
+    by a yes, by an answer to its question in the user's own words, or by a new request
+    rephrased to include what the tip asked for. A no or "doesn't apply" is recorded;
+    anything else is recorded as passed over. Every offer ends in exactly one of:
+    offer_accepted, offer_answered (how: reply | rephrase), offer_declined,
+    offer_misfit, offer_ignored."""
     offer = session.pop("offer", None)
-    if not offer or ts - offer.get("ts", 0) > OFFER_TTL_SECONDS:
-        return None
-    coach = state["coach"]
+    if not offer:
+        return None, None
     lesson_id = offer["ids"][0]
+    if ts - offer.get("ts", 0) > OFFER_TTL_SECONDS:
+        _offer_passed_over(lesson_id, ts)
+        return None, None
+    coach = state["coach"]
     if signals.is_misfit(text):
         # The tip didn't fit: a false positive. Never repeat it for a month, and say so.
         entry = lessons.get(lesson_id)
         if not (entry and entry["urgent"]):      # safety tips are recorded but never silenced
             coach["muted"][lesson_id] = ts + MISFIT_MUTE_SECONDS
         store.append_event({"type": "offer_misfit", "lesson": lesson_id, "ts": ts})
-        return lessons.misfit_instruction()
+        return lessons.misfit_instruction(), None
     if signals.is_decline(text):
         declines = coach["declines"].get(lesson_id, 0) + 1
         coach["declines"][lesson_id] = declines
@@ -275,16 +313,51 @@ def _take_offer(state, session, text, ts):
             coach["muted"][lesson_id] = ts + DECLINE_MUTE_SECONDS
             coach["declines"][lesson_id] = 0
         store.append_event({"type": "offer_declined", "lesson": lesson_id, "ts": ts})
-        return None
-    if not signals.is_acceptance(text):
-        return None
+        return None, None
     entries = [e for e in (lessons.get(i) for i in offer["ids"]) if e]
     if not entries:
-        return None
-    state["totals"]["offers_accepted"] += 1
-    state["xp"] += OFFER_ACCEPTED_XP
-    store.append_event({"type": "offer_accepted", "lesson": entries[0]["id"], "skill": entries[0]["skill"], "ts": ts})
-    return lessons.followup_instruction(entries)
+        return None, None
+    if signals.is_acceptance(text):
+        return _offer_taken(state, entries, ts, "offer_accepted", lessons.followup_instruction(entries)), entries[0]
+    how = signals.answers_tip(text, entries[0]["skill"])
+    if how == "reply":
+        return _offer_taken(state, entries, ts, "offer_answered", lessons.answered_instruction(entries), how), entries[0]
+    if how == "rephrase":
+        # They rewrote the request with what the tip asked for. Nothing to carry out: the
+        # new request already does it.
+        _offer_taken(state, entries, ts, "offer_answered", None, how)
+        return None, entries[0]
+    _offer_passed_over(lesson_id, ts)
+    return None, None
+
+
+def _tip_cheer(entry):
+    return 'Nice, you took the tip "%s".' % entry["title"]
+
+
+def _with_cheer(state, lines, habit, ts, detail=None):
+    """Put today's first cheer for this habit in front of the status lines (two lines at most).
+    Returns (lines, cheered)."""
+    c = game.cheer(state, habit, ts, detail)
+    if not c:
+        return lines, False
+    store.append_event({"type": "cheer", "habit": habit, "ts": ts})
+    return [c] + list(lines)[:1], True
+
+
+def _good_habits(analysis, text, taken):
+    """The good habits in this message, in cheer order, as (habit, wording)."""
+    found = []
+    if taken:
+        found.append(("tip", _tip_cheer(taken)))
+    if analysis["kind"] == "new" and analysis["context"] >= 0.6:
+        bits = signals.context_bits(text)
+        found.append(("context", ("Nice, you said %s before asking." % " and ".join(bits)) if bits else None))
+    if analysis["kind"] == "refine":
+        found.append(("revise", None))
+    if analysis.get("verify"):
+        found.append(("verify", None))
+    return found
 
 
 def handle_prompt(payload, delivery=None, source="hook"):
@@ -308,10 +381,16 @@ def handle_prompt(payload, delivery=None, source="hook"):
         session = state["sessions"].get(sid)
         if not session or not session.get("offer"):
             return None
-        followup = _take_offer(state, session, text, ts)
-        lines = game.toast_lines(0, None, game.check_achievements(state, ts), state["level"]) if followup else []
+        followup, taken = _take_offer(state, session, text, ts)
+        lines = []
+        if taken:
+            streak_grew = game.touch_streak(state, ts)          # taking a tip is a good-habit moment
+            lines = game.toast_lines(0, streak_grew, game.check_achievements(state, ts), state["level"])
+            lines, _ = _with_cheer(state, lines, "tip", ts, _tip_cheer(taken))
+            if streak_grew:
+                refresh_saved_pages()
         store.save_state(state)
-        if not followup:
+        if not followup and not lines:
             return None
         return _output(lines, followup, "UserPromptSubmit", delivery or delivery_mode(state["settings"]))
 
@@ -321,7 +400,7 @@ def handle_prompt(payload, delivery=None, source="hook"):
 
     session = _session(state, sid, ts)
     session["coached_this_turn"] = False
-    followup = _take_offer(state, session, text, ts)
+    followup, taken = _take_offer(state, session, text, ts)
     _expire_pending(state, session, ts)
 
     pending_gid = session.get("pending_gen")
@@ -365,13 +444,13 @@ def handle_prompt(payload, delivery=None, source="hook"):
         totals["sensitive"] += 1
     state["xp"] += game.xp_for_prompt(analysis)
 
-    streak_grew = game.touch_streak(state, ts) if game.is_good_habit(analysis) else None
+    streak_grew = game.touch_streak(state, ts) if (game.is_good_habit(analysis) or taken) else None
 
-    # -- level (rolling window, can go down) ---------------------------------------------
+    # -- level (rolling window; falls only after a sustained dip) -------------------------
     events = store.read_events(tail_bytes=store.RECENT_BYTES)
     metrics = scoring.compute_metrics(events, state["gens"])
     old_level = state["level"]
-    level = scoring.resolve_level(metrics, old_level)
+    level = scoring.settle_level(state, metrics, ts)
     state["level"] = level
     if level > old_level:
         game.level_up_achievement(state, level, ts)
@@ -435,6 +514,13 @@ def handle_prompt(payload, delivery=None, source="hook"):
     if analysis["sensitive"] and should:
         lines.insert(0, "Heads up: that message looks like it includes sensitive information.")
         lines = lines[:2]
+    elif lesson is None:
+        # A cheer for a good habit, but never in the same reply as a new tip: that reply
+        # already has the coach's one line. The habit stays uncheered until next time.
+        for habit, wording in _good_habits(analysis, text, taken):
+            lines, cheered = _with_cheer(state, lines, habit, ts, wording)
+            if cheered:
+                break
 
     store.save_state(state)
     if streak_grew or level != old_level or new_achievements:

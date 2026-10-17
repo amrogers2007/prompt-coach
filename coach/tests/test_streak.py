@@ -316,7 +316,7 @@ class WelcomeNote(CoachTestCase):
         st["settings"]["toasts"] = "chat"
         store.save_state(st)
         note = context_of(hooks.handle_session({"session_id": "one-line-note-1"}))
-        starred = [l for l in note.splitlines() if l.startswith("*Prompt Coach:")]
+        starred = [l for l in note.splitlines() if l.startswith("*\U0001f4a1 **Prompt Coach:**")]
         self.assertEqual(len(starred), 1)
         self.assertTrue(starred[0].endswith("*"))
 
@@ -555,7 +555,7 @@ class RealProcesses(CoachTestCase):
         self.assertIn("3-day streak of good AI habits.", p.stdout)
         self.assertEqual(store.load_state()["streak"]["count"], 3)
         p = self.run_hook("session", {"session_id": "real-0002"})
-        self.assertIn("3-day streak", p.stdout)
+        self.assertNotIn("Welcome back", p.stdout)            # same day: the welcome isn't repeated
         self.assertNotIn("makes it", p.stdout)
         self.assertFalse(os.path.exists(os.path.join(self.tmp, "errors.log")))
 

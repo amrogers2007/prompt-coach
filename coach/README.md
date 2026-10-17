@@ -11,17 +11,36 @@ Built for people who are **not coders and never learned how to use AI**, at work
 You:    write me a poem about the sea
 Claude: (writes the poem)
         ...
-        *Prompt Coach: Who is this poem for, and what should they feel when they read it?*
+        *💡 **Prompt Coach:** Who is this poem for, and what should they feel when they read it?*
 ```
 
 ```
 Claude: I've put together Board Update.pptx (8 slides) ...
-        *Prompt Coach: Treat that as a first draft. What would your CFO push back on first?*
+        *💡 **Prompt Coach:** Treat that as a first draft. What would your CFO push back on first?*
 You:    cut the market slide and lead with the hiring cost
-        Prompt Coach: Achievement unlocked: Second draft.
+        *🎉 **Prompt Coach:** Nice, you treated the first draft as a draft and asked for a change. Achievement unlocked: Second draft.*
 ```
 
 ## Install
+
+**Windows, the easy way: one setup program.** Download `PromptCoachSetup.exe`, double-click it, click
+**Install**. It needs nothing else on the computer (no Python, no Git), and it:
+
+- installs the coach as a normal Windows program for your user (no administrator rights),
+- connects it to the Claude desktop app's Chat and Cowork, and adds it to the Code tab,
+- closes and reopens Claude for you (it asks first) and checks that Claude started the coach,
+- adds a Start menu shortcut to your dashboard and an entry in *Installed apps* to remove it.
+
+Windows shows a blue "Windows protected your PC" notice because the program isn't signed by a paid publisher
+certificate yet: click **More info**, then **Run anyway**. The last page of setup shows one line to paste into
+Claude's settings so the coach starts by itself in every chat; that is the only step Claude doesn't let a setup
+program do for you. Your scores live in `~/.prompt-coach` and are kept when you upgrade or uninstall.
+
+Build the setup program from this repo with `python coach/scripts/build_installer.py` (needs
+`pip install pyinstaller`); it writes `dist/PromptCoachSetup.exe`. For IT departments it also runs without a
+window: `PromptCoachSetup.exe --silent --close-claude` (and `--silent --uninstall`).
+
+The manual routes below are for macOS, Linux, and developers who want to run the coach from a clone.
 
 **Claude Code (terminal, VS Code, desktop Code tab):**
 
@@ -53,7 +72,7 @@ helper that Claude calls each turn. Connect it from a clone of this repo:
 4. Start a new chat. Claude should open with an italic *Prompt Coach:* greeting. When it asks to use a Prompt Coach
    tool, pick **Always allow**.
 5. If a new chat doesn't greet you until you ask for the coach, add one line to Claude's own instructions, which it
-   reads in every chat (*Settings > Profile*, the box for personal preferences):
+   reads in every chat (*Settings > Account*, the box called *Instructions for Claude*):
 
    ```
    In every conversation, use my Prompt Coach tools without being asked: call coach_turn with my message
@@ -87,9 +106,10 @@ Then just work as usual. The coach starts on its own.
 
 | Moment | What happens |
 |---|---|
-| Session start | One-line welcome ("Beginner, 3-day streak"). |
-| Every few prompts | Your AI ends a reply with **one** short coaching recommendation, always in italics and starting with "Prompt Coach:". It's picked for what you just did (no audience named, a factual question with no source, a calculation...) and usually ends with an offer. Beginners hear from it about every 2 prompts, experts about every 8. |
-| You say "yes" to an offer | The AI carries out the recommendation for you (for example, asks the three questions that pin down your audience) and names the habit you're practicing. |
+| First conversation of the day | One-line welcome ("Beginner, 3-day streak"). Later conversations the same day start quietly. |
+| Every few prompts | Your AI ends a reply with **one** short coaching recommendation, always in italics and marked with the light-bulb emoji and a bold "Prompt Coach:" label. It's picked for what you just did (no audience named, a factual question with no source, a calculation...) and usually ends with an offer or a question. Beginners hear from it about every 4 prompts, experts about every 16. |
+| You take a tip | Saying "yes", answering its question in your own words, or rewriting your request to include what it asked for all count. On a "yes" or an answer, the AI carries out the recommendation for you (for example, asks the three questions that pin down your audience) and names the habit you're practicing. |
+| You use a good habit | The first time each day you give context up front, revise a draft, ask the AI to check its work, or take a tip, the coach says so in one line ("Nice, you said who it's for and what it's for before asking"), marked with a party popper or raised hands. |
 | A bare request | A prompt with no context from a newer user gets coached right away. |
 | Something consequential | Legal, medical, HR, or irreversible actions get a recommendation straight away instead of waiting their turn. |
 | A file is generated | The AI treats it as a first draft and asks how to improve it. After you revise it, it asks whether it's closer. |
@@ -162,8 +182,11 @@ shows:
   "18% of $2,350"). After fixing those gaps all three sets score 98% / 98%, but expect real-world precision nearer the
   blind numbers until detectors are checked against real (anonymized) pilot prompts. Tests fail if precision on any set
   drops below 92%.
-- **Leading measures.** `coach.py insights` (or `/prompt-coach:settings insights`): teachable moments spotted, tips
-  shown, taken, declined, and "didn't fit" (a live false-positive rate), for each recommendation.
+- **Leading measures.** `coach.py insights` (or `/prompt-coach:settings insights`): teachable moments spotted, and
+  what happened to every tip shown, for each recommendation. A tip ends in exactly one of five outcomes: said yes,
+  answered the question in their own words (the coach reads the next message for what the tip asked for: a reader,
+  a goal, a shape, a check), declined, "didn't fit" (a live false-positive rate), or passed over. The first two
+  count as taken; the dashboard's "Tips taken" card shows all five.
 - **Did it stick?** For each issue, how often it came up after it was first coached.
 - **Pilot mode.** `settings experiment 20` holds back coaching on a random 20% of *issues*, so each person has coached
   and uncoached issues to compare. (An issue stays in its group for good; holding back single moments would
@@ -279,6 +302,7 @@ PROMPT_COACH_HOME=/tmp/demo python coach/scripts/coach.py demo    # sample profi
 PROMPT_COACH_HOME=/tmp/demo python coach/scripts/coach.py score   # see the scoreboard
 python coach/scripts/build_zip.py                 # package for Claude desktop upload
 python coach/scripts/build_chat_skill.py          # the small skill file for Claude desktop chat
+python coach/scripts/build_installer.py           # dist/PromptCoachSetup.exe, the Windows setup program
 python coach/scripts/coach.py dashboard --demo    # the dashboard, with made-up history
 ```
 
@@ -286,4 +310,7 @@ Layout: `scripts/pcoach/signals.py` (what a prompt reveals), `scoring.py` (score
 `cadence.py` (when to speak), `library.py` (reads `library/recommendations.md`), `lessons.py` (picks a
 recommendation and words the instruction), `game.py` (XP/streaks/achievements), `hooks.py` (the three hook
 handlers), `report.py` (scoreboard, badge, export), `insights.py` (is it working), `evaluate.py` (detector accuracy),
-`store.py` (local storage).
+`store.py` (local storage). The Windows setup program is `scripts/installer.py` (the steps),
+`scripts/setup_app.py` (the window), `scripts/coach_app.py` (the installed `coach.exe`) and
+`scripts/build_installer.py`; `tests/test_installer.py` installs the real build into scratch folders and drives
+it through Claude Code, PowerShell and the chat protocol with no Python on the PATH.

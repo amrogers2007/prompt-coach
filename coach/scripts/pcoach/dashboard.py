@@ -143,8 +143,8 @@ def _gens(events, state_gens):
 
 def _empty_row(day):
     return {"day": day, "prompts": 0, "new": 0, "ctx_sum": 0.0, "ctx_n": 0, "prec_sum": 0.0, "prec_n": 0,
-            "verify": 0, "feat_yes": 0, "feat_n": 0, "coached": 0, "taken": 0, "declined": 0, "misfit": 0,
-            "docs": 0, "docs_done": 0, "docs_revised": 0, "issues": {}, "good_day": False,
+            "verify": 0, "feat_yes": 0, "feat_n": 0, "coached": 0, "taken": 0, "answered": 0, "declined": 0,
+            "misfit": 0, "ignored": 0, "docs": 0, "docs_done": 0, "docs_revised": 0, "issues": {}, "good_day": False,
             "score": None, "level": None}
 
 
@@ -242,7 +242,7 @@ def build(events=None, state=None, now=None):
             if e.get("feature") is not None:
                 row["feat_n"] += 1
                 row["feat_yes"] += 1 if e.get("feature") == 1.0 else 0
-            if game.is_good_habit({"kind": e.get("kind"), "context": e.get("context", 0.0)}):
+            if game.is_good_habit({"kind": e.get("kind"), "context": e.get("context", 0.0), "verify": e.get("verify")}):
                 row["good_day"] = True
             for trig in e.get("triggers") or ():
                 if trig in HABIT_GAPS:
@@ -251,10 +251,14 @@ def build(events=None, state=None, now=None):
             row["coached"] += 1
         elif t == "offer_accepted":
             row["taken"] += 1
+        elif t == "offer_answered":
+            row["answered"] += 1
         elif t == "offer_declined":
             row["declined"] += 1
         elif t == "offer_misfit":
             row["misfit"] += 1
+        elif t == "offer_ignored":
+            row["ignored"] += 1
         elif t == "gen":
             row["docs"] += 1
     for g in gens:
@@ -265,7 +269,7 @@ def build(events=None, state=None, now=None):
                 row["docs_revised"] += 1 if g.get("revisions", 0) > 0 else 0
 
     # The AI Fluency score as it stood at the end of each day (same rules as /score).
-    replay_level, i = 1, 0
+    replay, i = {"level": 1}, 0
     upto, last_m = [], None
     for day in days:
         end = _day_end(day)
@@ -274,9 +278,9 @@ def build(events=None, state=None, now=None):
             i += 1
         done = [dict(g, resolved=True) for g in gens if g.get("resolved") and (g.get("resolved_ts") or 0) < end]
         last_m = scoring.compute_metrics(upto, done)
-        replay_level = scoring.resolve_level(last_m, replay_level)
+        replay["level"] = scoring.settle_level(replay, last_m, end)
         rows[day]["score"] = last_m["score"]
-        rows[day]["level"] = replay_level
+        rows[day]["level"] = replay["level"]
 
     data["rows"] = [rows[d] for d in days]
     score = data["rows"][-1]["score"]

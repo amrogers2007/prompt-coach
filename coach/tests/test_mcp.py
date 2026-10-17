@@ -62,7 +62,7 @@ class InProcess(CoachTestCase):
         self.assertIn("I'm your AI coach", text)
         self.assertIn("at the very start", text)
         again = text_of(self.server.handle(call("coach_start")))
-        self.assertIn("Welcome back, I'm your AI coach", again)
+        self.assertNotIn("Welcome back", again)                   # a second conversation the same day is quiet
 
     def test_turns_return_nothing_then_a_coaching_instruction(self):
         first = text_of(self.server.handle(call("coach_turn", {"message": BARE})))

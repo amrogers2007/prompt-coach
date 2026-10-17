@@ -273,7 +273,7 @@
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   var LEVELS = ["Beginner", "Practitioner", "Advanced", "Expert"];
   var SUM_KEYS = ["prompts", "new", "ctx_sum", "ctx_n", "prec_sum", "prec_n", "verify", "feat_yes", "feat_n",
-                  "coached", "taken", "declined", "misfit", "docs", "docs_done", "docs_revised"];
+                  "coached", "taken", "answered", "declined", "misfit", "ignored", "docs", "docs_done", "docs_revised"];
   var PHRASES = {
     context: ["You give the AI more context", "You're giving the AI less context", true],
     precision: ["You say more often what a good answer looks like", "You say less often what a good answer looks like", true],
@@ -659,6 +659,19 @@
     return h("section", { class: "card span-4", "aria-label": "Your score" }, h("div", { class: "hero" }, r, text));
   }
 
+  // A tip is "taken" when you said yes to it or answered its question in your own words.
+  function tipsTaken(a) { return (a.taken || 0) + (a.answered || 0); }
+  function tipsSub(a) {
+    if (!a.coached) return "no tips offered yet";
+    var parts = [];
+    if (a.taken) parts.push(a.taken + " said yes");
+    if (a.answered) parts.push(a.answered + " answered or rephrased");
+    if (a.declined) parts.push(a.declined + " no thanks");
+    if (a.misfit) parts.push(a.misfit + " didn't fit");
+    if (a.ignored) parts.push(a.ignored + " passed over");
+    return "of " + plural(a.coached, "tip") + " offered" + (parts.length ? ": " + parts.join(", ") : "");
+  }
+
   function kpiCard(all, B, unit, rows) {
     function kpi(label, value, sub, spark) {
       return h("div", { class: "kpi" }, h("p", { class: "kpi-label", text: label }), h("p", { class: "kpi-value", text: value }),
@@ -671,7 +684,7 @@
       h("div", { class: "kpis" },
         kpi("Messages to AI", all.prompts.toLocaleString(), "most in one " + unit + ": " + Math.max.apply(null, perBucket), sparkline(perBucket)),
         kpi("Active days", String(all.activeDays), "of " + plural(rows.length, "day") + ", " + all.goodDays + " with a good-habit moment"),
-        kpi("Tips taken", String(all.taken), all.coached ? "of " + plural(all.coached, "tip") + " offered" : "no tips offered yet"),
+        kpi("Tips taken", String(tipsTaken(all)), tipsSub(all)),
         kpi("Drafts revised", revised === null ? "–" : pct(revised), all.docs_done ? all.docs_revised + " of " + plural(all.docs_done, "AI-made document") : "no AI-made documents yet")));
   }
 
@@ -757,7 +770,7 @@
         if (x >= 10 && x - y >= 5) wins.push({ size: x - y, text: "“" + DATA.issue_names[t] + "” came up less (" + pct(x) + " → " + pct(y) + ")" });
       });
       if (a.docs_done && a.docs_revised / a.docs_done >= 0.5) wins.push({ size: 1, text: "revised " + a.docs_revised + " of " + plural(a.docs_done, "AI-made draft") });
-      if (a.taken) wins.push({ size: 1, text: "took " + plural(a.taken, "coaching tip") });
+      if (tipsTaken(a)) wins.push({ size: 1, text: "took " + plural(tipsTaken(a), "coaching tip") });
       wins.sort(function (p, q) { return q.size - p.size; });
       wins = wins.slice(0, 3);
       var top = Object.keys(a.issues).sort(function (p, q) { return a.issues[q] - a.issues[p]; })[0];
@@ -923,7 +936,7 @@
           bars: B.map(function (b) { return { label: b.label, short: fmtDay(b.key), value: b.prompts,
                                               extra: [{ value: String(b.activeDays), label: b.activeDays === 1 ? "active day" : "active days" }, { value: String(b.coached), label: "tips offered" }] }; }) });
       },
-      function () { return table(["Period", "Messages", "Active days", "Tips offered", "Tips taken"], B.map(function (b) { return [b.label, String(b.prompts), String(b.activeDays), String(b.coached), String(b.taken)]; })); },
+      function () { return table(["Period", "Messages", "Active days", "Tips offered", "Tips taken", "Passed over"], B.map(function (b) { return [b.label, String(b.prompts), String(b.activeDays), String(b.coached), String(tipsTaken(b)), String(b.ignored)]; })); },
       "span-6");
   }
 

@@ -32,6 +32,11 @@ class DashboardData(CoachTestCase):
         self.assertEqual(sum(r["prompts"] for r in rows), sum(1 for e in events if e["type"] == "prompt"))
         self.assertEqual(sum(r["coached"] for r in rows), sum(1 for e in events if e["type"] == "coach"))
         self.assertEqual(sum(r["taken"] for r in rows), sum(1 for e in events if e["type"] == "offer_accepted"))
+        self.assertEqual(sum(r["answered"] for r in rows), sum(1 for e in events if e["type"] == "offer_answered"))
+        self.assertEqual(sum(r["ignored"] for r in rows), sum(1 for e in events if e["type"] == "offer_ignored"))
+        # every tip offered ended in exactly one outcome
+        outcomes = ("offer_accepted", "offer_answered", "offer_declined", "offer_misfit", "offer_ignored")
+        self.assertEqual(sum(r["coached"] for r in rows), sum(1 for e in events if e["type"] in outcomes))
         self.assertEqual(sum(r["docs"] for r in rows), sum(1 for e in events if e["type"] == "gen"))
         self.assertEqual(sum(r["docs_done"] for r in rows), sum(1 for e in events if e["type"] == "gen_resolved"))
         gaps = sum(sum(r["issues"].values()) for r in rows)
@@ -45,7 +50,8 @@ class DashboardData(CoachTestCase):
         events = store.read_events()
         good = set()
         for e in events:
-            if e["type"] == "prompt" and game.is_good_habit({"kind": e["kind"], "context": e["context"]}):
+            if e["type"] == "prompt" and game.is_good_habit({"kind": e["kind"], "context": e["context"],
+                                                               "verify": e.get("verify")}):
                 good.add(e["day"])
         rows = dashboard.build(now=self.t)["rows"]
         self.assertEqual({r["day"] for r in rows if r["good_day"]}, good)

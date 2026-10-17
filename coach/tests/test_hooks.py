@@ -241,19 +241,70 @@ class DocumentFlow(CoachTestCase):
 
 
 class SessionFlow(CoachTestCase):
-    def test_first_run_then_welcome_back(self):
+    def test_first_run_then_welcome_back_the_next_day(self):
         out = hooks.handle_session({"session_id": SID})
         self.assertIn("AI coach", out["systemMessage"])
         hooks.handle_prompt(prompt(BARE))
-        out = hooks.handle_session({"session_id": "another-session-1"})
+        same_day = hooks.handle_session({"session_id": "another-session-1"})
+        self.assertNotIn("systemMessage", same_day or {})          # quiet: it's still today
+        self.advance(86400)
+        out = hooks.handle_session({"session_id": "tomorrow-session-1"})
         self.assertIn("Welcome back", out["systemMessage"])
         self.assertIn("Beginner", out["systemMessage"])
+        self.assertTrue(out["systemMessage"].startswith("\U0001f4a1 Prompt Coach: "))
 
     def test_disabled_session_is_silent(self):
         st = store.load_state()
         st["settings"]["enabled"] = False
         store.save_state(st)
         self.assertIsNone(hooks.handle_session({"session_id": SID}))
+
+
+class Cheers(CoachTestCase):
+    """A small recognition the first time each good habit shows up in a day."""
+
+    def send(self, text, gap=60):
+        self.advance(gap)
+        return hooks.handle_prompt(prompt(text))
+
+    def said(self, out):
+        return (out or {}).get("systemMessage", "")
+
+    def test_context_up_front_is_cheered_once_a_day_and_names_what_was_given(self):
+        first = self.said(self.send(RICH))
+        self.assertIn("Nice, you said who it's for and what it's for and the background before asking.", first)
+        self.assertTrue(first.startswith("\U0001f389 Prompt Coach: "))
+        second = self.said(self.send(RICH + " Make it about the Q3 numbers."))
+        self.assertNotIn("you said who", second)
+        self.advance(86400)
+        self.assertIn("you said who it's for", self.said(self.send(RICH + " Variation for tomorrow.")))
+
+    def test_each_habit_gets_its_own_cheer_and_the_emoji_takes_turns(self):
+        first = self.said(self.send(RICH))                              # context (RICH also asks for sources)
+        self.assertTrue(first.startswith("\U0001f389"))
+        second = self.said(self.send(RICH + " And cite your sources for the growth figure."))
+        self.assertIn("asked the AI to check its work", second)
+        self.assertTrue(second.startswith("\U0001f64c"))
+        self.assertNotIn("you said who", second)
+
+    def test_no_cheer_in_the_same_reply_as_a_tip(self):
+        self.send(RICH)                                                 # cheered: context
+        st = store.load_state()
+        st["coach"]["prompts_since"] = 10                               # a tip is overdue
+        st["cheers"] = {"day": "1999-01-01", "habits": [], "count": 0}  # and the cheer is available again
+        store.save_state(st)
+        out = self.send(RICH + " Different wording so it is not a duplicate.")
+        self.assertIn("coaching moment", context_of(out))
+        self.assertNotIn("Nice", self.said(out))
+        later = self.send(RICH + " A third version, after the cooldown.")   # cooldown: no tip, so the cheer lands
+        self.assertNotIn("coaching moment", context_of(later))
+        self.assertIn("Nice", self.said(later))
+
+    def test_asking_for_a_check_keeps_the_streak_alive(self):
+        self.send(RICH)
+        self.advance(86400)
+        self.send("summarize this thread, and double-check the dates against the attached email")
+        self.assertEqual(store.load_state()["streak"]["count"], 2)
 
 
 class ToastDelivery(CoachTestCase):
@@ -285,20 +336,30 @@ class ToastDelivery(CoachTestCase):
         self.assertNotIn("systemMessage", out)
         self.assertIn("status note", context_of(out))
 
-    def test_every_session_opens_with_an_introduction(self):
+    def test_the_first_session_of_each_day_opens_with_an_introduction(self):
         self.set_mode("chat")
         hooks.handle_prompt(prompt(BARE))            # existing user: has history, never welcomed
         first = hooks.handle_session({"session_id": "second-session-1"})
         self.assertIn("I'm your AI coach", context_of(first))
         for sid in ("third-session-12", "fourth-session-1"):
-            later = hooks.handle_session({"session_id": sid})
-            text = context_of(later)
-            self.assertIn("status note", text, sid)
-            self.assertIn("Welcome back, I'm your AI coach", text)
-            self.assertIn("FIRST reply", text)
+            later = hooks.handle_session({"session_id": sid})      # the same day: no note, just the context
+            self.assertNotIn("status note", context_of(later), sid)
+            self.assertIn("Prompt Coach is active", context_of(later))
+        self.advance(86400)
+        text = context_of(hooks.handle_session({"session_id": "next-day-1"}))
+        self.assertIn("status note", text)
+        self.assertIn("Welcome back, I'm your AI coach", text)
+        self.assertIn("FIRST reply", text)
+        self.assertIn("*\U0001f4a1 **Prompt Coach:** Welcome back", text)
 
-    def test_terminal_sessions_also_greet_every_time(self):
+    def test_morning_and_evening_are_the_same_day(self):
+        import time as _time
+        lt = _time.localtime(self.t)
+        self.t = _time.mktime(lt[:3] + (8, 0, 0) + lt[6:])        # 8 in the morning, local time
         hooks.handle_session({"session_id": SID})
+        self.advance(11 * 3600)                                     # 7 in the evening, still today
+        self.assertNotIn("systemMessage", hooks.handle_session({"session_id": "evening-1"}) or {})
+        self.advance(14 * 3600)                                     # 9 the next morning
         again = hooks.handle_session({"session_id": "another-session-1"})
         self.assertIn("Welcome back, I'm your AI coach", again["systemMessage"])
 

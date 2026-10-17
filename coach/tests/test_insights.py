@@ -49,7 +49,9 @@ class Simulation(CoachTestCase):
                 coached.update(store.load_state()["coach"]["last_moment"].get("triggers", []))
         return insights.build()
 
-    def pilot(self, learns, people=6):
+    def pilot(self, learns, people=10):
+        # Ten people: tips come every 4th to 6th prompt, so fewer people give too few coached
+        # issues for the pooled effect to stand out from seed-to-seed noise.
         return [self.run_user(learns, seed=100 + p) for p in range(people)]
 
     def test_pilot_detects_a_real_learning_effect(self):

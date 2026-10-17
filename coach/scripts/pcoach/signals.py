@@ -584,6 +584,77 @@ def is_decline(text):
     return len(words(text)) <= 12 and bool(DECLINE.search(text or ""))
 
 
+# A tip is often a question ("Who is this for?"), and people answer it in their own
+# words ("new hires who haven't seen the old process") rather than with a yes. These
+# tell such an answer from a reply that passed the tip over, so the dashboard can say
+# how many tips were taken, not just how many got a literal yes.
+ANSWER_LEAD = re.compile(
+    r"^\s*(it'?s|its|this is|that'?s|they'?re|they are|the (readers?|audience|goal|point|purpose) (is|are)|"
+    r"for |to (the|my|our|a|an) |mostly|mainly|so (that )?|because|i want|i'?d like|i need|"
+    r"my (goal|boss|team|manager|aim)|probably|i think|about \d|around \d|roughly|\d)", re.I)
+ASKS_FOR_WORK = re.compile(r"\bhelp me\b|\bi need (a|an|you to)\b", re.I)
+
+
+def supplies(skill, text):
+    """Does the message contain the ingredient a tip for this habit asks for?"""
+    t = text or ""
+    if skill == "context":
+        return bool(AUDIENCE_ANY.search(t) or PURPOSE_ANY.search(t) or MATERIAL_GIVEN.search(t)
+                    or EXAMPLE_GIVEN.search(t) or STYLE_REF.search(t) or _any(AUDIENCE_CUES, t)
+                    or _any(PURPOSE_CUES, t) or _any(SITUATION_CUES, t) or _any(BACKGROUND_CUES, t))
+    if skill == "precision":
+        return bool(SHAPE_SPEC.search(t)) or precision_score(t) > 0
+    if skill == "verification":
+        return has_verification(t)
+    if skill == "iteration":
+        return is_refinement(t)
+    if skill == "feature":
+        return feature_signal(t) == 1.0
+    return False
+
+
+def is_request(text):
+    """Does the message ask for new work, rather than reply to something?"""
+    t = text or ""
+    w = len(words(t))
+    if CREATE_VERB.search(t) or CONTENT_REQUEST.search(t) or ASKS_FOR_WORK.search(t):
+        return True
+    if NEW_TASK_START.search(t) and not REFERS_BACK.search(t):
+        return True
+    return w > 25 and not FOLLOWUP_START.search(t)
+
+
+def answers_tip(text, skill):
+    """How the message takes the coach's last tip, or None if it doesn't.
+
+    'reply': it answers the tip in the user's own words ("it's for new hires").
+    'rephrase': it is a new request that now includes what the tip asked for (a reader,
+    a goal, a shape, a check...): the user rewrote their ask to match the advice."""
+    t = text or ""
+    w = len(words(t))
+    if w == 0:
+        return None
+    request = is_request(t)
+    if supplies(skill, t):
+        return "rephrase" if request else "reply"
+    if request:
+        return None
+    return "reply" if (w <= 25 and ANSWER_LEAD.match(t)) else None
+
+
+def context_bits(text):
+    """Which kinds of context a message gives, in plain words, for a cheer."""
+    t = text or ""
+    bits = []
+    if AUDIENCE_ANY.search(t) or _any(AUDIENCE_CUES, t):
+        bits.append("who it's for")
+    if PURPOSE_ANY.search(t) or _any(PURPOSE_CUES, t):
+        bits.append("what it's for")
+    if _any(SITUATION_CUES, t) or _any(BACKGROUND_CUES, t) or MATERIAL_GIVEN.search(t):
+        bits.append("the background")
+    return bits
+
+
 # When a specific trigger fires, the generic ones it covers are dropped: "what is
 # our PTO policy" is about the internal source, not facts in general, and a
 # 20-page plan needs an outline before it needs a named reader.

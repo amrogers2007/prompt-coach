@@ -16,10 +16,16 @@ interviews to a working, tested product.
 You:    write an email about the office move
 Claude: (writes the email)
         ...
-        *Prompt Coach: Knowing who will read this would sharpen the tone. Who is it for?*
+        *💡 **Prompt Coach:** Knowing who will read this would sharpen the tone. Who is it for?*
 ```
 
 ## Install
+
+**Windows:** download `PromptCoachSetup.exe`, double-click it, and click Install. It needs nothing else on the
+computer and sets up the Claude desktop app's Chat, Cowork and Code tab in one go
+([details](coach/README.md#install)).
+
+**macOS, Linux, or from the command line:**
 
 ```bash
 claude plugin marketplace add amrogers2007/prompt-coach
@@ -27,8 +33,8 @@ claude plugin install prompt-coach@prompt-coach
 ```
 
 That covers Claude Code and the desktop app's Code tab. To coach in the desktop app's regular chat as well, follow
-the short setup in [`coach/README.md`](coach/README.md#install). Requires Python 3.9 or newer; nothing else to
-install.
+the short setup in [`coach/README.md`](coach/README.md#install). This route requires Python 3.9 or newer; the
+Windows setup program does not.
 
 ## How it works
 

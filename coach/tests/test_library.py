@@ -225,10 +225,83 @@ class OfferFlow(CoachTestCase):
         events = [e["type"] for e in store.read_events()]
         self.assertIn("offer_declined", events)
 
+    def test_answering_the_tips_question_counts_as_taking_it(self):
+        # The tip asked something like "who is this for?"; the user answers in their own words.
+        self.coached_offer()
+        state = store.load_state()
+        offer = state["sessions"][SID]["offer"] = {"ids": ["ctx-audience"], "ts": self.t}
+        store.save_state(state)
+        out = self.send("it's for the whole company, most of them have never seen the new floor plan")
+        ctx = context_of(out)
+        self.assertIn("[Prompt Coach: follow-up]", ctx)
+        self.assertIn("using their answer", ctx)
+        self.assertIn(lessons.get(offer["ids"][0])["action"], ctx)
+        self.assertNotIn("coaching moment", ctx)             # no new tip stacked on top
+        state = store.load_state()
+        self.assertEqual(state["totals"]["offers_accepted"], 1)
+        self.assertNotIn("offer", state["sessions"][SID])
+        events = [e["type"] for e in store.read_events()]
+        self.assertIn("offer_answered", events)
+        self.assertNotIn("offer_ignored", events)
+
+    def test_moving_on_without_answering_is_recorded_as_passed_over(self):
+        self.coached_offer()
+        out = self.send("write me a poem about the sea")
+        self.assertNotIn("follow-up", context_of(out))
+        events = [e["type"] for e in store.read_events()]
+        self.assertIn("offer_ignored", events)
+        self.assertEqual(events.count("offer_ignored"), 1)
+        self.assertEqual(store.load_state()["totals"]["offers_accepted"], 0)
+
+    def test_every_offer_ends_in_exactly_one_outcome(self):
+        expected = [("yes please", "offer_accepted"), ("no thanks", "offer_declined"),
+                    ("that doesn't apply here", "offer_misfit"), ("for new hires", "offer_answered"),
+                    ("shorten paragraph 2", "offer_ignored"),
+                    ("Help me write a termination letter for an employee on my team", "offer_answered"),
+                    (RICH, "offer_answered"), ("write a memo about the new pricing", "offer_ignored")]
+        self.send(RICH)
+        for reply, outcome in expected:
+            state = store.load_state()
+            state["sessions"][SID]["offer"] = {"ids": ["ctx-audience"], "ts": self.t}
+            store.save_state(state)
+            self.send(reply)
+            events = [e for e in store.read_events() if e["type"].startswith("offer_")]
+            self.assertEqual(events[-1]["type"], outcome, reply)
+        self.assertEqual(len([e for e in store.read_events() if e["type"].startswith("offer_")]), len(expected))
+
+    def test_rephrasing_the_request_counts_as_taking_the_tip(self):
+        self.coached_offer()
+        state = store.load_state()
+        state["sessions"][SID]["offer"] = {"ids": ["ctx-audience"], "ts": self.t}
+        store.save_state(state)
+        out = self.send("write a memo for the sales team about the new pricing")
+        self.assertNotIn("follow-up", context_of(out))          # the new request already does it
+        taken = [e for e in store.read_events() if e["type"] == "offer_answered"]
+        self.assertEqual(len(taken), 1)
+        self.assertEqual(taken[0]["how"], "rephrase")
+        state = store.load_state()
+        self.assertEqual(state["totals"]["offers_accepted"], 1)
+        self.assertGreaterEqual(state["streak"]["count"], 1)      # taking a tip keeps the streak alive
+        self.assertIn('took the tip "Say who it\'s for"', out["systemMessage"])
+
+    def test_taking_a_tip_is_cheered_once_a_day(self):
+        outs = []
+        for _ in range(2):
+            self.coached_offer()
+            state = store.load_state()
+            state["sessions"][SID]["offer"] = {"ids": ["ctx-audience"], "ts": self.t}
+            store.save_state(state)
+            outs.append(self.send("yes please"))
+        self.assertIn("took the tip", outs[0]["systemMessage"])
+        self.assertTrue(outs[0]["systemMessage"].startswith(("\U0001f389", "\U0001f64c")))
+        self.assertNotIn("took the tip", outs[1].get("systemMessage", ""))
+        self.assertIn("[Prompt Coach: follow-up]", context_of(outs[1]))
+
     def test_a_stale_yes_does_nothing(self):
         self.coached_offer()
         out = self.send("yes", gap=hooks.OFFER_TTL_SECONDS + 5)
         self.assertIsNone(out)
+        self.assertIn("offer_ignored", [e["type"] for e in store.read_events()])
 
     def test_plain_yes_with_no_offer_is_still_ignored(self):
         self.assertIsNone(self.send("yes"))

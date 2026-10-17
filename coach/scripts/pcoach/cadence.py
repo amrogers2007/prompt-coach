@@ -10,7 +10,7 @@ Rules, in priority order:
   6. Otherwise on a schedule that stretches as the level rises.
 """
 
-INTERVAL_BY_LEVEL = {1: 2, 2: 3, 3: 5, 4: 8}
+INTERVAL_BY_LEVEL = {1: 4, 2: 6, 3: 10, 4: 16}
 INTENSITY_FACTOR = {"light": 1.6, "normal": 1.0, "frequent": 0.6}
 MIN_PROMPTS_BEFORE_COACHING = 2
 LOW_CONTEXT = 0.35

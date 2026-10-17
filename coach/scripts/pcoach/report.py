@@ -48,9 +48,10 @@ def build(state=None, events=None):
     state = state or store.load_state()
     events = events if events is not None else store.read_events(tail_bytes=store.RECENT_BYTES)
     m = scoring.compute_metrics(events, state["gens"])
-    level = scoring.resolve_level(m, state["level"])
+    level = scoring.settle_level(dict(state), m, time.time())     # a copy: reports never change the profile
     return {
         "generated_at": int(time.time()),
+        "holding": bool(state.get("below_since")),      # the score dipped below the level's line; kept for now
         "level": level,
         "level_name": scoring.LEVELS[level],
         "score": m["score"],

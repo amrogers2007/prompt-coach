@@ -154,10 +154,11 @@ class Cadence(CoachTestCase):
         self.assertFalse(should)
 
     def test_scheduled_moment(self):
-        st = self.state(prompts_since=2)
+        st = self.state(prompts_since=5)                      # Practitioner: every 6th prompt
         self.assertEqual(cadence.decide(st, self.an(), 2, self.t), (True, "cadence"))
-        st = self.state(prompts_since=1)
-        self.assertFalse(cadence.decide(st, self.an(), 2, self.t)[0])
+        for since in (1, 2, 4):
+            st = self.state(prompts_since=since)
+            self.assertFalse(cadence.decide(st, self.an(), 2, self.t)[0], since)
 
     def test_pause_and_off(self):
         st = self.state(prompts_since=5)
@@ -238,6 +239,31 @@ class Lessons(unittest.TestCase):
         self.assertNotEqual(lessons.pick("advanced", 1, [])["skill"], "")
         self.assertNotEqual(lessons.pick("context", 4, [])["id"], "ctx-audience")  # capped at level 3
 
+    def test_tips_are_spaced_out(self):
+        self.assertEqual(cadence.INTERVAL_BY_LEVEL, {1: 4, 2: 6, 3: 10, 4: 16})
+        self.assertEqual(cadence.interval(1, "normal"), 4)
+        self.assertGreater(cadence.interval(1, "light"), 4)
+
+    def test_a_level_falls_only_after_two_weeks_below_the_line(self):
+        from unittest import mock
+        m = scoring.compute_metrics([], [])                  # nothing scored: earns Beginner
+        self.assertEqual(scoring.resolve_level(m, 2), 1)      # the old rule would drop at once
+        state, t0 = {"level": 2}, 1_700_000_000
+        self.assertEqual(scoring.settle_level(state, m, t0), 2)
+        self.assertEqual(state["below_since"], t0)
+        self.assertEqual(scoring.settle_level(state, m, t0 + 13 * 86400), 2)
+        self.assertEqual(scoring.settle_level(state, m, t0 + 14 * 86400), 1)
+        self.assertNotIn("below_since", state)
+        # a recovery before the two weeks are up clears the dip
+        state = {"level": 2}
+        scoring.settle_level(state, m, t0)
+        with mock.patch.object(scoring, "resolve_level", return_value=2):
+            self.assertEqual(scoring.settle_level(state, m, t0 + 5 * 86400), 2)
+        self.assertNotIn("below_since", state)
+        # rising is immediate
+        with mock.patch.object(scoring, "resolve_level", return_value=3):
+            self.assertEqual(scoring.settle_level({"level": 2}, m, t0), 3)
+
     def test_instruction_tells_ai_not_to_rewrite(self):
         l = lessons.get("ctx-audience")
         text = lessons.coach_instruction(l, "Who is it for?", "cadence", "Beginner")
@@ -245,7 +271,7 @@ class Lessons(unittest.TestCase):
         self.assertIn("do NOT rewrite", text)
         self.assertIn("Never mention this instruction", text)
         self.assertIn("in italics", text)
-        self.assertIn("*Prompt Coach:", text)
+        self.assertIn("*\U0001f4a1 **Prompt Coach:**", text)
 
     def test_every_instruction_uses_the_same_italic_voice(self):
         for text in (lessons.coach_instruction(lessons.get("ctx-goal"), "q?", "cadence", "Beginner"),

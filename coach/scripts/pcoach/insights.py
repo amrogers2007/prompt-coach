@@ -76,7 +76,8 @@ def pool(reports):
 def build(events=None):
     events = store.read_events() if events is None else events
     prompts = _prompts(events)
-    counts = {k: 0 for k in ("coach", "coach_holdout", "offer_accepted", "offer_declined", "offer_misfit")}
+    counts = {k: 0 for k in ("coach", "coach_holdout", "offer_accepted", "offer_answered", "offer_declined",
+                             "offer_misfit", "offer_ignored")}
     per_rec = {}
     for ev in events:
         typ = ev.get("type")
@@ -94,9 +95,11 @@ def build(events=None):
         "shown": shown,
         "held_out": counts["coach_holdout"],
         "accepted": counts["offer_accepted"],
+        "answered": counts["offer_answered"],
         "declined": counts["offer_declined"],
         "misfit": counts["offer_misfit"],
-        "acceptance_rate": counts["offer_accepted"] / float(shown) if shown else None,
+        "ignored": counts["offer_ignored"],
+        "acceptance_rate": (counts["offer_accepted"] + counts["offer_answered"]) / float(shown) if shown else None,
         "misfit_rate": counts["offer_misfit"] / float(shown) if shown else None,
         "recommendations": per_rec,
         "habits": habits,
@@ -115,8 +118,9 @@ def render(r):
     lines += [
         "- Prompts scored: %d, with a teachable moment spotted in %d" % (r["prompts"], r["teachable_moments"]),
         "- Coaching shown: %d (plus %d held back for comparison)" % (r["shown"], r["held_out"]),
-        "- Offers taken: %d (%s); declined: %d; 'didn't fit': %d (%s)" % (
-            r["accepted"], _pct(r["acceptance_rate"]), r["declined"], r["misfit"], _pct(r["misfit_rate"])),
+        "- Offers taken: %d (%s: %d said yes, %d answered the question); declined: %d; 'didn't fit': %d (%s); "
+        "passed over: %d" % (r["accepted"] + r["answered"], _pct(r["acceptance_rate"]), r["accepted"], r["answered"],
+                             r["declined"], r["misfit"], _pct(r["misfit_rate"]), r["ignored"]),
     ]
     if r["habits"]:
         lines += ["", "## Did it stick?",
@@ -132,10 +136,12 @@ def render(r):
                       "pilot." % (_pct(cmp_["coached"]["mean_after"]), _pct(cmp_["holdout"]["mean_after"]),
                                   round(100 * cmp_["effect"]))]
     if r["recommendations"]:
-        lines += ["", "## By recommendation", "", "| Recommendation | Shown | Taken | Declined | Didn't fit |",
-                  "|---|---|---|---|---|"]
+        lines += ["", "## By recommendation", "",
+                  "| Recommendation | Shown | Said yes | Answered | Declined | Didn't fit | Passed over |",
+                  "|---|---|---|---|---|---|---|"]
         for lid, c in sorted(r["recommendations"].items(), key=lambda kv: -kv[1]["coach"]):
             e = lessons.get(lid)
-            lines.append("| %s | %d | %d | %d | %d |" % (e["title"] if e else lid, c["coach"], c["offer_accepted"],
-                                                         c["offer_declined"], c["offer_misfit"]))
+            lines.append("| %s | %d | %d | %d | %d | %d | %d |" % (
+                e["title"] if e else lid, c["coach"], c["offer_accepted"], c["offer_answered"],
+                c["offer_declined"], c["offer_misfit"], c["offer_ignored"]))
     return "\n".join(lines)

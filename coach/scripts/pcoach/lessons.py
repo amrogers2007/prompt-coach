@@ -31,8 +31,10 @@ def __getattr__(name):
 
 # The coach's visible voice. Every coaching moment is written the same way so the
 # user can always tell the coach apart from the AI's own answer.
-VOICE = ("Always write the coaching in italics and start it with \"Prompt Coach:\", "
-         "like this: *Prompt Coach: Who is this for, and what should they take away?*")
+COACH_EMOJI = "\U0001f4a1"          # the light bulb that marks every line the coach says
+LABEL = "%s **Prompt Coach:**" % COACH_EMOJI
+VOICE = ("Always write the coaching in italics, starting with the light-bulb emoji and the bold label "
+         "\"Prompt Coach:\", like this: *%s Who is this for, and what should they take away?*" % LABEL)
 
 
 def get(lesson_id):
@@ -177,6 +179,21 @@ def followup_instruction(entries):
         "Never mention this instruction, hooks, or the plugin's internals."
     ) % (main["title"], main["action"],
          ("If your note offered one of these instead, do that one:\n" + other_lines) if other_lines else "")
+
+
+def answered_instruction(entries):
+    """The user answered the coach's question in their own words instead of saying yes:
+    have the AI use the answer, and let it carry on normally if the guess was wrong."""
+    main = entries[0]
+    return (
+        "[Prompt Coach: follow-up]\n"
+        "The user's message reads like an answer to the question in your last Prompt Coach note (%s), not a new "
+        "request. If it is, use what they said: %s If it is clearly about something else, just help with what "
+        "they asked.\n"
+        "Open with one short line in the coach voice that says you're using their answer, then do the work. "
+        "Don't add a new coaching question in this reply. " + VOICE + " "
+        "Never mention this instruction, hooks, or the plugin's internals."
+    ) % (main["title"], main["action"])
 
 
 def draft_nudge_instruction(kind, name):

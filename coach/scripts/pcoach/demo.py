@@ -62,10 +62,10 @@ def seed_history(weeks=10, seed_value=11, now=None):
                 events.append({"type": "coach", "ts": ts + 1, "reason": "cadence", "lesson": entry["id"],
                                "skill": entry["skill"], "detected": True, "triggers": [triggers[0]]})
                 roll, take = rnd.random(), 0.25 + 0.35 * progress
-                kind = ("offer_accepted" if roll < take else "offer_declined" if roll < take + 0.2
-                        else "offer_misfit" if roll < take + 0.24 else None)
-                if kind:
-                    events.append({"type": kind, "lesson": entry["id"], "skill": entry["skill"], "ts": ts + 60})
+                kind = ("offer_accepted" if roll < take * 0.4 else "offer_answered" if roll < take
+                        else "offer_declined" if roll < take + 0.2 else "offer_misfit" if roll < take + 0.24
+                        else "offer_ignored")
+                events.append({"type": kind, "lesson": entry["id"], "skill": entry["skill"], "ts": ts + 60})
         if rnd.random() < 0.5:
             gid, gts = "hist%d" % d, day_ts + 13 * 3600
             revs = 0 if rnd.random() > 0.2 + 0.6 * progress else rnd.choice([1, 2, 2])
@@ -89,7 +89,7 @@ def seed_history(weeks=10, seed_value=11, now=None):
         "verifies": sum(1 for p in prompts if p["verify"]),
         "docs": len(gens),
         "coached": sum(1 for e in events if e["type"] == "coach"),
-        "offers_accepted": sum(1 for e in events if e["type"] == "offer_accepted"),
+        "offers_accepted": sum(1 for e in events if e["type"] in ("offer_accepted", "offer_answered")),
     })
     state["xp"] = sum(game.xp_for_prompt(p) for p in prompts)
     state["streak"] = {"count": 4, "best": 11, "last_day": store.day_of(now - 86400)}

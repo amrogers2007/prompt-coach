@@ -160,6 +160,29 @@ def resolve_level(m, stored):
     return max(level, earned)
 
 
+SUSTAINED_DIP_SECONDS = 14 * 86400   # a level is lost only after the score has stayed below it this long
+
+
+def settle_level(state, m, ts):
+    """The level to show now. Rising is immediate. Falling waits: the score must stay
+    below the level's line (with its slack) for two weeks before the level is actually
+    lost, so one quiet stretch doesn't take away what was earned. Keeps the start of
+    the dip in state['below_since']; a recovery clears it."""
+    stored = state.get("level", 1)
+    resolved = resolve_level(m, stored)
+    if resolved >= stored:
+        state.pop("below_since", None)
+        return resolved
+    since = state.get("below_since")
+    if since is None:
+        state["below_since"] = ts
+        return stored
+    if ts - since >= SUSTAINED_DIP_SECONDS:
+        state.pop("below_since", None)
+        return resolved
+    return stored
+
+
 def next_level_needs(m, level):
     """Plain-English list of what stands between the user and the next level."""
     nxt = level + 1

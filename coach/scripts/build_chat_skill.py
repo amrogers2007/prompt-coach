@@ -27,7 +27,7 @@ def chat_skill_md():
         "name: prompt-coach\n"
         'description: "Use in every conversation. Prompt Coach is this user\'s AI-skills coach: call its tools '
         '(coach_start, coach_turn, coach_document, coach_score, coach_settings) as described, and deliver its '
-        'coaching in italics starting with Prompt Coach:."\n'
+        'coaching in italics, marked with the light-bulb emoji and a bold Prompt Coach: label."\n'
         "---\n\n"
         "This user has the Prompt Coach helper connected to Claude on their computer. Use its tools in every "
         "conversation.\n\n"

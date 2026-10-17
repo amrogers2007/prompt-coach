@@ -140,5 +140,41 @@ class Documents(unittest.TestCase):
         self.assertTrue(any(p.endswith(".pdf") for p in paths))
 
 
+class AnswersTip(unittest.TestCase):
+    """After a tip like "who is this for?", does the next message take it: a reply in the
+    user's own words, or the request rephrased to include what the tip asked for?"""
+
+    def test_an_answer_in_their_own_words_is_a_reply(self):
+        for reply in ("it's for the whole company, most of them have never seen the new floor plan",
+                      "for new hires", "the board, they need to approve the budget",
+                      "so that staff stop parking in the visitor spots", "probably my manager and her team"):
+            self.assertEqual(signals.answers_tip(reply, "context"), "reply", reply)
+        self.assertEqual(signals.answers_tip("about 200 words, bullets, friendly", "precision"), "reply")
+        self.assertEqual(signals.answers_tip("please double-check the figures against the source", "verification"), "reply")
+        self.assertEqual(signals.answers_tip("make the intro punchier and cut the last paragraph", "iteration"), "reply")
+
+    def test_a_request_rewritten_to_include_the_advice_is_a_rephrase(self):
+        for text in (RICH, "Help me write a termination letter for an employee on my team, formal, 1 page",
+                     "write a memo for the sales team about the new pricing"):
+            self.assertEqual(signals.answers_tip(text, "context"), "rephrase", text)
+        self.assertEqual(signals.answers_tip("write the memo as 5 bullets under 150 words", "precision"), "rephrase")
+
+    def test_a_request_without_the_advice_or_an_unrelated_edit_is_neither(self):
+        for text in (BARE, "shorten paragraph 2", "", "thanks", "write a memo about the new pricing"):
+            self.assertIsNone(signals.answers_tip(text, "context"), text)
+        self.assertIsNone(signals.answers_tip("shorten paragraph 2", "verification"))
+
+    def test_context_bits_name_what_was_given(self):
+        self.assertEqual(signals.context_bits(RICH), ["who it's for", "what it's for", "the background"])
+        self.assertEqual(signals.context_bits("write a memo for the sales team"), ["who it's for"])
+        self.assertEqual(signals.context_bits(BARE), [])
+
+    def test_a_yes_or_no_is_handled_elsewhere(self):
+        # answers_tip is only consulted after the yes/no/doesn't-apply checks, so it needn't recognise them.
+        self.assertTrue(signals.is_acceptance("yes please"))
+        self.assertTrue(signals.is_decline("no thanks"))
+        self.assertTrue(signals.is_misfit("that doesn't apply here"))
+
+
 if __name__ == "__main__":
     unittest.main()
