@@ -83,7 +83,7 @@ GAP_EXAMPLES = {
                            "Before you answer, check this list: pricing section, under 500 words, no jargon."),
     "manual_edits": ("I fixed the greeting myself in Word.",
                      "Always open with “Hi team” and skip the closing line. Please remember that from now on."),
-    "sensitive": ("My SSN is 123-45-6789, fill in this form.",
+    "sensitive": ("My SSN is 078-05-1120, fill in this form.",
                   "My SSN is [SSN], fill in this form. I'll add the number myself."),
 }
 

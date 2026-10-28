@@ -16,6 +16,8 @@ repository and remains only in its history.
 | [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) | What was unresolved at the time |
 | [PRIVACY-DESIGN.md](PRIVACY-DESIGN.md) | A privacy design for team reporting (still relevant to a future team view) |
 | [PromptCoach_Direction_and_Roadmap.pdf](PromptCoach_Direction_and_Roadmap.pdf) | Direction and build sequence for the second prototype |
+| [INTERVIEW-NOTES.md](INTERVIEW-NOTES.md) | Early informal user interviews and the pain points they surfaced |
+| [GLOSSARY.md](GLOSSARY.md) | A plain-English glossary of startup terms, written while learning them |
 
 For how Prompt Coach works today, see [the coaching loop](../COACHING-LOOP.md) and
 [the design notes](../COACH-DESIGN.md).

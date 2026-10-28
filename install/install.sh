@@ -28,5 +28,8 @@ echo
 echo "Health check:"
 "$PY" "$(dirname "$0")/../coach/scripts/coach.py" doctor || true
 echo
+"$PY" "$(dirname "$0")/../coach/scripts/coach.py" dashboard --no-open || true
+echo "(Bookmark that page: the coach keeps it current. /prompt-coach:dashboard opens it too.)"
+echo
 echo "Done. Start a new Claude Code session and just work as usual; the coach starts automatically."
 echo "Type /prompt-coach:score any time to see your level."

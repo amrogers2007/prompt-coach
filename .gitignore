@@ -7,3 +7,6 @@ dist/
 
 # Kept private: the full business case (a public summary is docs/COACHING-LOOP.md)
 docs/BUSINESS-CASE.pdf
+
+# Local scratch, never part of the product
+playground/

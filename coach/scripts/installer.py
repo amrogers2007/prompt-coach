@@ -556,6 +556,14 @@ def run(opts, out=None, close=None, relaunch=None):
             r.add("Start menu shortcuts", OK)
         except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
             r.add("Start menu shortcuts", SKIPPED, str(exc))       # a convenience, not a failure
+    try:
+        # Make the dashboard page now, so the shortcut and a bookmark work from the first day.
+        flags = {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)} if sys.platform == "win32" else {}
+        made = subprocess.run([exe, "dashboard", "--no-open"], check=True, capture_output=True, text=True,
+                              timeout=60, cwd=opts.install_dir, **flags)
+        r.add("Make your dashboard", OK, (made.stdout.strip().split(": ", 1) + [""])[1])
+    except (OSError, subprocess.SubprocessError) as exc:
+        r.add("Make your dashboard", SKIPPED, _last_line(str(exc)))   # it is made on first use instead
     if opts.registry and sys.platform == "win32":
         try:
             register_app(opts.install_dir, version_of(opts.install_dir))

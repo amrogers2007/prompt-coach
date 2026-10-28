@@ -1,0 +1,51 @@
+name: Release
+
+# Push a tag like v0.5.2 and this builds the Windows setup program and the two zips,
+# runs the tests first, and attaches everything to a GitHub Release. The README's
+# download link (releases/latest/download/PromptCoachSetup.exe) points at the result.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: The tag must match the plugin version
+        run: |
+          python - <<'EOF'
+          import json, os, sys
+          tag = os.environ["GITHUB_REF_NAME"].lstrip("v")
+          version = json.load(open("coach/.claude-plugin/plugin.json"))["version"]
+          sys.exit(0 if tag == version else "tag %s != plugin version %s" % (tag, version))
+          EOF
+      - run: python -m unittest discover -s coach/tests
+
+  build:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install pyinstaller
+      - run: python coach/scripts/build_installer.py
+      - run: python coach/scripts/build_zip.py
+      - run: python coach/scripts/build_chat_skill.py
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Prompt Coach ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/PromptCoachSetup.exe
+            dist/prompt-coach-plugin.zip
+            dist/prompt-coach-chat-skill.zip

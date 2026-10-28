@@ -30,7 +30,7 @@ and doing a little research. Move answered ones to IDEA.md.
       questions below.
 - [ ] How do you make coaching feel helpful, not annoying? (Timing, frequency, tone.)
 - [ ] How would a skeptic's experience differ from an enthusiast's?
-      → **New data point, not fully answered.** See `INTERVIEW-NOTES.md`'s
+      → **New data point, not fully answered.** See `INTERVIEW-NOTES.md` (now in this folder)'s
       2026-09-17 physics-professor interview: for a "hard skeptic," half his
       objection (overconfidence, no clarifying questions) is exactly what
       Prompt Coach targets — but half (token/setup cost of customizing it,

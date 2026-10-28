@@ -110,6 +110,19 @@ def delivery_mode(settings):
     return "chat" if entry.startswith("claude-desktop") else "system"
 
 
+def _make_dashboard():
+    """Make the dashboard page once, at the first session, so a bookmark or the installer's
+    shortcut works from the first day. Returns its path, or None if it couldn't be made."""
+    try:
+        from . import dashboard
+        if os.path.exists(dashboard.default_path()):
+            return dashboard.default_path()
+        return dashboard.write(open_browser=False)
+    except Exception as exc:  # noqa: BLE001  (a convenience; the coaching itself still happens)
+        store.log_error("dashboard", exc)
+        return None
+
+
 def refresh_saved_pages():
     """The dashboard and the summary are files on disk. Once the user has made
     them, keep them current, so an open tab or a bookmark never shows an old
@@ -177,6 +190,9 @@ def handle_session(payload, delivery=None):
     if not state.get("welcomed"):
         lines.append("I'm your AI coach. Just work as usual; every so often I'll ask a question to help you "
                      "get more out of AI. Type /prompt-coach:score any time to see your level.")
+        page = _make_dashboard()
+        if page:
+            lines.append("A page of your habits over time is saved at %s. Bookmark it: I keep it current." % page)
         state["welcomed"] = True
     elif state.get("welcome_day") != today:
         # The first conversation of the day opens with the coach introducing itself. Later

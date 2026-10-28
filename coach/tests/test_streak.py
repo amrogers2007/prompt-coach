@@ -423,11 +423,14 @@ class SavedPagesStayFresh(CoachTestCase):
         start = page.index('"current": {')
         return json.loads(page[start + len('"current": '):page.index("}", start) + 1])["streak"]
 
-    def test_nothing_is_written_until_the_user_has_made_them(self):
+    def test_the_dashboard_is_made_at_the_first_session_and_the_summary_only_when_asked(self):
         self.send(RICH, "2026-01-05")
-        hooks.handle_session({"session_id": "fresh-sess-0002"})
-        self.assertFalse(os.path.exists(dashboard.default_path()))
+        text = said(hooks.handle_session({"session_id": "fresh-sess-0002"}))
+        self.assertTrue(os.path.exists(dashboard.default_path()))      # so a bookmark works from day one
+        self.assertIn(dashboard.default_path(), text)                   # and the first welcome says where
         self.assertFalse(os.path.exists(os.path.join(store.home(), "summary.md")))
+        text = said(hooks.handle_session({"session_id": "fresh-sess-0003"}))
+        self.assertNotIn("dashboard.html", text)                        # said once, not every session
 
     def test_dashboard_file_follows_the_streak(self):
         self.send(RICH, "2026-01-05")

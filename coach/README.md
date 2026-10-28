@@ -23,13 +23,15 @@ You:    cut the market slide and lead with the hiring cost
 
 ## Install
 
-**Windows, the easy way: one setup program.** Download `PromptCoachSetup.exe`, double-click it, click
+**Windows, the easy way: one setup program.** Download
+[`PromptCoachSetup.exe`](https://github.com/amrogers2007/prompt-coach/releases/latest/download/PromptCoachSetup.exe)
+(from the [latest release](https://github.com/amrogers2007/prompt-coach/releases/latest)), double-click it, click
 **Install**. It needs nothing else on the computer (no Python, no Git), and it:
 
 - installs the coach as a normal Windows program for your user (no administrator rights),
 - connects it to the Claude desktop app's Chat and Cowork, and adds it to the Code tab,
 - closes and reopens Claude for you (it asks first) and checks that Claude started the coach,
-- adds a Start menu shortcut to your dashboard and an entry in *Installed apps* to remove it.
+- makes your dashboard page, adds a Start menu shortcut to it, and an entry in *Installed apps* to remove it.
 
 Windows shows a blue "Windows protected your PC" notice because the program isn't signed by a paid publisher
 certificate yet: click **More info**, then **Run anyway**. The last page of setup shows one line to paste into
@@ -164,9 +166,11 @@ changed, and nothing on it is sent anywhere.
   example you can copy.
 - **Your habits** over time, **how much you use AI** (by week or day, never by hour), and your **streak and badges**.
 
-The page is a file (`~/.prompt-coach/dashboard.html`). Once you've made it, the coach keeps it current (at the
-start of each session and whenever your streak, level or badges change), so reloading an open tab or a bookmark
-shows today's numbers.
+The page is a file (`~/.prompt-coach/dashboard.html`), made when the coach is installed or at its first session,
+and the coach keeps it current (at the start of each session and whenever your streak, level or badges change),
+so reloading an open tab or a bookmark shows today's numbers. Ways to reach it: the Start menu shortcut
+("My AI habits dashboard", Windows setup program), a bookmark to the file (the first welcome note and the
+scoreboard show the path), `/prompt-coach:dashboard` in Claude Code, or asking in chat to see your trends.
 
 Every chart has a table view, keyboard access and hover details; it works in light and dark mode and on a phone.
 `coach.py dashboard --demo` builds one from made-up history, for showing people.
@@ -291,7 +295,7 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 ## Develop
 
 ```bash
-python -m unittest discover -s coach/tests -v     # 200+ tests, standard library only (about 2 minutes)
+python -m unittest discover -s coach/tests -v     # 340+ tests, standard library only (about 5 minutes)
 python coach/scripts/coach.py library             # check the recommendation library
 python coach/scripts/coach.py eval                # detector accuracy on evals/detector_corpus.jsonl
 python coach/scripts/coach.py eval coach/evals/detector_holdout.jsonl

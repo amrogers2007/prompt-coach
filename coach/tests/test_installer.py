@@ -149,7 +149,8 @@ class Install(StepsCase):
         self.assertTrue(r.ok, r.steps)
         self.assertEqual([(s, st) for s, st, _d in r.steps],
                          [("Install the coach", "ok"), ("Connect Claude chat and Cowork", "ok"),
-                          ("Add to the Code tab", "ok")])
+                          ("Add to the Code tab", "ok"),
+                          ("Make your dashboard", "skipped")])     # the scratch coach.exe is not a real program
         for name in ("coach.exe", "coachw.exe", "_internal", "marketplace", "plugin-template"):
             self.assertTrue(os.path.exists(os.path.join(self.install_dir, name)), name)
         self.assertEqual(self.config_data()["mcpServers"]["prompt-coach"],
@@ -243,7 +244,8 @@ class Install(StepsCase):
 
     def test_chat_only_and_code_only(self):
         r = self.run_setup(code=False)
-        self.assertEqual([s for s, _st, _d in r.steps], ["Install the coach", "Connect Claude chat and Cowork"])
+        self.assertEqual([s for s, _st, _d in r.steps],
+                         ["Install the coach", "Connect Claude chat and Cowork", "Make your dashboard"])
         self.assertEqual(self.claude.calls, [])
         shutil.rmtree(self.install_dir)
         os.unlink(self.config)

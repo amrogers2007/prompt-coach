@@ -291,6 +291,18 @@ def _read_text(path, newer_than=0.0):
 
 # --- commands ----------------------------------------------------------------------------------
 
+def make_dashboard():
+    """Make the user's dashboard page now, so a bookmark works from the first day.
+    A convenience: returns the path, or None if it couldn't be made."""
+    try:
+        if HERE not in sys.path:
+            sys.path.insert(0, HERE)
+        from pcoach import dashboard
+        return dashboard.write(open_browser=False)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def install(config_path, cdir, python=None, out=print, next_steps=True):
     python = python or find_python()
     if not python:
@@ -314,6 +326,9 @@ def install(config_path, cdir, python=None, out=print, next_steps=True):
         out("Connected Prompt Coach to Claude desktop.\n  config: %s%s" % (
             config_path, ("\n  backup: %s" % saved) if saved else ""))
     out("  python: %s\n  helper: %s\n  check:  %s" % (python, SERVER_SCRIPT, detail))
+    page = make_dashboard()
+    if page:
+        out("  dashboard: %s  (bookmark it; the coach keeps it current)" % page)
 
     if not next_steps:
         return 0

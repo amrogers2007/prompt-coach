@@ -225,6 +225,7 @@ def cmd_dashboard(args):
         try:
             demo.seed_history()
             data = dashboard.build()
+            data["demo"] = True              # the page says so, and the hosted sample page uses this
         finally:
             if old is None:
                 os.environ.pop("PROMPT_COACH_HOME", None)

@@ -36,5 +36,8 @@ Write-Host ""
 Write-Host "Health check:"
 & $py (Join-Path $PSScriptRoot "..\coach\scripts\coach.py") doctor
 Write-Host ""
+& $py (Join-Path $PSScriptRoot "..\coach\scripts\coach.py") dashboard --no-open
+Write-Host "(Bookmark that page: the coach keeps it current. /prompt-coach:dashboard opens it too.)"
+Write-Host ""
 Write-Host "Done. Start a new Claude Code session and just work as usual; the coach starts automatically."
 Write-Host "Type /prompt-coach:score any time to see your level."

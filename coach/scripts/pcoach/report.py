@@ -6,6 +6,7 @@ from the conversations.
 """
 
 import json
+import os
 import time
 
 from . import game, scoring, store
@@ -120,6 +121,7 @@ def render_text(r):
     lines.append("- Last 14 days: `%s`" % sparkline(r["daily"]))
     lines.append("- Documents generated: %d, revised at least once: %d" % (
         r["documents"]["generated"], r["documents"]["revised"]))
+    lines.append("- Dashboard (your habits over time): `%s`" % os.path.join(store.home(), "dashboard.html"))
     if r["achievements"]:
         titles = []
         for a in r["achievements"]:
