@@ -1,8 +1,9 @@
 name: Demo page
 
 # Publishes the sample dashboard (made-up history) to GitHub Pages on every push to main,
-# so anyone can see what a user gets without installing anything. The first run turns
-# Pages on for the repository by itself (Source: GitHub Actions).
+# so anyone can see what a user gets without installing anything.
+# One-time setup (the workflow's token may not create the site itself):
+# repository Settings > Pages > Build and deployment > Source: "GitHub Actions".
 
 on:
   push:

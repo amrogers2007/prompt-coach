@@ -279,7 +279,7 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 |---|---|
 | Claude Code (terminal, IDE, desktop Code tab) | Full: hooks, coaching, file detection, score. Tested. |
 | Claude desktop, Chat | Through the local helper (connected with `setup_desktop.py`) + skill: Claude calls the coach's tools each turn (greeting, coaching, offers and follow-ups, document nudges, score, why/mute/insights). Less reliable than hooks because Claude has to choose to call them, and it adds a small tool call per message. The helper is tested with an MCP client and test-launched by the setup script; the in-app behavior still needs a hand check. |
-| Claude desktop, Cowork | The same local helper works there if the session runs on your computer. The plugin zip's hooks may also load, but Cowork runs in a sandbox whose home folder is reportedly not kept between conversations, so prefer the helper (it keeps your data on your computer). Not yet tested by hand. |
+| Claude desktop, Cowork | The same local helper works there if the session runs on your computer. The plugin zip's hooks may also load, but Cowork runs in a sandbox whose home folder is reportedly not kept between conversations, so prefer the helper (it keeps your data on your computer). Confirmed by hand on Windows: the coach answers in Cowork and opens the dashboard from chat. |
 | claude.ai in a browser | Skills only; no local helper, so no tracking. |
 | ChatGPT, Copilot, Gemini | Not supported. Prompt Coach is a plugin for Claude. |
 
