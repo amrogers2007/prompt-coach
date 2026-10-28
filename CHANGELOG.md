@@ -9,6 +9,7 @@ Versions of the Prompt Coach plugin (`coach/`). Dates are commit dates.
   note and the scoreboard show where it is.
 - A sample dashboard, built from made-up history, is published to GitHub Pages on every push so people can see
   it without installing anything; the sample says it is one.
+- The dashboard has an Auto / Light / Dark switch, remembered per browser; before, it only followed the system.
 - Releases: pushing a version tag builds the Windows setup program and the zips and attaches them to a GitHub
   Release, which the README's download link points at.
 - Docs: the README leads with the problem and what is and isn't proven; the startup glossary and early interview

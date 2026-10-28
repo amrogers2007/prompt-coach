@@ -141,6 +141,16 @@ class Badges(CoachTestCase):
 
 
 class DashboardPage(CoachTestCase):
+    def test_page_lets_the_viewer_choose_light_or_dark(self):
+        """It follows the system by default; the viewer can pick light or dark, kept in their browser only."""
+        html = dashboard.render(dashboard.build(now=self.t))
+        self.assertIn('id="theme" role="group" aria-label="Appearance"', html)
+        self.assertIn('[["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]]', html)
+        self.assertIn('localStorage.getItem("pc-theme")', html)       # applied before first paint
+        self.assertIn(':root[data-theme="dark"]', html)                # the chosen dark theme
+        self.assertIn(':root:where(:not([data-theme="light"]))', html)  # system dark unless light was chosen
+        self.assertNotIn("getComputedStyle", html)                     # charts use CSS variables, so they follow a switch live
+
     def test_page_is_self_contained_and_carries_the_data(self):
         demo.seed_history(weeks=2, now=self.t)
         html = dashboard.render(dashboard.build(now=self.t))
@@ -154,7 +164,7 @@ class DashboardPage(CoachTestCase):
         d = dashboard.build()
         d["issue_names"] = {"x": "</script><script>alert(1)</script>"}
         html = dashboard.render(d)
-        self.assertEqual(html.count("</script>"), 2)                  # only the page's own two script tags
+        self.assertEqual(html.count("</script>"), 3)                  # only the page's own three script tags (theme, data, app)
         self.assertEqual(data_of(html)["issue_names"]["x"], "</script><script>alert(1)</script>")
 
     def test_write_saves_next_to_the_profile_without_opening_a_browser(self):

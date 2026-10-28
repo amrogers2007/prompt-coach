@@ -172,7 +172,8 @@ so reloading an open tab or a bookmark shows today's numbers. Ways to reach it: 
 ("My AI habits dashboard", Windows setup program), a bookmark to the file (the first welcome note and the
 scoreboard show the path), `/prompt-coach:dashboard` in Claude Code, or asking in chat to see your trends.
 
-Every chart has a table view, keyboard access and hover details; it works in light and dark mode and on a phone.
+Every chart has a table view, keyboard access and hover details; it works on a phone, follows your system's light
+or dark setting, and has an Auto / Light / Dark switch at the top (remembered in that browser).
 `coach.py dashboard --demo` builds one from made-up history, for showing people.
 
 ## Is the coaching working?

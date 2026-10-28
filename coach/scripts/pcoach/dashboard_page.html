@@ -74,6 +74,7 @@
   header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px 24px; }
   header h1 { font-size: 30px; line-height: 1.15; margin: 0 0 2px; letter-spacing: -0.01em; }
   .lede { color: var(--ink-2); margin: 0; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
   .filters { display: flex; gap: 6px; }
   .filters button {
     font: inherit; font-size: 14px; color: var(--ink-2); background: transparent; border: 0;
@@ -247,6 +248,13 @@
   .demo-note { margin: 0 0 18px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line, #ccc);
     background: var(--card, transparent); font-size: 0.95em; }
 </style>
+<script>
+  /* Appearance: follow the system unless the viewer chose light or dark (kept in this browser only). */
+  try {
+    var t = localStorage.getItem("pc-theme");
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+  } catch (e) { /* storage may be unavailable; the system setting applies */ }
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -255,7 +263,10 @@
       <h1>Your AI habits</h1>
       <p class="lede" id="lede">How you use AI, and how it's changing.</p>
     </div>
-    <div class="filters" id="filters" role="group" aria-label="Time range"></div>
+    <div class="tools">
+      <div class="filters" id="filters" role="group" aria-label="Time range"></div>
+      <div class="filters" id="theme" role="group" aria-label="Appearance"></div>
+    </div>
   </header>
   <p class="demo-note" id="demo-note" hidden>This is a <strong>sample</strong>, built from made-up history, to show the
     private page every Prompt Coach user gets. A real one is made on your own computer from your own habits.</p>
@@ -999,6 +1010,28 @@
     });
   }
 
+  // ---- appearance -------------------------------------------------------------------------------------------
+  var THEMES = [["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]];
+  function currentTheme() {
+    var t = document.documentElement.getAttribute("data-theme");
+    return t === "light" || t === "dark" ? t : "auto";
+  }
+  function setTheme(t) {
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    else document.documentElement.removeAttribute("data-theme");
+    try { if (t === "auto") localStorage.removeItem("pc-theme"); else localStorage.setItem("pc-theme", t); } catch (e) { /* ignore */ }
+    theme();
+  }
+  function theme() {
+    var box = document.getElementById("theme"), now = currentTheme();
+    box.textContent = "";
+    THEMES.forEach(function (o) {
+      box.append(h("button", { type: "button", "aria-pressed": now === o[0] ? "true" : "false", text: o[1],
+                               title: o[0] === "auto" ? "Follow the system setting" : o[1] + " mode",
+                               onclick: function () { setTheme(o[0]); } }));
+    });
+  }
+
   var drawers = [], refreshCompare = function () {};
   function render() {
     var main = document.getElementById("main");
@@ -1039,6 +1072,7 @@
     timer = setTimeout(function () { drawers.forEach(function (fn) { fn(); }); refreshCompare(); }, 150);
   });
   filters();
+  theme();
   render();
 })();
 </script>
