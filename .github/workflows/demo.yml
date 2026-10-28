@@ -1,8 +1,8 @@
 name: Demo page
 
 # Publishes the sample dashboard (made-up history) to GitHub Pages on every push to main,
-# so anyone can see what a user gets without installing anything.
-# One-time setup: repository Settings > Pages > Source: "GitHub Actions".
+# so anyone can see what a user gets without installing anything. The first run turns
+# Pages on for the repository by itself (Source: GitHub Actions).
 
 on:
   push:
@@ -31,6 +31,8 @@ jobs:
           python-version: "3.13"
       - run: python coach/scripts/coach.py dashboard --demo --no-open --out site/index.html
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
