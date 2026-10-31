@@ -4,8 +4,9 @@
 
 **A coach that lives inside Claude and teaches people to use AI well, while they work.**
 
-Companies have handed their people AI. Few have taught them to use it: 88% of employees use AI at work, mostly for
-search and summaries, and only 12% say they get enough training ([sources](docs/COACHING-LOOP.md)). A course doesn't
+Companies have handed their people AI. Few have taught them to use it: in an EY survey of 15,000 employees, 88% use
+AI in their daily work, mostly for search and summaries, and only 12% say they get enough training
+([sources](docs/COACHING-LOOP.md)). A course doesn't
 fix that, because using AI well is a set of small habits: say who the document is for, treat the first draft as a
 draft, check the number before you send it.
 
@@ -32,10 +33,12 @@ Claude: (writes the email)
 
 **Windows:** [download `PromptCoachSetup.exe`](https://github.com/amrogers2007/prompt-coach/releases/latest/download/PromptCoachSetup.exe),
 double-click it, and click Install. It needs nothing else on the computer and sets up the Claude desktop app's
-Chat, Cowork and Code tab in one go ([details](coach/README.md#install)). Windows shows a "protected your PC"
+Chat, Cowork (its agent mode) and Code tab in one go, with one line to paste into Claude's settings at the end so
+the coach starts itself in every chat ([details](coach/README.md#install)). Windows shows a "protected your PC"
 notice because the program isn't signed yet: click *More info*, then *Run anyway*.
 
-**macOS, Linux, or from the command line:**
+**macOS, Linux, or from the command line** (needs [Claude Code](https://claude.com/claude-code) installed, which
+puts the `claude` command on your path):
 
 ```bash
 claude plugin marketplace add amrogers2007/prompt-coach
@@ -43,8 +46,9 @@ claude plugin install prompt-coach@prompt-coach
 ```
 
 That covers Claude Code and the desktop app's Code tab. To coach in the desktop app's regular chat as well, follow
-the short setup in [`coach/README.md`](coach/README.md#install). This route requires Python 3.9 or newer; the
-Windows setup program does not.
+the setup in [`coach/README.md`](coach/README.md#install), which takes a terminal and a few minutes. This route
+requires Python 3.9 or newer; the Windows setup program does not. A Mac setup program like the Windows one is the
+next installer to build.
 
 ## How it works
 
@@ -68,21 +72,22 @@ You also get:
 ## What's proven, and what isn't yet
 
 - **It spots the right moments.** Measured against 220 labeled prompts. On prompts it had never seen, 93% of the
-  moments it flagged were real and it caught 88% of them; a second blind set scored 80% on both. Details, including
+  moments it flagged were real and it caught 88% of them; a second set it had never seen scored 80% on both. Details, including
   the weaker numbers, are in [COACHING-LOOP.md](docs/COACHING-LOOP.md).
 - **The measurement for "did habits change?" is built.** A pilot mode holds back coaching on a random share of
-  issues per person, so coached and uncoached issues can be compared. In simulated pilots, coached issues came back
-  7% of the time against 18% for uncoached ones.
+  issues per person, so coached and uncoached issues can be compared. In a simulated pilot of 10 people, coached issues came
+  back about 7% of the time against about 17% for uncoached ones.
 - **Not yet shown: that it changes real behavior at work.** That needs a pilot with real people. The next step is a
   three-to-four-week pilot with a small group in pilot mode, then pooled results.
-- **Tested by hand on Windows** (Claude Code and the desktop app's chat). The same code runs on macOS and Linux and
-  is tested in CI on both Python 3.9 and 3.13, but it hasn't been tried by hand on a Mac yet.
+- **Tested by hand on Windows** (Claude Code, the desktop app's chat, and Cowork). The same code runs on macOS and
+  Linux and the tests run automatically on every change, on Python 3.9 and 3.13, but it hasn't been tried by hand on
+  a Mac yet.
 
 ## What's in this repo
 
 | Folder | What it is |
 |---|---|
-| [`coach/`](coach/) | The plugin: hooks, skills, the coach agent, the recommendation library, and 340+ automated tests (Python, standard library only). |
+| [`coach/`](coach/) | The plugin: the code that watches each prompt and each generated file, the coaching skills, the recommendation library, and 340+ automated tests (Python, standard library only). |
 | [`docs/`](docs/) | Why it works the way it does: the coaching loop, design notes, and the research behind the library. |
 | [`install/`](install/) | Guided installers for macOS, Linux and Windows. |
 
@@ -96,5 +101,6 @@ You also get:
 
 ## About
 
-Built by Amanda Rogers (CS + Physics, Harvey Mudd), from user interviews to a working, tested product.
-Released under the MIT license.
+Built by Amanda Rogers (CS + Physics, Harvey Mudd). The next step is a pilot with a small group; the full business
+case is shared on request. Questions, pilot interest or bug reports: open an issue on GitHub or reach the author
+through the [GitHub profile](https://github.com/amrogers2007). Released under the MIT license.

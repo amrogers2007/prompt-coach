@@ -57,23 +57,32 @@ Or run the guided installer, which also checks your setup: `sh install/install.s
 **Claude desktop app, Chat and Cowork:** chat can't run hooks, so there the coach is a small local
 helper that Claude calls each turn. Connect it from a clone of this repo:
 
-1. Open a terminal **outside Claude** (Windows: Start > PowerShell; Mac: Terminal) and run:
+1. Get the code and keep it where it is (Claude launches the helper from this folder):
+
+   ```bash
+   git clone https://github.com/amrogers2007/prompt-coach && cd prompt-coach
+   ```
+
+2. Open a terminal **outside Claude** (Windows: Start > PowerShell; Mac: Terminal) in that folder and run
+   (`python3` instead of `python` on a Mac):
 
    ```bash
    python coach/scripts/setup_desktop.py --wait
    ```
 
-2. When it says so, quit Claude completely: system tray icon > **Quit** (or Claude's menu > File > Exit). Closing
-   the window isn't enough, because Claude keeps running in the background. The script waits, registers the helper
+3. When it says so, quit Claude completely: Windows: system tray icon > **Quit** (or Claude's menu > File > Exit);
+   Mac: Claude menu > **Quit Claude** (Cmd+Q). Closing the window isn't enough, because Claude keeps running in
+   the background. The script waits, registers the helper
    in Claude desktop's config while Claude is closed (backing the file up first), reopens Claude, and confirms from
    Claude's log that the helper started. It uses a regular Python and the code in your clone, so later updates
    need no reinstall.
-3. Upload the chat skill once: `python coach/scripts/build_chat_skill.py` writes
-   `dist/prompt-coach-chat-skill.zip`; add it under *Customize > Skills*. It tells Claude to use the coach in every
+4. Upload the chat skill once: `prompt-coach-chat-skill.zip` from the
+   [latest release](https://github.com/amrogers2007/prompt-coach/releases/latest) (or
+   `python coach/scripts/build_chat_skill.py` writes it to `dist/`); add it under *Customize > Skills*. It tells Claude to use the coach in every
    conversation.
-4. Start a new chat. Claude should open with an italic *Prompt Coach:* greeting. When it asks to use a Prompt Coach
+5. Start a new chat. Claude should open with an italic *Prompt Coach:* greeting. When it asks to use a Prompt Coach
    tool, pick **Always allow**.
-5. If a new chat doesn't greet you until you ask for the coach, add one line to Claude's own instructions, which it
+6. If a new chat doesn't greet you until you ask for the coach, add one line to Claude's own instructions, which it
    reads in every chat (*Settings > Account*, the box called *Instructions for Claude*):
 
    ```
@@ -96,13 +105,14 @@ can't see the helper's files, so it is never used. If the coach doesn't start, t
 `%LOCALAPPDATA%\Claude\logs\mcp-server-prompt-coach.log`.
 
 Your score is shared with the Code tab (same `~/.prompt-coach` folder), and a message that reaches both channels is
-only counted once. In Cowork you can also upload `dist/prompt-coach-plugin.zip` (*Customize > Plugins > Add >
+only counted once. In Cowork you can also upload `prompt-coach-plugin.zip` from the
+[latest release](https://github.com/amrogers2007/prompt-coach/releases/latest) (*Customize > Plugins > Add >
 Upload plugin*); see "Where it runs".
 
 **Try it without installing:** `claude --plugin-dir ./coach`
 
-Requires Python 3.9+ on the machine (standard library only, nothing to `pip install`).
-Then just work as usual. The coach starts on its own.
+The command-line and clone routes need Python 3.9+ on the machine (standard library only, nothing to
+`pip install`); the Windows setup program does not. Then just work as usual. The coach starts on its own.
 
 ## What you'll see
 
@@ -178,13 +188,13 @@ or dark setting, and has an Auto / Light / Dark switch at the top (remembered in
 
 ## Is the coaching working?
 
-The coach measures itself the way the project's business case says a buyer would, and never by how many tips it
-shows:
+The coach measures itself the way a buyer would (the project's business case, shared on request, sets that out),
+and never by how many tips it shows:
 
-- **Detection accuracy.** `coach.py eval` scores every trigger against 220 labeled prompts
-  ([`evals/`](evals/)). Honest out-of-sample results, each scored once before any tuning on it: first blind set
+- **Detection accuracy.** Every trigger is scored against 220 labeled prompts in three sets
+  ([`evals/`](evals/)): `coach.py eval <file>` scores one set, and the test suite scores all three. Honest out-of-sample results, each scored once before any tuning on it: first blind set
   **93% precision, 88% recall**; second blind set **80% / 80%** (it exposed vocabulary gaps such as "minimum wage" or
-  "18% of $2,350"). After fixing those gaps all three sets score 98% / 98%, but expect real-world precision nearer the
+  "18% of $2,350"). After fixing those gaps all three sets score 98-100% precision and 98-99% recall, but expect real-world precision nearer the
   blind numbers until detectors are checked against real (anonymized) pilot prompts. Tests fail if precision on any set
   drops below 92%.
 - **Leading measures.** `coach.py insights` (or `/prompt-coach:settings insights`): teachable moments spotted, and
@@ -196,8 +206,9 @@ shows:
 - **Pilot mode.** `settings experiment 20` holds back coaching on a random 20% of *issues*, so each person has coached
   and uncoached issues to compare. (An issue stays in its group for good; holding back single moments would
   contaminate the comparison.) Safety and other urgent tips are never held back. Pool several people's
-  `insights --json` with `insights.pool()` for a team result. In a simulated pilot of 6 people, coached issues came back
-  7% of the time against 18% for held-back ones when people learned, and there was no real difference when they didn't.
+  `insights --json` with `insights.pool()` for a team result. In a simulated pilot of 10 people (`tests/test_insights.py`), coached
+  issues came back about 7% of the time against about 17% for held-back ones when people learned, and there was no
+  real difference when they didn't.
 
 ## How your level works
 
@@ -221,10 +232,11 @@ Levels are deliberately hard and **can go down** if habits slip:
 |---|---|
 | 1 Beginner | Everyone starts here |
 | 2 Practitioner | Score 30+, 8+ prompts |
-| 3 Advanced | Score 55+, 30+ prompts on 5+ days, 4+ documents revised |
-| 4 Expert | Score 78+, 100 prompts on 15+ days, 10+ documents with at least 70% revised, no sensitive-data flags (about 3+ working weeks of consistently strong habits) |
+| 3 Advanced | Score 55+, 30+ prompts on 5+ days, 4+ generated documents seen through (revised or accepted) |
+| 4 Expert | Score 78+, 100 prompts on 15+ days, 10+ generated documents with an average revision credit of 70%+ (two specific revisions of a document is full credit), no sensitive-data flags (about 3+ working weeks of consistently strong habits) |
 
-A level is only lost when you fall about 6 points **below** its gate, so one off day doesn't flip it.
+A level is only lost when you fall about 6 points **below** its gate and stay there for two weeks, so one off day
+doesn't flip it.
 The window counts prompts, not calendar days, so a vacation doesn't cost you a level.
 
 Streaks count days in a row with at least one good-habit moment: a context-rich request or a revision.
@@ -272,14 +284,14 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 - **You can always ask why.** `/prompt-coach:settings why` explains the last tip and what spotted it; `mute` stops a tip for good. Saying "that doesn't apply" to a tip does the same for a month.
 - The shareable summary and `export` contain aggregate numbers only.
 - `settings reset --yes` deletes everything.
-- Honest limit: the score is measured on your own device, so today it's self-reported, not tamper-proof. A verified team version is future work (see `docs/COACH-DESIGN.md`).
+- Honest limit: the score is measured on your own device, so today it's self-reported, not tamper-proof. A verified team version is future work (see [docs/COACH-DESIGN.md](../docs/COACH-DESIGN.md)).
 
 ## Where it runs
 
 | Surface | Status |
 |---|---|
 | Claude Code (terminal, IDE, desktop Code tab) | Full: hooks, coaching, file detection, score. Tested. |
-| Claude desktop, Chat | Through the local helper (connected with `setup_desktop.py`) + skill: Claude calls the coach's tools each turn (greeting, coaching, offers and follow-ups, document nudges, score, why/mute/insights). Less reliable than hooks because Claude has to choose to call them, and it adds a small tool call per message. The helper is tested with an MCP client and test-launched by the setup script; the in-app behavior still needs a hand check. |
+| Claude desktop, Chat | Through the local helper (connected with `setup_desktop.py`) + skill: Claude calls the coach's tools each turn (greeting, coaching, offers and follow-ups, document nudges, score, why/mute/insights). Less reliable than hooks because Claude has to choose to call them, and it adds a small tool call per message. The helper is tested with an MCP client and test-launched by the setup script, and the in-app behavior is confirmed by hand on Windows. |
 | Claude desktop, Cowork | The same local helper works there if the session runs on your computer. The plugin zip's hooks may also load, but Cowork runs in a sandbox whose home folder is reportedly not kept between conversations, so prefer the helper (it keeps your data on your computer). Confirmed by hand on Windows: the coach answers in Cowork and opens the dashboard from chat. |
 | claude.ai in a browser | Skills only; no local helper, so no tracking. |
 | ChatGPT, Copilot, Gemini | Not supported. Prompt Coach is a plugin for Claude. |

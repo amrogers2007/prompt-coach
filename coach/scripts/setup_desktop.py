@@ -38,6 +38,17 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SERVER_SCRIPT = os.path.join(HERE, "coach_mcp.py")
+PY_NAME = "python" if sys.platform == "win32" else "python3"     # what to type to run Python here
+
+
+def quit_hint(short=False):
+    """How to quit Claude completely on this computer, for the messages."""
+    if sys.platform == "darwin":
+        return "Claude menu > Quit Claude (Cmd+Q)" if short else "  in the menu bar: Claude > Quit Claude (or press Cmd+Q)."
+    if short:
+        return "right-click the Claude icon in the system tray > Quit"
+    return ("  right-click the Claude icon in the system tray (bottom right, maybe under the ^ arrow) > Quit,\n"
+            "  or in Claude's window use the menu (top left) > File > Exit.")
 SERVER_NAME = "prompt-coach"
 
 
@@ -224,17 +235,15 @@ def wait_and_apply(config_path, cdir, out=print, running=desktop_running,
         return 1
 
     if running():
-        out("Ready. Now quit Claude completely:\n"
-            "  right-click the Claude icon in the system tray (bottom right, maybe under the ^ arrow) > Quit,\n"
-            "  or in Claude's window use the menu (top left) > File > Exit.\n"
+        out("Ready. Now quit Claude completely:\n%s\n"
             "Closing the window is not enough: Claude keeps running in the background.\n"
-            "Waiting for Claude to close...")
+            "Waiting for Claude to close..." % quit_hint())
     waited, quiet = 0.0, 0
     while quiet < 2:                       # two quiet checks in a row: Claude is really gone
         if running():
             quiet = 0
             if waited and waited % 60 < poll:
-                out("  ...Claude is still running. If you only closed its window, use Quit from the tray icon.")
+                out("  ...Claude is still running. If you only closed its window: %s." % quit_hint(short=True))
             if waited >= timeout:
                 out("Gave up waiting (Claude never fully closed). Nothing was changed.")
                 return 1
@@ -334,15 +343,17 @@ def install(config_path, cdir, python=None, out=print, next_steps=True):
         return 0
     if desktop_running():
         out("\nWarning: Claude is running right now, and a running Claude overwrites this change within seconds.\n"
-            "Run this instead from a terminal outside Claude, then quit Claude:  python %s --wait"
-            % os.path.relpath(os.path.abspath(__file__)))
+            "Run this instead from a terminal outside Claude, then quit Claude:  %s %s --wait"
+            % (PY_NAME, os.path.relpath(os.path.abspath(__file__))))
     out("\nNext:\n"
-        "  1. Quit Claude completely (right-click its icon in the system tray > Quit) and open it again.\n"
+        "  1. Quit Claude completely (%s) and open it again.\n"
         "  2. Start a new chat. Claude should open with an italic 'Prompt Coach:' greeting.\n"
         "  3. When Claude asks to use a Prompt Coach tool, choose 'Always allow'.\n"
         "  If there's no greeting: make sure the Prompt Coach skill is uploaded and on (Customize > Skills;\n"
-        "  build it with: python coach/scripts/build_chat_skill.py, file dist/prompt-coach-chat-skill.zip).")
+        "  build it with: %s coach/scripts/build_chat_skill.py, file dist/prompt-coach-chat-skill.zip)."
+        % (quit_hint(short=True), PY_NAME))
     return 0
+
 
 
 def remove(config_path, out=print):

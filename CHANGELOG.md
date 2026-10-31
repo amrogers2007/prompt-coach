@@ -2,6 +2,14 @@
 
 Versions of the Prompt Coach plugin (`coach/`). Dates are commit dates.
 
+## 0.5.4 (2026-10-31)
+
+- The dashboard has an Auto / Light / Dark switch, remembered per browser; before, it only followed the system.
+- Docs reconciled after a full read-through: chat and Cowork are recorded as confirmed by hand on Windows
+  everywhere; the Mac instructions say `python3` and how to quit Claude on a Mac; the simulated-pilot numbers,
+  the level gates, the two-week rule for losing a level, and the test counts match the code; the install fallbacks
+  point at the GitHub release instead of a build step; the plugin zip no longer carries the build scripts.
+
 ## 0.5.3 (2026-10-28)
 
 - The dashboard page is made when the coach is installed (Windows setup, the chat setup, the guided installers)
@@ -9,7 +17,6 @@ Versions of the Prompt Coach plugin (`coach/`). Dates are commit dates.
   note and the scoreboard show where it is.
 - A sample dashboard, built from made-up history, is published to GitHub Pages on every push so people can see
   it without installing anything; the sample says it is one.
-- The dashboard has an Auto / Light / Dark switch, remembered per browser; before, it only followed the system.
 - Releases: pushing a version tag builds the Windows setup program and the zips and attaches them to a GitHub
   Release, which the README's download link points at.
 - Docs: the README leads with the problem and what is and isn't proven; the startup glossary and early interview
@@ -26,8 +33,8 @@ Versions of the Prompt Coach plugin (`coach/`). Dates are commit dates.
 
 ## 0.5.0 (2026-10-16)
 
-- Every tip ends in exactly one outcome: said yes, answered in your own words, rephrased the request to include
-  what it asked for, declined, didn't fit, or passed over. The first three count as taken.
+- Every tip ends in exactly one of five outcomes: said yes, answered in your own words (by replying, or by rewriting
+  the request to include what it asked for), declined, didn't fit, or passed over. The first two count as taken.
 - Tips come half as often: every 4th prompt for Beginners, 6th for Practitioners, 10th for Advanced, 16th for
   Experts. Safety warnings and the bare-request tip are still immediate.
 - Every line the coach says is italic, marked with the light-bulb emoji and a bold "Prompt Coach:" label.

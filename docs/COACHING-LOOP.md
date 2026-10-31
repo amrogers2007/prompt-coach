@@ -1,14 +1,16 @@
 # The Prompt Coach loop
 
 **Prompt Coach teaches people to use AI well while they're using it, not in a course beforehand.**
-This page is a short public summary of the project's business case.
+This page is the public summary of the project: the problem, how the coach works, and what the evidence says so
+far. The full business case (buyer, pricing, go-to-market) is shared on request.
 
 ## The problem: having AI isn't the same as using it well
 
-- **Few use it often.** 52% of U.S. employees use AI at work at least a few times a year, but only 30% use it a
-  few times a week or more, and 15% daily. ([Gallup, May 2026][gallup])
-- **Most use is basic.** 88% of employees use AI in their daily work, mostly for search and summaries. Only 5%
-  use it in advanced ways, and 12% get enough training. ([EY, 15,000 employees][ey])
+- **Few use it often.** Among U.S. employees, 52% use AI at work at least a few times a year, but only 30% use it
+  a few times a week or more, and 15% daily. ([Gallup, May 2026][gallup])
+- **Most use is basic.** Among employees already using AI, across 15 countries, 88% use it in their daily work,
+  mostly for search and summaries. Only 5% use it in advanced ways, and 12% get enough training.
+  ([EY, 15,000 employees][ey])
 - **Training is rare.** 39% of workers used AI at work in the past year, but only 15.9% say their employer offers
   AI training. 19% of users say tasks take longer while they're still learning. ([New York Fed, 2026][nyfed])
 - **Access doesn't become habit.** In a trial with 7,137 workers at 66 large firms, over 90% of those given
@@ -18,6 +20,14 @@ This page is a short public summary of the project's business case.
   improve knowledge, behavior and motivation. ([Monib et al., 2024][micro])
 
 So Prompt Coach coaches inside the conversation with the AI, at the moment a good habit matters.
+
+## Who it's for
+
+- **The user** is a non-technical professional who was handed AI at work and never taught to use it well.
+- **The buyer**, in a company, is whoever owns AI adoption or training: often HR, learning and development, or IT.
+  They need to see that habits change, which is why the coach measures itself (below).
+- **The wedge** is a plugin for Claude: the one surface today where a coach can sit inside the conversation, see each
+  request and each generated document, and act. Other tools come later.
 
 ## How it works
 
@@ -44,7 +54,8 @@ So Prompt Coach coaches inside the conversation with the AI, at the moment a goo
   caught 88% of them. A second blind test scored 80% on both. After fixes, it scores about 98% on the test sets;
   real prompts from a pilot are the next test.
 - **Changing habits.** A pilot mode holds back coaching on some issues so they can be compared with coached ones.
-  In simulated pilots, coached issues came back 7% of the time against 18% for uncoached ones.
+  In a simulated pilot of 10 people, coached issues came back about 7% of the time against about 17% for
+  uncoached ones.
 - **Still unknown:** whether it changes real behavior at work. That needs a pilot with real people.
 
 **Not built yet:** coaching in other work tools, insights for managers, and levels others can verify.

@@ -9,8 +9,8 @@ if (-not $claude) {
   $bundled = Get-ChildItem "$env:APPDATA\Claude\claude-code\*\claude.exe" -ErrorAction SilentlyContinue |
              Sort-Object FullName -Descending | Select-Object -First 1
   if ($bundled) { $claude = $bundled.FullName } else {
-    Write-Host "Claude Code was not found. Using the Claude desktop app? Open Customize > Plugins and upload dist\prompt-coach-plugin.zip"
-    Write-Host "(build it with: python coach\scripts\build_zip.py)"
+    Write-Host "Claude Code was not found. The easiest route on Windows is PromptCoachSetup.exe from"
+    Write-Host "https://github.com/amrogers2007/prompt-coach/releases/latest (it needs no Python and no Claude Code)."
     exit 1
   }
 } else { $claude = $claude.Source }

@@ -6,8 +6,8 @@ REPO="amrogers2007/prompt-coach"
 
 if ! command -v claude >/dev/null 2>&1; then
   echo "Claude Code ('claude') was not found on your PATH."
-  echo "Using the Claude desktop app instead? Open Customize > Plugins and upload dist/prompt-coach-plugin.zip"
-  echo "(build it with: python coach/scripts/build_zip.py)."
+  echo "Install it from https://claude.com/claude-code, or, in the Claude desktop app, open Customize > Plugins and"
+  echo "upload prompt-coach-plugin.zip from https://github.com/amrogers2007/prompt-coach/releases/latest"
   exit 1
 fi
 

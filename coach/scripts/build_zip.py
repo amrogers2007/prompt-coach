@@ -14,6 +14,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PLUGIN_ROOT = os.path.dirname(HERE)
 OUT_DIR = os.path.join(os.path.dirname(PLUGIN_ROOT), "dist")
 SKIP_DIRS = {"tests", "__pycache__", ".git", "dist"}
+SKIP_FILES = {"build_installer.py", "installer.py", "setup_app.py", "build_zip.py", "build_chat_skill.py"}   # build-time only
 
 
 def main():
@@ -24,7 +25,7 @@ def main():
         for root, dirs, files in os.walk(PLUGIN_ROOT):
             dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
             for name in files:
-                if name.endswith((".pyc", ".pyo")):
+                if name.endswith((".pyc", ".pyo")) or (root == os.path.join(PLUGIN_ROOT, "scripts") and name in SKIP_FILES):
                     continue
                 full = os.path.join(root, name)
                 arc = os.path.relpath(full, PLUGIN_ROOT).replace(os.sep, "/")

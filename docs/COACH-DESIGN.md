@@ -16,11 +16,11 @@ how the user has done over time, and converts that into a level a manager can un
 | **Claude plugin first** (skills + hooks + agent) | It's the one surface where a coach can genuinely be inside the loop: hooks can observe each prompt and each file the AI writes, and inject a coaching instruction into the AI's context. The same plugin folder also loads (with a subset) in the Claude desktop app's Cowork. |
 | **Coach asks, doesn't rewrite** | People learn habits by producing the missing piece themselves. It also fits the user-research finding (a skeptical physics professor) that people want to build their own judgment rather than outsource it. |
 | **Coaching delivered by the main AI, via hook-injected instructions** | Simple, and the coach automatically has the full conversation as memory. Cost: the AI might occasionally not comply. The alternative (a separate coach process) can't see the chat. |
-| **Adaptive cadence** | Beginners about every 4 prompts, experts about every 16 (halved in 0.5 after dogfooding: every 2 felt like nagging), never twice in a row, always on generated files and sensitive data, with `pause` and `intensity` controls. The goal is "constant but not nagging". |
-| **Behavior-based, hard, reversible levels** | Requested: 4 levels, "a bit hard", can drop. Computed from a rolling window with a small buffer, so it is fair rather than jumpy, and vacation-proof (window counts prompts, not days). |
+| **Adaptive cadence** | Beginners about every 4 prompts, experts about every 16 (tips come half as often since 0.5: every 2 prompts felt like nagging), never twice in a row, always on generated files and sensitive data, with `pause` and `intensity` controls. The goal is "constant but not nagging". |
+| **Behavior-based, hard, reversible levels** | Requested: 4 levels, "a bit hard", can drop. Computed from a rolling window with a small buffer (a level is lost only after the score has stayed about 6 points under its line for two weeks), so it is fair rather than jumpy, and vacation-proof (window counts prompts, not days). |
 | **Iteration is 30% of the score** | The research behind the project says the single biggest gap for novices is accepting the first draft. So a generated document is tracked as a "draft" and scored by how many revisions follow. |
 | **No prompt text stored, ever** | Enterprise trust. Signals are reduced to small numbers immediately; only those persist. |
-| **Python, standard library only** | Testable here, no install step, works on macOS/Linux/Windows. Cost: users need Python 3.9+ (checked by the installer and `doctor`). Node was the alternative, but it isn't installed on most non-coder machines either. |
+| **Python, standard library only** | Testable here, no install step, works on macOS/Linux/Windows. Cost: the macOS/Linux and clone routes need Python 3.9+ (checked by the guided installers and `doctor`); the Windows setup program bundles its own runtime, so end users there need nothing. Node was the alternative, but it isn't installed on most non-coder machines either. |
 | **Hooks fail silent** | A coach must never break someone's AI session: every hook exits 0 and logs errors to `~/.prompt-coach/errors.log`. |
 
 ## How a turn flows
@@ -61,7 +61,7 @@ desktop's config by `coach/scripts/setup_desktop.py`, that reuses the same engin
 - One shared profile in `~/.prompt-coach`, so the Code tab, chat and Cowork add up to one level. A message seen by both channels is
   deduplicated (first channel wins, 120 s window).
 - Cost of the design: reliability depends on Claude deciding to call the tools (hooks are guaranteed), and there is one extra tool call per message.
-- Runtime: Claude Desktop ships Node.js but not Python, so the helper uses the user's Python 3.9+. A Node port would remove that requirement.
+- Runtime: Claude Desktop ships Node.js but not Python, so the helper uses the user's Python 3.9+ (on Windows the setup program bundles one). A Node port would remove that requirement.
 - v0.3: the helper first shipped as a packaged installer (`.mcpb`), which never started on the author's Windows PC.
   Claude launched it with `python3`, which resolved to the Microsoft Store Python. Both that Python and Claude (an
   MSIX app) get private, virtualized copies of AppData, so the helper's files, installed into Claude's copy, didn't
@@ -78,7 +78,7 @@ desktop's config by `coach/scripts/setup_desktop.py`, that reuses the same engin
 ## Recommendation library and the evidence loop (v0.3)
 
 A collaborator's proposal (trigger, recommendation, agent action) and the project's business case (kept outside the
-public repo) shaped v0.3:
+public repo, shared on request) shaped v0.3:
 
 - **One editable library.** `coach/library/recommendations.md` holds all 76 recommendations (the collaborator's 60 plus the 16
   original lessons). Each has *when / recommend / action*, a habit, a level range and a detector. Adding one is a
@@ -97,7 +97,7 @@ public repo) shaped v0.3:
   less after coaching. Pilot mode randomizes per user and issue (not per moment, which would contaminate the
   control), and `insights.pool()` combines participants. Only "after" rates are compared: an issue's first moment is
   when it first appears, so a before/after change is biased. Simulated pilots confirm the analysis finds a real effect
-  (-11 pts) and shows none when behavior doesn't change (-2 pts).
+  (about -10 pts: coached issues came back about 7% of the time, held-back ones about 17%, in a 10-person simulation) and shows none when behavior doesn't change (about 0 pts).
 
 ## The personal dashboard (v0.4)
 
@@ -109,7 +109,7 @@ saved next to the profile and opened in the default browser. Decisions:
   "what changed" and is honest about weak spots. A team view can reuse `dashboard.build()` later; it is blocked on
   the k-anonymity design in `history/PRIVACY-DESIGN.md`, this page is not.
 - **Replayed, not stored.** The score-over-time line is recomputed day by day from the event log with the same
-  `scoring` functions the coach uses, so it always agrees with `/score` and never needs a second store.
+  `scoring` functions the coach uses, so it always agrees with `/prompt-coach:score` and never needs a second store.
 - **Same data, plainer words.** Habit gaps come from the detector labels already logged (never message text).
   Each gets a name, the library entry's *when* and *recommend*, and a before/after example (`GAP_EXAMPLES`); a
   test checks the "better" version of each example no longer trips its own detector, which found three detector
@@ -125,9 +125,9 @@ saved next to the profile and opened in the default browser. Decisions:
 
 ## Open questions / next steps
 
-1. **Cowork/Desktop in practice.** Anthropic's docs say hooks/agents/skills load in Cowork. Untested by hand here.
-   Need to confirm where hook scripts execute (host vs sandbox) and that Python is available there. If not, port the
-   handlers to a runtime that is guaranteed.
+1. **Cowork/Desktop in practice.** Chat and Cowork are confirmed by hand on Windows through the local helper
+   (v0.5.3): the coach answers and opens the dashboard from chat. Still open: macOS (not tried by hand), and whether
+   the plugin zip's hooks run inside Cowork's sandbox at all (the helper doesn't depend on it).
 2. **Real-model validation.** Hook I/O was verified against the real Claude Code binary (hooks fire, JSON accepted,
    context injected). What is not yet measured is how reliably models follow the coaching instruction and how the
    questions *feel*. Suggested next step: `claude plugin eval` cases (the docs describe an eval harness) plus a week of dogfooding.
@@ -139,6 +139,6 @@ saved next to the profile and opened in the default browser. Decisions:
    already does this ad hoc).
 6. **Coaching content.** 76 recommendations in the library. Needs review by someone who trains people for a living,
    and a fresh blind prompt set (ideally real, anonymized prompts from a pilot) to re-measure detector precision.
-8. **A real pilot.** The measurement is built; the evidence isn't. Next: a few colleagues with `experiment 20` for
+7. **A real pilot.** The measurement is built; the evidence isn't. Next: a few colleagues with `experiment 20` for
    three to four weeks, then pool their `insights --json`.
-7. **Team features.** Leaderboards are tempting and risky (they reward gaming the heuristics); prefer team-level trends.
+8. **Team features.** Leaderboards are tempting and risky (they reward gaming the heuristics); prefer team-level trends.
