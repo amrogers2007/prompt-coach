@@ -102,5 +102,5 @@ You also get:
 ## About
 
 Built by Amanda Rogers (CS + Physics, Harvey Mudd). The next step is a pilot with a small group; the full business
-case is shared on request. Questions, pilot interest or bug reports: email [amanda@rogmail.net](mailto:amanda@rogmail.net)
+case is shared on request. Questions, pilot interest or bug reports: email [amrogers@hmc.edu](mailto:amrogers@hmc.edu)
 or open an issue on GitHub. Released under the MIT license.
