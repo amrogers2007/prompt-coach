@@ -7,11 +7,52 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 from helpers import SCRIPTS
 
 sys.path.insert(0, SCRIPTS)
 import setup_desktop  # noqa: E402
+
+
+class ClaudeDir(unittest.TestCase):
+    """Where Claude desktop keeps claude_desktop_config.json on Windows: it has moved twice."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="claude-dirs-")
+        self.roaming = os.path.join(self.root, "Roaming")
+        self.env = {"LOCALAPPDATA": os.path.join(self.root, "Local"), "APPDATA": self.roaming}
+
+    def find(self):
+        with mock.patch.dict(os.environ, self.env), mock.patch.object(setup_desktop.sys, "platform", "win32"):
+            return setup_desktop.claude_dir()
+
+    def folder(self, *parts, config=False, marker=None):
+        d = os.path.join(self.root, *parts)
+        os.makedirs(d, exist_ok=True)
+        for name in ["claude_desktop_config.json"] * config + [marker] * bool(marker):
+            open(os.path.join(d, name), "w").close()
+        return d
+
+    def test_classic_install_uses_roaming(self):
+        self.assertEqual(self.find(), os.path.join(self.roaming, "Claude"))
+
+    def test_store_install_uses_the_package_copy(self):
+        pkg = self.folder("Local", "Packages", "Claude_abc", "LocalCache", "Roaming", "Claude", config=True)
+        self.assertEqual(self.find(), pkg)
+
+    def test_data_moved_out_of_the_package_wins(self):
+        self.folder("Local", "Packages", "Claude_abc", "LocalCache", "Roaming", "Claude",
+                    config=True, marker=".user-data-left.claude_abc")
+        moved = self.folder("Local", "Claude-Data", "claude_abc")            # even before its config exists
+        self.assertEqual(self.find(), moved)
+        self.folder("Local", "Claude-Data", "claude_abc", config=True)
+        self.assertEqual(self.find(), moved)
+
+    def test_the_folder_that_has_a_config_is_preferred(self):
+        self.folder("Local", "Claude-Data", "claude_abc")
+        pkg = self.folder("Local", "Packages", "Claude_abc", "LocalCache", "Roaming", "Claude", config=True)
+        self.assertEqual(self.find(), pkg)
 
 
 class SetupDesktop(unittest.TestCase):

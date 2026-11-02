@@ -19,7 +19,8 @@ the window isn't enough (Claude keeps running in the system tray); use Quit.
 
 What it takes care of:
   * Claude installed from the Microsoft Store / MSIX keeps its settings in a private copy
-    of AppData; the config there is the one Claude reads, so that is the one edited.
+    of AppData, and versions from autumn 2026 move them to %LOCALAPPDATA%\\Claude-Data; the
+    config Claude reads is the one edited.
   * The helper must be started with a real Python. The Microsoft Store Python is
     sandboxed and can't see other apps' files (the helper fails with "No such file or
     directory"), so an absolute path to a regular Python is used.
@@ -58,10 +59,17 @@ def claude_dir():
     """Claude desktop's settings folder, as Claude itself sees it."""
     if sys.platform == "win32":
         local = os.environ.get("LOCALAPPDATA", "")
-        packaged = sorted(glob.glob(os.path.join(local, "Packages", "Claude_*", "LocalCache", "Roaming", "Claude")))
-        if packaged:
-            return packaged[0]
-        return os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "Claude")
+        # Three places, newest first: versions from autumn 2026 keep their data in Claude-Data
+        # (outside the MSIX package, leaving a ".user-data-left" marker in the old place), earlier
+        # MSIX versions in the package's private copy of AppData, the classic installer in Roaming.
+        moved = sorted(glob.glob(os.path.join(local, "Claude-Data", "claude_*")))
+        packaged = [p for p in sorted(glob.glob(os.path.join(local, "Packages", "Claude_*", "LocalCache", "Roaming", "Claude")))
+                    if not glob.glob(os.path.join(p, ".user-data-left.*"))]
+        roaming = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "Claude")
+        for folder in moved + packaged + [roaming]:
+            if os.path.isfile(os.path.join(folder, "claude_desktop_config.json")):
+                return folder
+        return (moved or packaged or [roaming])[0]
     if sys.platform == "darwin":
         return os.path.expanduser("~/Library/Application Support/Claude")
     return os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "Claude")

@@ -88,6 +88,7 @@ helper that Claude calls each turn. Connect it from a clone of this repo:
    ```
    In every conversation, use my Prompt Coach tools without being asked: call coach_turn with my message
    before you reply to each message I send, starting with the very first one, and follow what it returns.
+   If I ask you to save something to memory, do that first.
    ```
 
    In chat nothing can force Claude to run a tool: a skill is only opened when Claude judges it relevant, and
@@ -291,8 +292,8 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 | Surface | Status |
 |---|---|
 | Claude Code (terminal, IDE, desktop Code tab) | Full: hooks, coaching, file detection, score. Tested. |
-| Claude desktop, Chat | Through the local helper (connected with `setup_desktop.py`) + skill: Claude calls the coach's tools each turn (greeting, coaching, offers and follow-ups, document nudges, score, why/mute/insights). Less reliable than hooks because Claude has to choose to call them, and it adds a small tool call per message. The helper is tested with an MCP client and test-launched by the setup script, and the in-app behavior is confirmed by hand on Windows. |
-| Claude desktop, Cowork | The same local helper works there if the session runs on your computer. The plugin zip's hooks may also load, but Cowork runs in a sandbox whose home folder is reportedly not kept between conversations, so prefer the helper (it keeps your data on your computer). Confirmed by hand on Windows: the coach answers in Cowork and opens the dashboard from chat. |
+| Claude desktop, Chat | Through the local helper (connected with `setup_desktop.py`) + skill: Claude calls the coach's tools each turn (greeting, coaching, offers and follow-ups, document nudges, score, why/mute/insights). Less reliable than hooks because Claude has to choose to call them, and it adds a small tool call per message. The helper is tested with an MCP client and test-launched by the setup script, and the in-app behavior is confirmed by hand on Windows. One limit: Claude refuses to update its memory in a conversation once the helper has run in it (see "Limits worth knowing"). |
+| Claude desktop, Cowork | The same local helper works there, also when the session runs in the cloud (Claude reaches it through your computer). The plugin zip's hooks may also load, but Cowork runs in a sandbox whose home folder is reportedly not kept between conversations, so prefer the helper (it keeps your data on your computer). Confirmed by hand on Windows: the coach answers in Cowork and opens the dashboard from chat. The same memory limit as in Chat applies. |
 | claude.ai in a browser | Skills only; no local helper, so no tracking. |
 | ChatGPT, Copilot, Gemini | Not supported. Prompt Coach is a plugin for Claude. |
 
@@ -303,6 +304,15 @@ It also writes `summary.md` and a small `badge.svg` (Level and score) you can pa
 - The coach can only see what hooks can: it can't read the AI's reply to judge it, so "did you accept the draft?" is inferred from your next prompt.
 - 33 of the 76 recommendations can't be spotted from your message alone (a failed tool step, sources that disagree); they are offered to the AI as alternatives and used only when it judges they fit.
 - The coaching question is delivered *by the AI following an instruction*, so it can occasionally skip or word it differently.
+- In Chat and Cowork, Claude refuses to update its memory once a connected tool has run in the conversation, and
+  the coach's helper is one (that is Claude's own explanation when it refuses; Anthropic doesn't document the
+  rule, so it may change). So "save this to memory" halfway through a conversation is refused by Claude, not by
+  the coach, and nothing the coach does later in that conversation can lift it. What the coach does instead: a
+  memory request is never scored or coached; Claude is told to do a memory update *before* calling any coach
+  tool, so a save asked for in the first message of a conversation should go through (inferred from Claude's
+  own refusal, not yet confirmed by hand); and when a save is refused, Claude says why in one line, hands you
+  the note as a block to paste as the first message of a new conversation, and offers to write it into a file
+  instead. Claude Code and the plugin's hooks don't have this limit.
 - Document detection covers Office files and PDFs (and larger Markdown/HTML written directly). Files made by unusual tools may be missed.
 
 ## Develop

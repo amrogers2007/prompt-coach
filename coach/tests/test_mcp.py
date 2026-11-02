@@ -79,6 +79,28 @@ class InProcess(CoachTestCase):
             self.assertIn("Nothing to do", text_of(self.server.handle(call("coach_turn", {"message": msg}))))
         self.assertEqual(store.load_state()["totals"]["prompts"], 0)
 
+    def test_a_memory_request_gets_the_memory_note_instead_of_coaching(self):
+        self.server.handle(call("coach_turn", {"message": RICH}))
+        before = store.load_state()["totals"]["prompts"]
+        text = text_of(self.server.handle(call("coach_turn", {"message": "can you update to memory rn"})))
+        self.assertIn("memory update", text)
+        self.assertIn("Save to memory:", text)               # the way out: first message of a new conversation
+        self.assertIn("No coaching this turn", text)
+        self.assertNotIn("coaching moment", text)
+        self.assertEqual(store.load_state()["totals"]["prompts"], before)      # housekeeping, not scored
+
+    def test_a_memory_request_as_the_first_message_still_greets(self):
+        text = text_of(self.server.handle(call("coach_turn", {"message": "remember that I write for the board"})))
+        self.assertIn("I'm your AI coach", text)
+        self.assertIn("Save to memory:", text)
+
+    def test_memory_comes_first_in_the_instructions_and_both_tools(self):
+        self.assertIn("Memory comes first", mcp_server.INSTRUCTIONS)
+        self.assertIn("coach_start and coach_turn included", mcp_server.INSTRUCTIONS)
+        for name in ("coach_start", "coach_turn"):
+            tool = [t for t in mcp_server.TOOLS if t["name"] == name][0]
+            self.assertIn("memory", tool["description"], name)
+
     def test_sensitive_message_gets_a_heads_up_and_is_not_stored(self):
         text = text_of(self.server.handle(call("coach_turn", {"message": "summarize: SSN 123-45-6789 for Jane Doe"})))
         self.assertIn("sensitive", text.lower())

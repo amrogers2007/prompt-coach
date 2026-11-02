@@ -269,6 +269,36 @@ class MachineTurns(CoachTestCase):
         self.assertIsNone(hooks.handle_prompt(prompt(notice)))
         self.assertEqual(store.load_state()["totals"]["prompts"], before)
 
+    def test_a_request_to_save_to_memory_is_housekeeping_not_a_prompt(self):
+        hooks.handle_prompt(prompt(RICH))
+        before = store.load_state()["totals"]["prompts"]
+        self.assertIsNone(hooks.handle_prompt(prompt("can you update to memory rn")))
+        self.assertEqual(store.load_state()["totals"]["prompts"], before)
+
+    def test_a_memory_request_lets_the_coach_s_open_question_lapse(self):
+        hooks.handle_prompt(prompt(BARE))
+        self.advance(60)
+        out = hooks.handle_prompt(prompt(BARE + " about the sea"))
+        self.assertIn("coaching moment", context_of(out))             # the coach asked something
+        self.advance(60)
+        self.assertIsNone(hooks.handle_prompt(prompt("save this to memory please")))
+        self.assertNotIn("offer", store.load_state()["sessions"][SID])  # ...and the question lapsed here
+        self.assertEqual([e["type"] for e in store.read_events() if e["type"].startswith("offer")], ["offer_ignored"])
+        self.advance(60)
+        self.assertIsNone(hooks.handle_prompt(prompt("yes")))          # a later "yes" answers nothing
+
+    def test_a_coding_flavoured_memory_request_is_a_memory_request_first(self):
+        from pcoach import signals
+        hooks.handle_prompt(prompt(BARE))
+        self.advance(60)
+        self.assertIn("coaching moment", context_of(hooks.handle_prompt(prompt(BARE + " about the sea"))))
+        self.advance(60)
+        save = "remember: run npm test and git commit before every deploy"
+        self.assertTrue(signals.is_coding_prompt(save) and signals.is_memory_request(save))
+        self.assertIsNone(hooks.handle_prompt(prompt(save)))
+        self.assertNotIn("offer", store.load_state()["sessions"][SID])
+        self.assertEqual([e["type"] for e in store.read_events() if e["type"].startswith("offer")], ["offer_ignored"])
+
 
 class Cheers(CoachTestCase):
     """A small recognition the first time each good habit shows up in a day."""

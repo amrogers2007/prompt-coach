@@ -2,6 +2,23 @@
 
 Versions of the Prompt Coach plugin (`coach/`). Dates are commit dates.
 
+## 0.5.5 (2026-11-02)
+
+- Memory comes first in Chat and Cowork. Claude refuses to update its memory once a connected tool has run in the
+  conversation (its own explanation; the rule isn't documented), and the coach's helper is one, so "save this to
+  memory" used to end in "nothing has been saved". Now the helper's instructions put a memory update before any
+  coach call (so a save asked for in a conversation's first message should go through), a "save to memory"
+  message is neither scored nor coached, and when a save is refused the coach has Claude say why in one line,
+  hand over the note as a block to paste as the first message of a new conversation, and offer a file instead.
+  To get this in Chat and Cowork: with the Windows setup program, install the new `PromptCoachSetup.exe`; from a
+  clone connected with `setup_desktop.py`, `git pull`, then quit and reopen Claude (the helper hands Claude its
+  instructions when it starts). Everyone: upload the new `prompt-coach-chat-skill.zip` under *Customize >
+  Skills* in place of the old one, and if you pasted the one-liner into *Settings > Account*, add its new
+  sentence: "If I ask you to save something to memory, do that first."
+- `setup_desktop.py` finds Claude's settings where current versions keep them (`%LOCALAPPDATA%\Claude-Data`);
+  before, `--check` reported the coach as not connected on such a machine, and a connect would have written to
+  the old folder.
+
 ## 0.5.4 (2026-10-31)
 
 - The dashboard has an Auto / Light / Dark switch, remembered per browser; before, it only followed the system.

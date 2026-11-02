@@ -255,6 +255,31 @@ def is_machine_turn(text):
     return bool(MACHINE_TURN.search(text or ""))
 
 
+# "save this to memory", "update your memory", a message that *is* a "remember that I...":
+# a request to keep something for later, not work to score. Deliberately narrow: a work
+# prompt that happens to say "remember that the reader is my manager" is context, and the
+# coach's own audience; "in memory of", "memory foam", "my memory file" and "do you remember
+# my list?" are not saves either. Missing a real save costs little (Claude's instructions
+# cover memory anyway); silencing the coach on a good prompt costs more.
+MEMORY_REQUEST = re.compile(
+    r"\b(?:save|add|put|store|commit|write|keep|note|log|update)\b[^.?!\n]{0,40}?"
+    r"(?:\b(?:to|into)\s+(?:your |my |the |its |claude'?s )?memor(?:y|ies)\b(?!\s+(?:file|list|card|stick)\b)"
+    r"|\bin\s+(?:your |its |claude'?s )memor(?:y|ies)\b"
+    r"|\bin\s+memory\b(?!\s+(?:of|file|list|card|stick)\b))"
+    r"|\bupdate\s+(?:your |my |its )?memor(?:y|ies)\b(?!\s+(?:file|usage|card|stick|foam|leak|limit|footprint)\b)"
+    r"|\bmemori[sz]e\b"
+    # a message that is nothing but "remember that ...": one clause, to the end
+    r"|\A\s*(?:(?:please|i want you to|i'd like you to|i need you to)\s+)?remember"
+    r"(?:\s*[:\-]|\s+(?:this|that|these|it|my|we|i|i'm|it's|the following)\b)[^.?!;\n]{0,200}[.!]?\s*\Z"
+    r"|\bremember\s+(?:this|that|it|my|i)\b[^.?!\n]{0,60}?\b(?:for (?:next time|later|the future)|from now on|going forward)\b",
+    re.I)
+
+
+def is_memory_request(text):
+    """The message asks Claude to remember something or to update its memory."""
+    return bool(MEMORY_REQUEST.search(text or ""))
+
+
 def is_coding_prompt(text):
     """Coding work isn't this coach's audience (everyday non-technical tasks), so
     such prompts are left out of scoring and coaching rather than being judged

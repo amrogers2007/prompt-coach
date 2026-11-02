@@ -381,7 +381,19 @@ def handle_prompt(payload, delivery=None, source="hook"):
     ts = store.now()
     sid = payload.get("session_id") or "unknown"
 
-    if signals.is_coding_prompt(text) or signals.is_machine_turn(text):
+    if signals.is_machine_turn(text):
+        return None
+    if signals.is_memory_request(text):
+        # Housekeeping, not work: nothing is scored, and the coach's open question lapses
+        # here rather than being answered by whatever the user says next.
+        state = store.load_state()
+        session = state["sessions"].get(sid)
+        stale = session.pop("offer", None) if session else None
+        if stale:
+            _offer_passed_over(stale["ids"][0], ts)
+            store.save_state(state)
+        return None
+    if signals.is_coding_prompt(text):
         return None
     trivial = signals.is_trivial(text)
     answer = signals.is_acceptance(text) or signals.is_decline(text) or signals.is_misfit(text)

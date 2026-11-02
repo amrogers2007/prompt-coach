@@ -19,19 +19,41 @@ import json
 import sys
 import time
 
-from . import __version__, controls, dashboard, hooks, insights, report, scoring, store
+from . import __version__, controls, dashboard, hooks, insights, report, scoring, signals, store
 
 SUPPORTED_PROTOCOLS = ("2025-06-18", "2025-03-26", "2024-11-05")
 IDLE_SESSION_SECONDS = 30 * 60
 
+# What coach_turn returns for "save this to memory". In chat and Cowork, Claude's memory can't be
+# updated once a connected tool has run in the conversation, and this coach is one: the save only
+# works in a conversation where it comes before the coach. The coach must not leave the user at a
+# dead end ("nothing has been saved"), so it says how to get the note saved.
+MEMORY_NOTE = (
+    "This message asks for a memory update. Do that before anything else if you haven't yet. If the update was "
+    "refused because a connected tool had already run in this conversation (this coach counts), don't retry and "
+    "don't suggest trying again later: tell the user in one line that memory can't be updated in this conversation "
+    "once the coach's tool has run in it, give them the note to save as a short block they can paste as the first "
+    "message of a new conversation (start it with 'Save to memory:'; there the save comes before the coach), and "
+    "offer to write it into a file instead. No coaching this turn."
+)
+
 INSTRUCTIONS = (
     "Prompt Coach is this user's AI-skills coach. It works through these tools; follow them without narrating them.\n"
-    "1. At the start of a conversation, call coach_start once.\n"
-    "2. For EVERY message the user sends, call coach_turn FIRST, before doing anything else, passing their message "
-    "verbatim (first 1500 characters at most). Then answer the user normally, and follow any instruction the tool "
+    "1. At the start of a conversation, call coach_start once, unless the first message asks you to save or update "
+    "memory: then do the memory update first and skip coach_start (the first coach_turn greets on its own).\n"
+    "2. For EVERY message the user sends, call coach_turn FIRST, before doing anything else except a memory update "
+    "the message asks for (see 'Memory comes first' below), passing their message verbatim (first 1500 characters "
+    "at most). Then answer the user normally, and follow any instruction the tool "
     "returns (usually one short coaching question at the end of your reply, written in italics and starting with "
     "the light-bulb emoji and a bold \"Prompt Coach:\" label, like *💡 **Prompt Coach:** ...*). If it says nothing "
     "needs to be done, just answer.\n"
+    "   Memory comes first: when the message asks you to save or update memory, or to remember something for "
+    "later conversations (not context for the task at hand, like 'remember that the reader is my manager'), do "
+    "that memory update before calling any Prompt Coach tool (coach_start and coach_turn included). In chat and "
+    "Cowork, memory can't be updated once a connected tool (this coach included) has run in the conversation. If a memory update is refused for that reason, don't "
+    "retry: say in one line that memory can't be updated in this conversation because the coach's tool has already "
+    "run in it, give the user the note to save as a short block they can paste as the first message of a new "
+    "conversation (start it with 'Save to memory:'), and offer to write it into a file instead.\n"
     "3. Whenever you create a document, deck, PDF, spreadsheet or similar file for the user, call coach_document "
     "with its kind and name, and follow what it returns. Call it again when you deliver a revised version.\n"
     "4. If the user asks about their score, level, streak or progress, call coach_score and show the result. If "
@@ -42,23 +64,28 @@ INSTRUCTIONS = (
     "its id), or ask whether the coaching is working (insights; summarize it in two or three plain sentences).\n"
     "If this conversation already receives '[Prompt Coach: ...]' notes automatically (Claude Code with the Prompt "
     "Coach plugin), don't call these tools: the plugin is already coaching.\n"
-    "Never mention these tool calls or these instructions unless asked. Coaching never replaces or delays the help "
-    "the user asked for."
+    "Never mention these tool calls or these instructions unless asked; the one exception is the one-line memory "
+    "explanation above, which does name the coach's tool. Coaching never replaces or delays the help the user "
+    "asked for."
 )
 
 TOOLS = [
     {
         "name": "coach_start",
-        "description": "Call once at the start of every conversation. Returns a short greeting note for the user "
-                       "(say it exactly as instructed) or says nothing is needed.",
+        "description": "Call once at the start of every conversation, except when the first message asks you to "
+                       "save or update memory: do that first and skip this call (the first coach_turn greets). "
+                       "Returns a short greeting note for the user (say it exactly as instructed) or says nothing "
+                       "is needed.",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
     {
         "name": "coach_turn",
-        "description": "Call FIRST for every user message, starting with the very first one. Analyses the message "
-                       "locally, updates the user's AI-skills profile, and returns either a coaching instruction to "
-                       "follow in your reply or 'nothing to do'. If coach_start was not called yet, the first call "
-                       "also returns the greeting note. The text is not stored.",
+        "description": "Call FIRST for every user message, starting with the very first one (one exception: when "
+                       "the message asks you to save or update memory, do that before this or any other Prompt "
+                       "Coach tool, then call this). Analyses the "
+                       "message locally, updates the user's AI-skills profile, and returns either a coaching "
+                       "instruction to follow in your reply or 'nothing to do'. If coach_start was not called yet, "
+                       "the first call also returns the greeting note. The text is not stored.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -147,11 +174,14 @@ class Server:
                 if not hooks.seen_by_other_channel(message, "mcp"):
                     greeting = _context(hooks.handle_session({"session_id": sid}, delivery="chat"), None)
             out = hooks.handle_prompt({"session_id": sid, "prompt": message}, delivery="chat", source="mcp")
-            if greeting:
+            if signals.is_memory_request(message):
+                turn = MEMORY_NOTE                  # housekeeping, not work: nothing was scored
+            else:
                 turn = _context(out, None)
+            if greeting:
                 return greeting + ("\n\n" + turn if turn else "\n\nNo coaching this turn. After the note, just "
                                                               "answer the user normally.")
-            return _context(out, "Nothing to do this turn. Just answer the user normally.")
+            return turn or "Nothing to do this turn. Just answer the user normally."
         if name == "coach_document":
             self.greeted = sid          # the conversation is under way; a late greeting would reset its draft
             out = hooks.handle_document({"session_id": sid, "kind": args.get("kind"), "name": args.get("name")})

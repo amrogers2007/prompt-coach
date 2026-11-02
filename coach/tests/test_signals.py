@@ -195,5 +195,47 @@ class AnswersTip(unittest.TestCase):
         self.assertTrue(signals.is_misfit("that doesn't apply here"))
 
 
+class MemoryRequests(unittest.TestCase):
+    def test_requests_to_remember_are_recognised(self):
+        for t in ["can you update to memory rn", "save this to memory", "add that to your memory please",
+                  "please remember that my manager is Priya", "Remember this for next time: I write for the board",
+                  "commit this to memory", "memorize my internship list", "I want you to remember my address",
+                  "update your memory with the new dates", "remember: my manager is Priya", "Remember - I work at Acme",
+                  "remember the following: I live in Austin", "update memories", "put it in memory",
+                  "store this in claude's memory", "remember that I write for the board from now on",
+                  "remember my name is Amanda", "Remember I'm in London now.", "update your memory to say I report to Dana",
+                  "Remember it for next time: I like bullet points."]:
+            self.assertTrue(signals.is_memory_request(t), t)
+
+    def test_memory_as_a_topic_or_as_context_is_not(self):
+        for t in ["my laptop needs more memory", "write a poem about a memory of my grandmother",
+                  "do you remember my internship list?", "memory foam mattress review for my blog",
+                  "I have a memory file of internships, help me write a cover letter",
+                  "remember to include the chart", "what do you remember about me",
+                  "Write a speech in memory of my grandfather", "Put together a slideshow in memory of our founder",
+                  "update memory usage figures in the report", "Put this in my memory file: Stripe interview on 12 Nov",
+                  "Can you remember my internship list from last time and add Stripe to it?",
+                  "Things to remember: the deadline is Friday",
+                  # context inside a work prompt is the coach's own audience, never a save
+                  "Draft a cover letter for the Acme data analyst role. Remember that I interned at Google in 2025 "
+                  "and that the reader is a hiring manager; keep it under 300 words.",
+                  "Write a thank-you email to my interviewer. Please remember that I am a sophomore at Harvey Mudd.",
+                  "Summarise this report for the board, and remember it must be one page.",
+                  "Write me a cover letter. Remember I'm a sophomore.",
+                  # ...whichever order the sentences come in
+                  "Remember I'm a sophomore. Write me a cover letter.",
+                  "Please remember that I am a sophomore at Harvey Mudd. Write a thank-you email to my interviewer.",
+                  "Remember that email I sent you yesterday? Rewrite it so it's more polite.",
+                  "Remember my audience is the exec team; summarise the attached in 3 bullets.",
+                  "Remember: this is for the board, keep it to one page. Here's the draft...",
+                  "Remember - the client is Irish, so use euros. Draft the quote.",
+                  "Remember I'm not technical. Explain what a VPN is.",
+                  "Remember items 3 and 7 from the list? Draft replies to those two.",
+                  "Remember Myra from accounts? Write her a leaving card.",
+                  "Update the memory column in the laptop inventory spreadsheet to 16GB",
+                  "Update the memory section of the IT policy to say 16GB minimum", RICH, BARE]:
+            self.assertFalse(signals.is_memory_request(t), t)
+
+
 if __name__ == "__main__":
     unittest.main()

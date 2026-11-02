@@ -43,7 +43,7 @@ UNINSTALL_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\%s" % APP_
 # The one thing setup cannot do for the user: Claude's own instructions live in their account.
 PREFERENCE_LINE = ("In every conversation, use my Prompt Coach tools without being asked: call coach_turn with my "
                    "message before you reply to each message I send, starting with the very first one, and follow "
-                   "what it returns.")
+                   "what it returns. If I ask you to save something to memory, do that first.")
 
 OK, SKIPPED, FAILED = "ok", "skipped", "failed"
 NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0

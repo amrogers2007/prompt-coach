@@ -74,6 +74,16 @@ desktop's config by `coach/scripts/setup_desktop.py`, that reuses the same engin
   that handed over to the first ("Not main instance" in main.log). So `setup_desktop.py --wait` runs from a terminal
   outside Claude, waits until no desktop Claude process remains, writes the config, reopens Claude
   (`shell:AppsFolder\<AppID>`), and reads `mcp-server-prompt-coach.log` to confirm the helper started.
+- v0.5.5, a cost of being a tool: in chat and Cowork (seen in a cloud Cowork session, which shares the claude.ai
+  account memory), Claude refuses to update its memory once a connected tool has run in the conversation, and the
+  helper is one. That is Claude's own account of its refusal (2026-11-02), not a rule in Anthropic's docs. By that
+  account the block lasts the rest of the conversation, and the helper runs on the first message, so a coached
+  conversation is memory-blocked from the start: "save this to memory" ended in "nothing has been saved". Whether
+  a Cowork session running on the computer behaves differently is untested. Hooks aren't tools, so Claude Code
+  is unaffected. The helper now has Claude do a memory update before any coach call, scores no memory request,
+  and, when a save is refused, has Claude say why and hand the note over as the first message of a new
+  conversation. The full fix would be to run as hooks in Cowork as well (the plugin zip); whether cloud Cowork
+  runs a user plugin's hooks is untested.
 
 ## Recommendation library and the evidence loop (v0.3)
 
